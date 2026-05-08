@@ -84,3 +84,8 @@ def test_node_is_frozen() -> None:
     )
     with pytest.raises(AttributeError):
         node.node_id = 2  # type: ignore[misc]
+
+
+def test_network_type_includes_mb() -> None:
+    """NetworkType should expose MB as an explicit known value."""
+    assert NetworkType.MB.value == "MB"
