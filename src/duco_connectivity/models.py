@@ -23,6 +23,7 @@ class NetworkType(StrEnum):
     VIRT = "VIRT"
     RF = "RF"
     WI = "WI"
+    MB = "MB"
     UNKNOWN = "UNKNOWN"
 
 

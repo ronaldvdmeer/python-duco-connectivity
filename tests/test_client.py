@@ -305,6 +305,41 @@ async def test_get_nodes_unknown_network_type_falls_back_to_unknown() -> None:
     assert nodes[0].general.network_type == NetworkType.UNKNOWN
 
 
+async def test_get_nodes_mb_network_type_is_parsed() -> None:
+    """Known MB network types should be parsed explicitly."""
+    payload: dict[str, object] = {
+        "Nodes": [
+            {
+                "Node": 4,
+                "General": {
+                    "Type": {"Val": "UCCO2"},
+                    "SubType": {"Val": 0},
+                    "NetworkType": {"Val": "MB"},
+                    "Parent": {"Val": 1},
+                    "Asso": {"Val": 1},
+                    "Name": {"Val": ""},
+                    "Identify": {"Val": 0},
+                },
+                "Ventilation": {
+                    "State": {"Val": "AUTO"},
+                    "TimeStateRemain": {"Val": 0},
+                    "TimeStateEnd": {"Val": 0},
+                    "Mode": {"Val": "-"},
+                },
+            }
+        ]
+    }
+    mock_response = _response(json_payload=payload)
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with patch.object(session, "request", _request(mock_response)):
+            nodes = await client.async_get_nodes()
+
+    assert len(nodes) == 1
+    assert nodes[0].general.network_type == NetworkType.MB
+
+
 async def test_get_nodes_unknown_node_type_falls_back_to_unknown() -> None:
     """Test that unknown node types do not crash parsing."""
     payload: dict[str, object] = {

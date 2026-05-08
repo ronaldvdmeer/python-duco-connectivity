@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Add explicit `NetworkType.MB` support for nodes reported over MB transport.
 - Harden host parsing in `DucoClient` so host values with embedded ports are
   parsed correctly, conflicting `host` and `port` inputs are rejected, HTTP
   scheme casing is accepted, embedded credentials are rejected, and malformed
