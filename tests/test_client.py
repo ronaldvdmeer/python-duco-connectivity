@@ -69,11 +69,32 @@ async def test_base_url_uses_embedded_port_from_host() -> None:
         assert client.base_url == "http://192.0.2.94:8080"
 
 
+async def test_uppercase_http_scheme_is_accepted() -> None:
+    """HTTP hosts should be accepted regardless of scheme casing."""
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="HTTP://192.0.2.94:8080")
+        assert client.base_url == "http://192.0.2.94:8080"
+
+
 async def test_conflicting_port_sources_are_rejected() -> None:
     """The client should reject a separate port when the host already includes one."""
     async with aiohttp.ClientSession() as session:
         with pytest.raises(ValueError, match="Port specified both"):
             DucoClient(session=session, host="192.0.2.94:8080", port=8081)
+
+
+async def test_userinfo_in_host_is_rejected() -> None:
+    """The unauthenticated client should reject credentials embedded in the host value."""
+    async with aiohttp.ClientSession() as session:
+        with pytest.raises(ValueError, match="must not include user credentials"):
+            DucoClient(session=session, host="user:pass@192.0.2.94")
+
+
+async def test_invalid_embedded_port_is_rejected() -> None:
+    """Malformed embedded ports should raise a consistent client ValueError."""
+    async with aiohttp.ClientSession() as session:
+        with pytest.raises(ValueError, match="Invalid port in host value"):
+            DucoClient(session=session, host="192.0.2.94:abc")
 
 
 async def test_api_info_is_parsed(api_info_full_data: dict[str, object]) -> None:

@@ -40,13 +40,18 @@ class DucoClient:
         self._timeout = aiohttp.ClientTimeout(total=request_timeout)
 
         parsed_host = urlsplit(host.rstrip("/") if "://" in host else f"//{host.rstrip('/')}")
+        scheme = parsed_host.scheme.lower()
 
-        if parsed_host.scheme == "https":
+        if scheme == "https":
             msg = "HTTPS is not supported by this client"
             raise ValueError(msg)
 
-        if parsed_host.scheme not in ("", "http"):
+        if scheme not in ("", "http"):
             msg = f"Unsupported scheme in host value: {host}"
+            raise ValueError(msg)
+
+        if parsed_host.username is not None or parsed_host.password is not None:
+            msg = f"Host value must not include user credentials: {host}"
             raise ValueError(msg)
 
         if parsed_host.path not in ("", "/") or parsed_host.query or parsed_host.fragment:
@@ -58,7 +63,12 @@ class DucoClient:
             msg = f"Invalid host value: {host}"
             raise ValueError(msg)
 
-        embedded_port = parsed_host.port
+        try:
+            embedded_port = parsed_host.port
+        except ValueError as err:
+            msg = f"Invalid port in host value: {host}"
+            raise ValueError(msg) from err
+
         if embedded_port is not None and port is not None:
             msg = "Port specified both in host and port argument"
             raise ValueError(msg)
