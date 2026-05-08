@@ -13,6 +13,7 @@ from duco_connectivity import (
     DucoWriteLimitError,
     NetworkType,
     NodeType,
+    VentilationMode,
     VentilationState,
 )
 
@@ -354,6 +355,80 @@ async def test_timed_manual_state_is_parsed() -> None:
     assert len(nodes) == 1
     assert nodes[0].ventilation is not None
     assert nodes[0].ventilation.state is VentilationState.MAN3x2
+
+
+async def test_get_nodes_unknown_ventilation_state_falls_back_to_unknown() -> None:
+    """Unknown ventilation states should not break node parsing."""
+    payload: dict[str, object] = {
+        "Nodes": [
+            {
+                "Node": 6,
+                "General": {
+                    "Type": {"Val": "BOX"},
+                    "SubType": {"Val": 1},
+                    "NetworkType": {"Val": "VIRT"},
+                    "Parent": {"Val": 0},
+                    "Asso": {"Val": 0},
+                    "Name": {"Val": "Living"},
+                    "Identify": {"Val": 0},
+                },
+                "Ventilation": {
+                    "State": {"Val": "FUTURE_STATE"},
+                    "Mode": {"Val": "AUTO"},
+                    "TimeStateRemain": {"Val": 0},
+                    "TimeStateEnd": {"Val": 0},
+                },
+            }
+        ]
+    }
+
+    mock_response = _response(json_payload=payload)
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with patch.object(session, "request", _request(mock_response)):
+            nodes = await client.async_get_nodes()
+
+    assert len(nodes) == 1
+    assert nodes[0].ventilation is not None
+    assert nodes[0].ventilation.state is VentilationState.UNKNOWN
+
+
+async def test_get_nodes_unknown_ventilation_mode_falls_back_to_unknown() -> None:
+    """Unknown ventilation modes should not break node parsing."""
+    payload: dict[str, object] = {
+        "Nodes": [
+            {
+                "Node": 7,
+                "General": {
+                    "Type": {"Val": "BOX"},
+                    "SubType": {"Val": 1},
+                    "NetworkType": {"Val": "VIRT"},
+                    "Parent": {"Val": 0},
+                    "Asso": {"Val": 0},
+                    "Name": {"Val": "Bedroom"},
+                    "Identify": {"Val": 0},
+                },
+                "Ventilation": {
+                    "State": {"Val": "AUTO"},
+                    "Mode": {"Val": "FUTURE_MODE"},
+                    "TimeStateRemain": {"Val": 0},
+                    "TimeStateEnd": {"Val": 0},
+                },
+            }
+        ]
+    }
+
+    mock_response = _response(json_payload=payload)
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with patch.object(session, "request", _request(mock_response)):
+            nodes = await client.async_get_nodes()
+
+    assert len(nodes) == 1
+    assert nodes[0].ventilation is not None
+    assert nodes[0].ventilation.mode is VentilationMode.UNKNOWN
 
 
 async def test_connection_error_raises_duco_connection_error() -> None:

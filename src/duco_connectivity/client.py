@@ -146,6 +146,20 @@ class DucoClient:
         except ValueError:
             return DiagStatus.UNKNOWN
 
+    @staticmethod
+    def _to_ventilation_state(raw_value: str) -> VentilationState:
+        try:
+            return VentilationState(raw_value)
+        except ValueError:
+            return VentilationState.UNKNOWN
+
+    @staticmethod
+    def _to_ventilation_mode(raw_value: str) -> VentilationMode:
+        try:
+            return VentilationMode(raw_value)
+        except ValueError:
+            return VentilationMode.UNKNOWN
+
     async def async_get_api_info(self) -> ApiInfo:
         """Return API metadata advertised by the box."""
         payload = await self._request_json("GET", "/api")
@@ -263,8 +277,8 @@ class DucoClient:
         if "Ventilation" in payload:
             vent = payload["Ventilation"]
             ventilation = NodeVentilationInfo(
-                state=VentilationState(self._read_wrapped_value(vent, "State")),
-                mode=VentilationMode(self._read_wrapped_value(vent, "Mode")),
+                state=self._to_ventilation_state(self._read_wrapped_value(vent, "State")),
+                mode=self._to_ventilation_mode(self._read_wrapped_value(vent, "Mode")),
                 time_state_remain=self._read_wrapped_value(vent, "TimeStateRemain"),
                 time_state_end=self._read_wrapped_value(vent, "TimeStateEnd"),
                 flow_lvl_tgt=self._read_wrapped_value(vent, "FlowLvlTgt")

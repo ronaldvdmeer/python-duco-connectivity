@@ -32,6 +32,7 @@ class VentilationMode(StrEnum):
     AUTO = "AUTO"
     MANU = "MANU"
     NONE = "-"
+    UNKNOWN = "UNKNOWN"
 
 
 class VentilationState(StrEnum):
@@ -54,6 +55,7 @@ class VentilationState(StrEnum):
     MAN1x3 = "MAN1x3"
     MAN2x3 = "MAN2x3"
     MAN3x3 = "MAN3x3"
+    UNKNOWN = "UNKNOWN"
 
 
 class DiagStatus(StrEnum):
