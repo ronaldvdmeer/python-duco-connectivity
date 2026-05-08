@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "python-duco-connectivity"
 version = "0.1.0"
 description = "Async HTTP client for the local Duco Connectivity API"
-readme = { file = ["README.md", "CHANGELOG.md"], content-type = "text/markdown" }
+readme = "README.md"
 license = "MIT"
 requires-python = ">=3.12"
 authors = [
