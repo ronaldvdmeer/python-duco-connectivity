@@ -62,24 +62,31 @@ class DucoClient:
         kwargs.setdefault("timeout", self._timeout)
 
         try:
-            response = await self._session.request(method, f"{self._base_url}{path}", **kwargs)
-        except Exception as err:
+            request = self._session.request(method, f"{self._base_url}{path}", **kwargs)
+        except (aiohttp.ClientError, TimeoutError) as err:
             msg = f"Could not reach Duco device at {self._base_url}: {err}"
             raise DucoConnectionError(msg) from err
 
-        if response.status == 429:
-            raise DucoWriteLimitError()
-
-        if response.status >= 400:
-            body = await response.text()
-            msg = f"Unexpected response {response.status} for {path}: {body}"
-            raise DucoError(msg)
-
         try:
-            return await response.json(content_type=None)
-        except ValueError as err:
-            msg = f"Expected JSON response from {path}: {err}"
-            raise DucoError(msg) from err
+            async with request as response:
+                if response.status == 429:
+                    raise DucoWriteLimitError()
+
+                if response.status >= 400:
+                    body = await response.text()
+                    msg = f"Unexpected response {response.status} for {path}: {body}"
+                    raise DucoError(msg)
+
+                try:
+                    return await response.json(content_type=None)
+                except ValueError as err:
+                    msg = f"Expected JSON response from {path}: {err}"
+                    raise DucoError(msg) from err
+        except DucoError:
+            raise
+        except (aiohttp.ClientError, TimeoutError) as err:
+            msg = f"Could not reach Duco device at {self._base_url}: {err}"
+            raise DucoConnectionError(msg) from err
 
     @staticmethod
     def _read_wrapped_value(payload: dict[str, Any], key: str) -> Any:

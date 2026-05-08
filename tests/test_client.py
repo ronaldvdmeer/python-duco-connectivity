@@ -35,6 +35,19 @@ def _response(
     return response
 
 
+def _request_context(response: MagicMock) -> MagicMock:
+    """Create a mock aiohttp request context manager."""
+    request_context = MagicMock()
+    request_context.__aenter__ = AsyncMock(return_value=response)
+    request_context.__aexit__ = AsyncMock(return_value=False)
+    return request_context
+
+
+def _request(response: MagicMock) -> MagicMock:
+    """Create a mock request callable returning a request context manager."""
+    return MagicMock(return_value=_request_context(response))
+
+
 async def test_https_is_rejected() -> None:
     """HTTPS hosts should be rejected during client construction."""
     async with aiohttp.ClientSession() as session:
@@ -55,7 +68,7 @@ async def test_api_info_is_parsed(api_info_full_data: dict[str, object]) -> None
 
     async with aiohttp.ClientSession() as session:
         client = DucoClient(session=session, host="192.0.2.94")
-        with patch.object(session, "request", AsyncMock(return_value=mock_response)):
+        with patch.object(session, "request", _request(mock_response)):
             api_info = await client.async_get_api_info()
 
     assert api_info.public_api_version == "2.6"
@@ -71,7 +84,7 @@ async def test_board_info_is_parsed(board_info_data: dict[str, object]) -> None:
 
     async with aiohttp.ClientSession() as session:
         client = DucoClient(session=session, host="192.0.2.94")
-        with patch.object(session, "request", AsyncMock(return_value=mock_response)):
+        with patch.object(session, "request", _request(mock_response)):
             board = await client.async_get_board_info()
 
     assert board.box_name == "SILENT_CONNECT"
@@ -90,7 +103,7 @@ async def test_board_info_with_optional_versions(
 
     async with aiohttp.ClientSession() as session:
         client = DucoClient(session=session, host="192.0.2.94")
-        with patch.object(session, "request", AsyncMock(return_value=mock_response)):
+        with patch.object(session, "request", _request(mock_response)):
             board = await client.async_get_board_info()
 
     assert board.public_api_version == "2.6"
@@ -103,7 +116,7 @@ async def test_lan_info_wifi_is_parsed(lan_info_data: dict[str, object]) -> None
 
     async with aiohttp.ClientSession() as session:
         client = DucoClient(session=session, host="192.0.2.94")
-        with patch.object(session, "request", AsyncMock(return_value=mock_response)):
+        with patch.object(session, "request", _request(mock_response)):
             lan = await client.async_get_lan_info()
 
     assert lan.mode == "WIFI_CLIENT"
@@ -119,7 +132,7 @@ async def test_lan_info_ethernet_is_parsed(
 
     async with aiohttp.ClientSession() as session:
         client = DucoClient(session=session, host="192.0.2.94")
-        with patch.object(session, "request", AsyncMock(return_value=mock_response)):
+        with patch.object(session, "request", _request(mock_response)):
             lan = await client.async_get_lan_info()
 
     assert lan.mode == "ETHERNET"
@@ -133,7 +146,7 @@ async def test_get_diagnostics(diag_data: dict[str, object]) -> None:
 
     async with aiohttp.ClientSession() as session:
         client = DucoClient(session=session, host="192.0.2.94")
-        with patch.object(session, "request", AsyncMock(return_value=mock_response)):
+        with patch.object(session, "request", _request(mock_response)):
             diags = await client.async_get_diagnostics()
 
     assert len(diags) == 3
@@ -147,7 +160,7 @@ async def test_get_nodes_parses_full_payload(nodes_data: dict[str, object]) -> N
 
     async with aiohttp.ClientSession() as session:
         client = DucoClient(session=session, host="192.0.2.94")
-        with patch.object(session, "request", AsyncMock(return_value=mock_response)):
+        with patch.object(session, "request", _request(mock_response)):
             nodes = await client.async_get_nodes()
 
     assert len(nodes) == 3
@@ -201,7 +214,7 @@ async def test_get_nodes_unknown_network_type_falls_back_to_unknown() -> None:
 
     async with aiohttp.ClientSession() as session:
         client = DucoClient(session=session, host="192.0.2.94")
-        with patch.object(session, "request", AsyncMock(return_value=mock_response)):
+        with patch.object(session, "request", _request(mock_response)):
             nodes = await client.async_get_nodes()
 
     assert len(nodes) == 1
@@ -230,7 +243,7 @@ async def test_get_nodes_unknown_node_type_falls_back_to_unknown() -> None:
 
     async with aiohttp.ClientSession() as session:
         client = DucoClient(session=session, host="192.0.2.94")
-        with patch.object(session, "request", AsyncMock(return_value=mock_response)):
+        with patch.object(session, "request", _request(mock_response)):
             nodes = await client.async_get_nodes()
 
     assert len(nodes) == 1
@@ -244,7 +257,7 @@ async def test_get_write_requests_remaining_is_parsed() -> None:
 
     async with aiohttp.ClientSession() as session:
         client = DucoClient(session=session, host="192.0.2.94")
-        with patch.object(session, "request", AsyncMock(return_value=mock_response)):
+        with patch.object(session, "request", _request(mock_response)):
             remaining = await client.async_get_write_requests_remaining()
 
     assert remaining == 197
@@ -280,7 +293,7 @@ async def test_timed_manual_state_is_parsed() -> None:
 
     async with aiohttp.ClientSession() as session:
         client = DucoClient(session=session, host="192.0.2.94")
-        with patch.object(session, "request", AsyncMock(return_value=mock_response)):
+        with patch.object(session, "request", _request(mock_response)):
             nodes = await client.async_get_nodes()
 
     assert len(nodes) == 1
@@ -295,7 +308,7 @@ async def test_connection_error_raises_duco_connection_error() -> None:
         with patch.object(
             session,
             "request",
-            AsyncMock(side_effect=aiohttp.ClientConnectionError("unreachable")),
+            MagicMock(side_effect=aiohttp.ClientConnectionError("unreachable")),
         ):
             with pytest.raises(DucoConnectionError, match="Could not reach Duco device"):
                 await client.async_get_api_info()
@@ -305,7 +318,7 @@ async def test_timeout_raises_duco_connection_error() -> None:
     """Timeouts should surface as DucoConnectionError."""
     async with aiohttp.ClientSession() as session:
         client = DucoClient(session=session, host="192.0.2.94")
-        with patch.object(session, "request", AsyncMock(side_effect=TimeoutError())):
+        with patch.object(session, "request", MagicMock(side_effect=TimeoutError())):
             with pytest.raises(DucoConnectionError, match="Could not reach Duco device"):
                 await client.async_get_api_info()
 
@@ -316,7 +329,7 @@ async def test_http_error_raises_duco_error() -> None:
 
     async with aiohttp.ClientSession() as session:
         client = DucoClient(session=session, host="192.0.2.94")
-        with patch.object(session, "request", AsyncMock(return_value=mock_response)):
+        with patch.object(session, "request", _request(mock_response)):
             with pytest.raises(DucoError, match="Unexpected response 500"):
                 await client.async_get_api_info()
 
@@ -332,7 +345,7 @@ async def test_invalid_json_raises_duco_error(api_info_data: dict[str, object]) 
 
     async with aiohttp.ClientSession() as session:
         client = DucoClient(session=session, host="192.0.2.94")
-        with patch.object(session, "request", AsyncMock(return_value=mock_response)):
+        with patch.object(session, "request", _request(mock_response)):
             with pytest.raises(DucoError, match="Expected JSON response"):
                 await client.async_get_api_info()
 
@@ -340,12 +353,15 @@ async def test_invalid_json_raises_duco_error(api_info_data: dict[str, object]) 
 async def test_write_limit_error_is_raised() -> None:
     """HTTP 429 should raise DucoWriteLimitError."""
     mock_response = _response(status=429, json_payload={})
+    request_context = _request_context(mock_response)
 
     async with aiohttp.ClientSession() as session:
         client = DucoClient(session=session, host="192.0.2.94")
-        with patch.object(session, "request", AsyncMock(return_value=mock_response)):
+        with patch.object(session, "request", MagicMock(return_value=request_context)):
             with pytest.raises(DucoWriteLimitError, match="Duco write capacity exhausted"):
                 await client.async_set_ventilation_state(1, "MAN2")
+
+    request_context.__aexit__.assert_awaited_once()
 
 
 async def test_set_ventilation_state_uses_compact_json_body() -> None:
@@ -354,7 +370,7 @@ async def test_set_ventilation_state_uses_compact_json_body() -> None:
 
     async with aiohttp.ClientSession() as session:
         client = DucoClient(session=session, host="192.0.2.94")
-        request = AsyncMock(return_value=mock_response)
+        request = MagicMock(return_value=_request_context(mock_response))
         with patch.object(session, "request", request):
             await client.async_set_ventilation_state(1, "MAN2")
 
