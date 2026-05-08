@@ -1,0 +1,15 @@
+.DS_Store
+.coverage
+.github/copilot-instructions.md
+.github/skills/
+.mypy_cache/
+notes/
+.pytest_cache/
+.ruff_cache/
+.venv/
+__pycache__/
+build/
+dist/
+src/*.egg-info/
+src/**/*.egg-info/
+tests/__pycache__/
