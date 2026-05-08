@@ -1,0 +1,37 @@
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+### Changed
+
+- Harden host parsing in `DucoClient` so host values with embedded ports are
+  parsed correctly, conflicting `host` and `port` inputs are rejected, HTTP
+  scheme casing is accepted, embedded credentials are rejected, and malformed
+  embedded ports raise a consistent client-specific `ValueError`.
+- Fall back to `DiagStatus.UNKNOWN` for unrecognized diagnostic status strings.
+- Fall back to `VentilationState.UNKNOWN` and `VentilationMode.UNKNOWN` for
+  future ventilation values so node parsing stays resilient to new firmware
+  responses.
+- Add focused regression tests for the new parsing edge cases.
+
+## [0.1.0] - 2026-05-08
+
+### Added
+
+- Initial public release of `python-duco-connectivity`.
+- Async HTTP client for the local unauthenticated Duco Connectivity API.
+- Typed models for API info, board info, LAN info, nodes, diagnostics, and
+  write-budget data.
+- Support for requesting ventilation state changes through the public action
+  endpoint.
+- CI validation with pytest, Ruff, mypy, Bandit, and pip-audit.
+- PyPI Trusted Publishing workflow for tagged releases.
+
+[Unreleased]: https://github.com/ronaldvdmeer/python-duco-connectivity/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/ronaldvdmeer/python-duco-connectivity/releases/tag/v0.1.0
+
