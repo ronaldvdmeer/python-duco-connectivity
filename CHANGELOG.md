@@ -7,7 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Changed
+## [0.1.1] - 2026-05-08
+
+### Fixed
 
 - Add explicit `NetworkType.MB` support for nodes reported over MB transport.
 - Harden host parsing in `DucoClient` so host values with embedded ports are
@@ -18,6 +20,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fall back to `VentilationState.UNKNOWN` and `VentilationMode.UNKNOWN` for
   future ventilation values so node parsing stays resilient to new firmware
   responses.
+
+### Enhanced
+
 - Add focused regression tests for the new parsing edge cases.
 
 ## [0.1.0] - 2026-05-08
@@ -33,6 +38,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CI validation with pytest, Ruff, mypy, Bandit, and pip-audit.
 - PyPI Trusted Publishing workflow for tagged releases.
 
-[Unreleased]: https://github.com/ronaldvdmeer/python-duco-connectivity/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/ronaldvdmeer/python-duco-connectivity/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/ronaldvdmeer/python-duco-connectivity/releases/tag/v0.1.1
 [0.1.0]: https://github.com/ronaldvdmeer/python-duco-connectivity/releases/tag/v0.1.0
-

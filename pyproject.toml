@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "python-duco-connectivity"
-version = "0.1.0"
+version = "0.1.1"
 description = "Async HTTP client for the local Duco Connectivity API"
 readme = "README.md"
 license = "MIT"
