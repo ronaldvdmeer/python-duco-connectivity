@@ -36,7 +36,7 @@ def _compat_caller() -> str | None:
 
     while frame is not None:
         module_name = frame.f_globals.get("__name__", "")
-        if not module_name.startswith("duco_connectivity"):
+        if module_name != "duco_connectivity" and not module_name.startswith("duco_connectivity."):
             return f"{module_name}.{frame.f_code.co_name}"
         frame = frame.f_back
 

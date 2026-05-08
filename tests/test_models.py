@@ -20,6 +20,13 @@ from duco_connectivity import (
 )
 
 
+def _build_wrapper(module_name: str, source: str) -> object:
+    """Create a wrapper function in a custom module namespace."""
+    namespace = {"__name__": module_name}
+    exec(source, namespace)
+    return namespace["external_wrapper"]
+
+
 def test_api_endpoint_defaults() -> None:
     """ApiEndpoint should default to empty metadata lists."""
     endpoint = ApiEndpoint(url="/api")
@@ -78,6 +85,26 @@ def test_api_info_legacy_api_version_property_logs_external_caller(
     assert (
         "Compatibility property api_version accessed by "
         "test_models.external_wrapper; delegating to public_api_version."
+    ) in caplog.text
+
+
+def test_api_info_legacy_api_version_property_treats_prefixed_external_module_as_external(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Modules like duco_connectivity_tools should not be treated as internal."""
+    info = ApiInfo(public_api_version="2.5")
+    external_wrapper = _build_wrapper(
+        "duco_connectivity_tools",
+        "def external_wrapper(info):\n    return info.api_version\n",
+    )
+
+    with caplog.at_level(logging.DEBUG, logger="duco_connectivity.models"):
+        value = external_wrapper(info)
+
+    assert value == "2.5"
+    assert (
+        "Compatibility property api_version accessed by "
+        "duco_connectivity_tools.external_wrapper; delegating to public_api_version."
     ) in caplog.text
 
 

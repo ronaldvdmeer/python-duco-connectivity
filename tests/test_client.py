@@ -50,6 +50,13 @@ def _request(response: MagicMock) -> MagicMock:
     return MagicMock(return_value=_request_context(response))
 
 
+def _build_async_wrapper(module_name: str, source: str) -> object:
+    """Create an async wrapper function in a custom module namespace."""
+    namespace = {"__name__": module_name}
+    exec(source, namespace)
+    return namespace["external_wrapper"]
+
+
 async def test_https_is_rejected() -> None:
     """HTTPS hosts should be rejected during client construction."""
     async with aiohttp.ClientSession() as session:
@@ -480,6 +487,34 @@ async def test_get_write_req_remaining_alias_logs_external_caller(
     assert (
         "Compatibility alias async_get_write_req_remaining() used by "
         "test_client.external_wrapper; delegating to "
+        "async_get_write_requests_remaining()."
+    ) in caplog.text
+
+
+async def test_get_write_req_remaining_alias_treats_prefixed_external_module_as_external(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Modules like duco_connectivity_tools should not be treated as internal."""
+    payload: dict[str, object] = {"General": {"PublicApi": {"WriteReqCntRemain": {"Val": 197}}}}
+    mock_response = _response(json_payload=payload)
+    external_wrapper = _build_async_wrapper(
+        "duco_connectivity_tools",
+        "async def external_wrapper(client):\n"
+        "    return await client.async_get_write_req_remaining()\n",
+    )
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with (
+            caplog.at_level(logging.DEBUG, logger="duco_connectivity.client"),
+            patch.object(session, "request", _request(mock_response)),
+        ):
+            remaining = await external_wrapper(client)
+
+    assert remaining == 197
+    assert (
+        "Compatibility alias async_get_write_req_remaining() used by "
+        "duco_connectivity_tools.external_wrapper; delegating to "
         "async_get_write_requests_remaining()."
     ) in caplog.text
 
