@@ -27,7 +27,7 @@ class NetworkType(StrEnum):
 
 
 class VentilationMode(StrEnum):
-    """Control modes reported for node ventilation."""
+    """Control modes reported for node ventilation, plus a client-side fallback."""
 
     AUTO = "AUTO"
     MANU = "MANU"
@@ -36,7 +36,7 @@ class VentilationMode(StrEnum):
 
 
 class VentilationState(StrEnum):
-    """State values accepted and reported for node ventilation."""
+    """Ventilation states reported by the API, plus a client-side fallback."""
 
     AUTO = "AUTO"
     AUT1 = "AUT1"
@@ -59,7 +59,7 @@ class VentilationState(StrEnum):
 
 
 class DiagStatus(StrEnum):
-    """Health states returned by the diagnostics API."""
+    """Health states returned by the diagnostics API, plus a client-side fallback."""
 
     OK = "Ok"
     DISABLE = "Disable"

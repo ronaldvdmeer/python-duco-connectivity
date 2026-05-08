@@ -70,6 +70,13 @@ async def test_base_url_uses_embedded_port_from_host() -> None:
         assert client.base_url == "http://192.0.2.94:8080"
 
 
+async def test_bracketed_ipv6_host_is_accepted() -> None:
+    """Bracketed IPv6 hosts should be accepted and normalized."""
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="[fe80::1]")
+        assert client.base_url == "http://[fe80::1]"
+
+
 async def test_uppercase_http_scheme_is_accepted() -> None:
     """HTTP hosts should be accepted regardless of scheme casing."""
     async with aiohttp.ClientSession() as session:
@@ -96,6 +103,13 @@ async def test_invalid_embedded_port_is_rejected() -> None:
     async with aiohttp.ClientSession() as session:
         with pytest.raises(ValueError, match="Invalid port in host value"):
             DucoClient(session=session, host="192.0.2.94:abc")
+
+
+async def test_unbracketed_ipv6_host_is_rejected() -> None:
+    """Bare IPv6 hosts should require brackets to avoid ambiguous parsing."""
+    async with aiohttp.ClientSession() as session:
+        with pytest.raises(ValueError, match="Unbracketed IPv6 host values"):
+            DucoClient(session=session, host="fe80::1")
 
 
 async def test_negative_port_argument_is_rejected() -> None:

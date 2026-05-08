@@ -39,7 +39,15 @@ class DucoClient:
         self._session = session
         self._timeout = aiohttp.ClientTimeout(total=request_timeout)
 
-        parsed_host = urlsplit(host.rstrip("/") if "://" in host else f"//{host.rstrip('/')}")
+        raw_host = host.rstrip("/")
+        authority = raw_host.split("://", 1)[1] if "://" in raw_host else raw_host
+        authority = authority.split("/", 1)[0].split("?", 1)[0].split("#", 1)[0]
+
+        if "@" not in authority and authority.count(":") >= 2 and not authority.startswith("["):
+            msg = "Unbracketed IPv6 host values are not supported; use [addr] or [addr]:port"
+            raise ValueError(msg)
+
+        parsed_host = urlsplit(raw_host if "://" in host else f"//{raw_host}")
         scheme = parsed_host.scheme.lower()
 
         if scheme == "https":
