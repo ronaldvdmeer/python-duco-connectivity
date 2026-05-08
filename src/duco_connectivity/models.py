@@ -62,6 +62,7 @@ class DiagStatus(StrEnum):
     OK = "Ok"
     DISABLE = "Disable"
     ERROR = "Error"
+    UNKNOWN = "UNKNOWN"
 
 
 @dataclass(frozen=True, slots=True)

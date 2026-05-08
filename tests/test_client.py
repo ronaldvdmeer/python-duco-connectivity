@@ -62,6 +62,20 @@ async def test_base_url_defaults_to_http() -> None:
         assert client.base_url == "http://192.0.2.94"
 
 
+async def test_base_url_uses_embedded_port_from_host() -> None:
+    """Hosts with an embedded port should preserve that port in the base URL."""
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="http://192.0.2.94:8080")
+        assert client.base_url == "http://192.0.2.94:8080"
+
+
+async def test_conflicting_port_sources_are_rejected() -> None:
+    """The client should reject a separate port when the host already includes one."""
+    async with aiohttp.ClientSession() as session:
+        with pytest.raises(ValueError, match="Port specified both"):
+            DucoClient(session=session, host="192.0.2.94:8080", port=8081)
+
+
 async def test_api_info_is_parsed(api_info_full_data: dict[str, object]) -> None:
     """Test that the API info model follows the public API payload."""
     mock_response = _response(json_payload=api_info_full_data)
@@ -152,6 +166,26 @@ async def test_get_diagnostics(diag_data: dict[str, object]) -> None:
     assert len(diags) == 3
     assert diags[0].component == "Ventilation"
     assert diags[0].status == DiagStatus.OK
+
+
+async def test_get_diagnostics_unknown_status_falls_back_to_unknown() -> None:
+    """Unknown diagnostic statuses should not break parsing."""
+    payload: dict[str, object] = {
+        "Diag": {
+            "SubSystems": [
+                {"Component": "Ventilation", "Status": "FutureState"},
+            ]
+        }
+    }
+    mock_response = _response(json_payload=payload)
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with patch.object(session, "request", _request(mock_response)):
+            diags = await client.async_get_diagnostics()
+
+    assert len(diags) == 1
+    assert diags[0].status == DiagStatus.UNKNOWN
 
 
 async def test_get_nodes_parses_full_payload(nodes_data: dict[str, object]) -> None:
