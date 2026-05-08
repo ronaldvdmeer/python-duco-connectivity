@@ -78,13 +78,45 @@ class ApiEndpoint:
     modules: list[str] = field(default_factory=list)
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True, slots=True, init=False)
 class ApiInfo:
     """Version and endpoint metadata returned by the API root."""
 
     public_api_version: str
     reported_api_version: str | None = None
     endpoints: list[ApiEndpoint] = field(default_factory=list)
+
+    def __init__(
+        self,
+        public_api_version: str | None = None,
+        *,
+        api_version: str | None = None,
+        reported_api_version: str | None = None,
+        endpoints: list[ApiEndpoint] | None = None,
+    ) -> None:
+        """Initialize API info with backward-compatible api_version support."""
+        resolved_public_api_version = public_api_version
+        if resolved_public_api_version is None:
+            resolved_public_api_version = api_version
+        elif api_version is not None and api_version != public_api_version:
+            msg = "api_version must match public_api_version when both are provided"
+            raise ValueError(msg)
+
+        if resolved_public_api_version is None:
+            msg = "public_api_version or api_version must be provided"
+            raise TypeError(msg)
+
+        object.__setattr__(self, "public_api_version", resolved_public_api_version)
+        object.__setattr__(self, "reported_api_version", reported_api_version)
+        object.__setattr__(self, "endpoints", [] if endpoints is None else endpoints)
+
+    @property
+    def api_version(self) -> str:
+        """Backward-compatible alias for the old api_version field name."""
+        return self.public_api_version
+
+
+ApiEndpointInfo = ApiEndpoint
 
 
 @dataclass(frozen=True, slots=True)

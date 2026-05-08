@@ -4,6 +4,7 @@ import pytest
 
 from duco_connectivity import (
     ApiEndpoint,
+    ApiEndpointInfo,
     ApiInfo,
     BoardInfo,
     NetworkType,
@@ -29,8 +30,21 @@ def test_api_info_defaults() -> None:
     """ApiInfo should allow omitted optional fields."""
     info = ApiInfo(public_api_version="2.5")
     assert info.public_api_version == "2.5"
+    assert info.api_version == "2.5"
     assert info.reported_api_version is None
     assert info.endpoints == []
+
+
+def test_api_info_accepts_legacy_api_version_argument() -> None:
+    """ApiInfo should accept the old api_version keyword."""
+    info = ApiInfo(api_version="2.5")
+    assert info.public_api_version == "2.5"
+    assert info.api_version == "2.5"
+
+
+def test_api_endpoint_info_alias_points_to_api_endpoint() -> None:
+    """ApiEndpointInfo should remain import-compatible with ApiEndpoint."""
+    assert ApiEndpointInfo is ApiEndpoint
 
 
 def test_board_info_optional_software_version() -> None:
