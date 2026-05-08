@@ -27,15 +27,16 @@ class NetworkType(StrEnum):
 
 
 class VentilationMode(StrEnum):
-    """Control modes reported for node ventilation."""
+    """Control modes reported for node ventilation, plus a client-side fallback."""
 
     AUTO = "AUTO"
     MANU = "MANU"
     NONE = "-"
+    UNKNOWN = "UNKNOWN"
 
 
 class VentilationState(StrEnum):
-    """State values accepted and reported for node ventilation."""
+    """Ventilation states reported by the API, plus a client-side fallback."""
 
     AUTO = "AUTO"
     AUT1 = "AUT1"
@@ -54,14 +55,16 @@ class VentilationState(StrEnum):
     MAN1x3 = "MAN1x3"
     MAN2x3 = "MAN2x3"
     MAN3x3 = "MAN3x3"
+    UNKNOWN = "UNKNOWN"
 
 
 class DiagStatus(StrEnum):
-    """Health states returned by the diagnostics API."""
+    """Health states returned by the diagnostics API, plus a client-side fallback."""
 
     OK = "Ok"
     DISABLE = "Disable"
     ERROR = "Error"
+    UNKNOWN = "UNKNOWN"
 
 
 @dataclass(frozen=True, slots=True)

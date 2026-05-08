@@ -2,6 +2,7 @@
 
 import json
 from typing import Any
+from urllib.parse import urlsplit
 
 import aiohttp
 
@@ -37,17 +38,61 @@ class DucoClient:
     ) -> None:
         self._session = session
         self._timeout = aiohttp.ClientTimeout(total=request_timeout)
-        if host.startswith("https://"):
+
+        raw_host = host.rstrip("/")
+        authority = raw_host.split("://", 1)[1] if "://" in raw_host else raw_host
+        authority = authority.split("/", 1)[0].split("?", 1)[0].split("#", 1)[0]
+
+        if "@" not in authority and authority.count(":") >= 2 and not authority.startswith("["):
+            msg = "Unbracketed IPv6 host values are not supported; use [addr] or [addr]:port"
+            raise ValueError(msg)
+
+        parsed_host = urlsplit(raw_host if "://" in host else f"//{raw_host}")
+        scheme = parsed_host.scheme.lower()
+
+        if scheme == "https":
             msg = "HTTPS is not supported by this client"
             raise ValueError(msg)
-        normalized_host = host.removeprefix("http://").removeprefix("https://").rstrip("/")
-        if "://" in host and not host.startswith("http://"):
+
+        if scheme not in ("", "http"):
             msg = f"Unsupported scheme in host value: {host}"
             raise ValueError(msg)
-        if port is None:
+
+        if parsed_host.username is not None or parsed_host.password is not None:
+            msg = f"Host value must not include user credentials: {host}"
+            raise ValueError(msg)
+
+        if parsed_host.path not in ("", "/") or parsed_host.query or parsed_host.fragment:
+            msg = f"Host value must not include a path, query, or fragment: {host}"
+            raise ValueError(msg)
+
+        normalized_host = parsed_host.hostname
+        if normalized_host is None:
+            msg = f"Invalid host value: {host}"
+            raise ValueError(msg)
+
+        try:
+            embedded_port = parsed_host.port
+        except ValueError as err:
+            msg = f"Invalid port in host value: {host}"
+            raise ValueError(msg) from err
+
+        if port is not None and not 0 <= port <= 65535:
+            msg = f"Invalid port argument: {port}"
+            raise ValueError(msg)
+
+        if embedded_port is not None and port is not None:
+            msg = "Port specified both in host and port argument"
+            raise ValueError(msg)
+
+        if ":" in normalized_host:
+            normalized_host = f"[{normalized_host}]"
+
+        resolved_port = port if port is not None else embedded_port
+        if resolved_port is None:
             self._base_url = f"http://{normalized_host}"
         else:
-            self._base_url = f"http://{normalized_host}:{port}"
+            self._base_url = f"http://{normalized_host}:{resolved_port}"
 
     @property
     def base_url(self) -> str:
@@ -105,6 +150,27 @@ class DucoClient:
             return NetworkType(raw_value)
         except ValueError:
             return NetworkType.UNKNOWN
+
+    @staticmethod
+    def _to_diag_status(raw_value: str) -> DiagStatus:
+        try:
+            return DiagStatus(raw_value)
+        except ValueError:
+            return DiagStatus.UNKNOWN
+
+    @staticmethod
+    def _to_ventilation_state(raw_value: str) -> VentilationState:
+        try:
+            return VentilationState(raw_value)
+        except ValueError:
+            return VentilationState.UNKNOWN
+
+    @staticmethod
+    def _to_ventilation_mode(raw_value: str) -> VentilationMode:
+        try:
+            return VentilationMode(raw_value)
+        except ValueError:
+            return VentilationMode.UNKNOWN
 
     async def async_get_api_info(self) -> ApiInfo:
         """Return API metadata advertised by the box."""
@@ -177,7 +243,7 @@ class DucoClient:
         return [
             DiagComponent(
                 component=item["Component"],
-                status=DiagStatus(item["Status"]),
+                status=self._to_diag_status(item["Status"]),
             )
             for item in payload["Diag"]["SubSystems"]
         ]
@@ -223,8 +289,8 @@ class DucoClient:
         if "Ventilation" in payload:
             vent = payload["Ventilation"]
             ventilation = NodeVentilationInfo(
-                state=VentilationState(self._read_wrapped_value(vent, "State")),
-                mode=VentilationMode(self._read_wrapped_value(vent, "Mode")),
+                state=self._to_ventilation_state(self._read_wrapped_value(vent, "State")),
+                mode=self._to_ventilation_mode(self._read_wrapped_value(vent, "Mode")),
                 time_state_remain=self._read_wrapped_value(vent, "TimeStateRemain"),
                 time_state_end=self._read_wrapped_value(vent, "TimeStateEnd"),
                 flow_lvl_tgt=self._read_wrapped_value(vent, "FlowLvlTgt")

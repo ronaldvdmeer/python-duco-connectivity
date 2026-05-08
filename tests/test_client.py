@@ -13,6 +13,7 @@ from duco_connectivity import (
     DucoWriteLimitError,
     NetworkType,
     NodeType,
+    VentilationMode,
     VentilationState,
 )
 
@@ -60,6 +61,69 @@ async def test_base_url_defaults_to_http() -> None:
     async with aiohttp.ClientSession() as session:
         client = DucoClient(session=session, host="192.0.2.94")
         assert client.base_url == "http://192.0.2.94"
+
+
+async def test_base_url_uses_embedded_port_from_host() -> None:
+    """Hosts with an embedded port should preserve that port in the base URL."""
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="http://192.0.2.94:8080")
+        assert client.base_url == "http://192.0.2.94:8080"
+
+
+async def test_bracketed_ipv6_host_is_accepted() -> None:
+    """Bracketed IPv6 hosts should be accepted and normalized."""
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="[fe80::1]")
+        assert client.base_url == "http://[fe80::1]"
+
+
+async def test_uppercase_http_scheme_is_accepted() -> None:
+    """HTTP hosts should be accepted regardless of scheme casing."""
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="HTTP://192.0.2.94:8080")
+        assert client.base_url == "http://192.0.2.94:8080"
+
+
+async def test_conflicting_port_sources_are_rejected() -> None:
+    """The client should reject a separate port when the host already includes one."""
+    async with aiohttp.ClientSession() as session:
+        with pytest.raises(ValueError, match="Port specified both"):
+            DucoClient(session=session, host="192.0.2.94:8080", port=8081)
+
+
+async def test_userinfo_in_host_is_rejected() -> None:
+    """The unauthenticated client should reject credentials embedded in the host value."""
+    async with aiohttp.ClientSession() as session:
+        with pytest.raises(ValueError, match="must not include user credentials"):
+            DucoClient(session=session, host="user:pass@192.0.2.94")
+
+
+async def test_invalid_embedded_port_is_rejected() -> None:
+    """Malformed embedded ports should raise a consistent client ValueError."""
+    async with aiohttp.ClientSession() as session:
+        with pytest.raises(ValueError, match="Invalid port in host value"):
+            DucoClient(session=session, host="192.0.2.94:abc")
+
+
+async def test_unbracketed_ipv6_host_is_rejected() -> None:
+    """Bare IPv6 hosts should require brackets to avoid ambiguous parsing."""
+    async with aiohttp.ClientSession() as session:
+        with pytest.raises(ValueError, match="Unbracketed IPv6 host values"):
+            DucoClient(session=session, host="fe80::1")
+
+
+async def test_negative_port_argument_is_rejected() -> None:
+    """Explicit negative ports should be rejected during client construction."""
+    async with aiohttp.ClientSession() as session:
+        with pytest.raises(ValueError, match="Invalid port argument"):
+            DucoClient(session=session, host="192.0.2.94", port=-1)
+
+
+async def test_out_of_range_port_argument_is_rejected() -> None:
+    """Explicit ports above 65535 should be rejected during client construction."""
+    async with aiohttp.ClientSession() as session:
+        with pytest.raises(ValueError, match="Invalid port argument"):
+            DucoClient(session=session, host="192.0.2.94", port=99999)
 
 
 async def test_api_info_is_parsed(api_info_full_data: dict[str, object]) -> None:
@@ -152,6 +216,26 @@ async def test_get_diagnostics(diag_data: dict[str, object]) -> None:
     assert len(diags) == 3
     assert diags[0].component == "Ventilation"
     assert diags[0].status == DiagStatus.OK
+
+
+async def test_get_diagnostics_unknown_status_falls_back_to_unknown() -> None:
+    """Unknown diagnostic statuses should not break parsing."""
+    payload: dict[str, object] = {
+        "Diag": {
+            "SubSystems": [
+                {"Component": "Ventilation", "Status": "FutureState"},
+            ]
+        }
+    }
+    mock_response = _response(json_payload=payload)
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with patch.object(session, "request", _request(mock_response)):
+            diags = await client.async_get_diagnostics()
+
+    assert len(diags) == 1
+    assert diags[0].status == DiagStatus.UNKNOWN
 
 
 async def test_get_nodes_parses_full_payload(nodes_data: dict[str, object]) -> None:
@@ -299,6 +383,80 @@ async def test_timed_manual_state_is_parsed() -> None:
     assert len(nodes) == 1
     assert nodes[0].ventilation is not None
     assert nodes[0].ventilation.state is VentilationState.MAN3x2
+
+
+async def test_get_nodes_unknown_ventilation_state_falls_back_to_unknown() -> None:
+    """Unknown ventilation states should not break node parsing."""
+    payload: dict[str, object] = {
+        "Nodes": [
+            {
+                "Node": 6,
+                "General": {
+                    "Type": {"Val": "BOX"},
+                    "SubType": {"Val": 1},
+                    "NetworkType": {"Val": "VIRT"},
+                    "Parent": {"Val": 0},
+                    "Asso": {"Val": 0},
+                    "Name": {"Val": "Living"},
+                    "Identify": {"Val": 0},
+                },
+                "Ventilation": {
+                    "State": {"Val": "FUTURE_STATE"},
+                    "Mode": {"Val": "AUTO"},
+                    "TimeStateRemain": {"Val": 0},
+                    "TimeStateEnd": {"Val": 0},
+                },
+            }
+        ]
+    }
+
+    mock_response = _response(json_payload=payload)
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with patch.object(session, "request", _request(mock_response)):
+            nodes = await client.async_get_nodes()
+
+    assert len(nodes) == 1
+    assert nodes[0].ventilation is not None
+    assert nodes[0].ventilation.state is VentilationState.UNKNOWN
+
+
+async def test_get_nodes_unknown_ventilation_mode_falls_back_to_unknown() -> None:
+    """Unknown ventilation modes should not break node parsing."""
+    payload: dict[str, object] = {
+        "Nodes": [
+            {
+                "Node": 7,
+                "General": {
+                    "Type": {"Val": "BOX"},
+                    "SubType": {"Val": 1},
+                    "NetworkType": {"Val": "VIRT"},
+                    "Parent": {"Val": 0},
+                    "Asso": {"Val": 0},
+                    "Name": {"Val": "Bedroom"},
+                    "Identify": {"Val": 0},
+                },
+                "Ventilation": {
+                    "State": {"Val": "AUTO"},
+                    "Mode": {"Val": "FUTURE_MODE"},
+                    "TimeStateRemain": {"Val": 0},
+                    "TimeStateEnd": {"Val": 0},
+                },
+            }
+        ]
+    }
+
+    mock_response = _response(json_payload=payload)
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with patch.object(session, "request", _request(mock_response)):
+            nodes = await client.async_get_nodes()
+
+    assert len(nodes) == 1
+    assert nodes[0].ventilation is not None
+    assert nodes[0].ventilation.mode is VentilationMode.UNKNOWN
 
 
 async def test_connection_error_raises_duco_connection_error() -> None:
