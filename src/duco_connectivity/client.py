@@ -98,6 +98,10 @@ class DucoClient:
             self._base_url = f"http://{normalized_host}:{resolved_port}"
 
         _LOGGER.debug("Initialized DucoClient for %s", self._base_url)
+        _LOGGER.debug(
+            "Using HTTP-only duco_connectivity transport for %s.",
+            self._base_url,
+        )
 
     @property
     def base_url(self) -> str:

@@ -161,6 +161,7 @@ async def test_request_logging_includes_method_path_and_status(
                 await client.async_get_api_info()
 
     assert "Initialized DucoClient for http://192.0.2.94" in caplog.text
+    assert "Using HTTP-only duco_connectivity transport for http://192.0.2.94." in caplog.text
     assert "Requesting GET http://192.0.2.94/api" in caplog.text
     assert "Received response 200 for GET http://192.0.2.94/api" in caplog.text
 
