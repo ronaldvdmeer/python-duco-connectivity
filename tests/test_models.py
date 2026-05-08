@@ -1,5 +1,7 @@
 """Tests for the public data models."""
 
+import logging
+
 import pytest
 
 from duco_connectivity import (
@@ -40,6 +42,43 @@ def test_api_info_accepts_legacy_api_version_argument() -> None:
     info = ApiInfo(api_version="2.5")
     assert info.public_api_version == "2.5"
     assert info.api_version == "2.5"
+
+
+def test_api_info_legacy_api_version_argument_logs_external_caller(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Using the old constructor keyword should log the external caller."""
+
+    def external_wrapper() -> ApiInfo:
+        return ApiInfo(api_version="2.5")
+
+    with caplog.at_level(logging.DEBUG, logger="duco_connectivity.models"):
+        info = external_wrapper()
+
+    assert info.public_api_version == "2.5"
+    assert (
+        "Compatibility constructor argument api_version used by "
+        "test_models.external_wrapper; mapping to public_api_version."
+    ) in caplog.text
+
+
+def test_api_info_legacy_api_version_property_logs_external_caller(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Using the old property should log the external caller."""
+    info = ApiInfo(public_api_version="2.5")
+
+    def external_wrapper() -> str:
+        return info.api_version
+
+    with caplog.at_level(logging.DEBUG, logger="duco_connectivity.models"):
+        value = external_wrapper()
+
+    assert value == "2.5"
+    assert (
+        "Compatibility property api_version accessed by "
+        "test_models.external_wrapper; delegating to public_api_version."
+    ) in caplog.text
 
 
 def test_api_endpoint_info_alias_points_to_api_endpoint() -> None:

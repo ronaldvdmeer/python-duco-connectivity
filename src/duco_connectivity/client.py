@@ -2,6 +2,8 @@
 
 import json
 import logging
+import sys
+from types import FrameType
 from typing import Any
 from urllib.parse import urlsplit
 
@@ -26,6 +28,19 @@ from .models import (
 )
 
 _LOGGER = logging.getLogger(__name__)
+
+
+def _compat_caller() -> str | None:
+    """Return the first external caller that reached a compatibility path."""
+    frame: FrameType | None = sys._getframe(1)
+
+    while frame is not None:
+        module_name = frame.f_globals.get("__name__", "")
+        if not module_name.startswith("duco_connectivity"):
+            return f"{module_name}.{frame.f_code.co_name}"
+        frame = frame.f_back
+
+    return None
 
 
 class DucoClient:
@@ -330,10 +345,18 @@ class DucoClient:
 
     async def async_get_write_req_remaining(self) -> int:
         """Backward-compatible alias for the old write budget method name."""
-        _LOGGER.debug(
-            "Compatibility alias async_get_write_req_remaining() used; "
-            "delegating to async_get_write_requests_remaining()."
-        )
+        caller = _compat_caller()
+        if caller is None:
+            _LOGGER.debug(
+                "Compatibility alias async_get_write_req_remaining() used; "
+                "delegating to async_get_write_requests_remaining()."
+            )
+        else:
+            _LOGGER.debug(
+                "Compatibility alias async_get_write_req_remaining() used by %s; "
+                "delegating to async_get_write_requests_remaining().",
+                caller,
+            )
         return await self.async_get_write_requests_remaining()
 
     async def async_set_ventilation_state(

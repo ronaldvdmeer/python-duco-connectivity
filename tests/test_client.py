@@ -458,6 +458,32 @@ async def test_get_write_req_remaining_alias_is_parsed() -> None:
     assert remaining == 197
 
 
+async def test_get_write_req_remaining_alias_logs_external_caller(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Compatibility logging should include the external caller path."""
+    payload: dict[str, object] = {"General": {"PublicApi": {"WriteReqCntRemain": {"Val": 197}}}}
+    mock_response = _response(json_payload=payload)
+
+    async def external_wrapper(client: DucoClient) -> int:
+        return await client.async_get_write_req_remaining()
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with (
+            caplog.at_level(logging.DEBUG, logger="duco_connectivity.client"),
+            patch.object(session, "request", _request(mock_response)),
+        ):
+            remaining = await external_wrapper(client)
+
+    assert remaining == 197
+    assert (
+        "Compatibility alias async_get_write_req_remaining() used by "
+        "test_client.external_wrapper; delegating to "
+        "async_get_write_requests_remaining()."
+    ) in caplog.text
+
+
 async def test_get_write_req_remaining_alias_logs_compat_usage(
     caplog: pytest.LogCaptureFixture,
 ) -> None:
