@@ -98,6 +98,20 @@ async def test_invalid_embedded_port_is_rejected() -> None:
             DucoClient(session=session, host="192.0.2.94:abc")
 
 
+async def test_negative_port_argument_is_rejected() -> None:
+    """Explicit negative ports should be rejected during client construction."""
+    async with aiohttp.ClientSession() as session:
+        with pytest.raises(ValueError, match="Invalid port argument"):
+            DucoClient(session=session, host="192.0.2.94", port=-1)
+
+
+async def test_out_of_range_port_argument_is_rejected() -> None:
+    """Explicit ports above 65535 should be rejected during client construction."""
+    async with aiohttp.ClientSession() as session:
+        with pytest.raises(ValueError, match="Invalid port argument"):
+            DucoClient(session=session, host="192.0.2.94", port=99999)
+
+
 async def test_api_info_is_parsed(api_info_full_data: dict[str, object]) -> None:
     """Test that the API info model follows the public API payload."""
     mock_response = _response(json_payload=api_info_full_data)

@@ -69,6 +69,10 @@ class DucoClient:
             msg = f"Invalid port in host value: {host}"
             raise ValueError(msg) from err
 
+        if port is not None and not 0 <= port <= 65535:
+            msg = f"Invalid port argument: {port}"
+            raise ValueError(msg)
+
         if embedded_port is not None and port is not None:
             msg = "Port specified both in host and port argument"
             raise ValueError(msg)
