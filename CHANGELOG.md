@@ -37,11 +37,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   logging, and public model constructor compatibility
   ([#6](https://github.com/ronaldvdmeer/python-duco-connectivity/pull/6))
 
-### Contributors
-
-- Thanks to [@ronaldvdmeer](https://github.com/ronaldvdmeer) for contributing
-  to this release.
-
 ## [0.1.1] - 2026-05-08
 
 ### Fixed
