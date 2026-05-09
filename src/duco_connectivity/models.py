@@ -107,10 +107,10 @@ class ApiInfo:
     def __init__(
         self,
         public_api_version: str | None = None,
-        *,
-        api_version: str | None = None,
         reported_api_version: str | None = None,
         endpoints: list[ApiEndpoint] | None = None,
+        *,
+        api_version: str | None = None,
     ) -> None:
         """Initialize API info with backward-compatible api_version support."""
         if api_version is not None:

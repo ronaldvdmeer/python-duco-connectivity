@@ -51,6 +51,28 @@ def test_api_info_accepts_legacy_api_version_argument() -> None:
     assert info.api_version == "2.5"
 
 
+def test_api_info_accepts_previous_positional_signature() -> None:
+    """ApiInfo should still accept the old positional optional fields."""
+    endpoint = ApiEndpoint(url="/api")
+
+    info = ApiInfo("2.5", "reported", [endpoint])
+
+    assert info.public_api_version == "2.5"
+    assert info.reported_api_version == "reported"
+    assert info.endpoints == [endpoint]
+
+
+def test_api_info_accepts_positional_optional_fields_with_legacy_keyword() -> None:
+    """Legacy api_version support should not block the old positional optional fields."""
+    endpoint = ApiEndpoint(url="/api")
+
+    info = ApiInfo(None, "reported", [endpoint], api_version="2.5")
+
+    assert info.public_api_version == "2.5"
+    assert info.reported_api_version == "reported"
+    assert info.endpoints == [endpoint]
+
+
 def test_api_info_legacy_api_version_argument_logs_external_caller(
     caplog: pytest.LogCaptureFixture,
 ) -> None:
