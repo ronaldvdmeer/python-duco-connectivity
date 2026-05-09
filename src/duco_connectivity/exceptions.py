@@ -18,3 +18,7 @@ class DucoWriteLimitError(DucoError):
         if remaining is not None:
             detail = f"{detail} ({remaining} writes remaining)"
         super().__init__(detail)
+
+
+# Backward-compatible alias for the old python-duco-client exception name.
+DucoRateLimitError = DucoWriteLimitError

@@ -1,7 +1,25 @@
 """Typed models for values exposed by the local Duco API."""
 
+import logging
+import sys
 from dataclasses import dataclass, field
 from enum import StrEnum
+from types import FrameType
+
+_LOGGER = logging.getLogger(__name__)
+
+
+def _compat_caller() -> str | None:
+    """Return the first external caller that reached a compatibility path."""
+    frame: FrameType | None = sys._getframe(1)
+
+    while frame is not None:
+        module_name = frame.f_globals.get("__name__", "")
+        if module_name != "duco_connectivity" and not module_name.startswith("duco_connectivity."):
+            return f"{module_name}.{frame.f_code.co_name}"
+        frame = frame.f_back
+
+    return None
 
 
 class NodeType(StrEnum):
@@ -78,13 +96,70 @@ class ApiEndpoint:
     modules: list[str] = field(default_factory=list)
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True, slots=True, init=False)
 class ApiInfo:
     """Version and endpoint metadata returned by the API root."""
 
     public_api_version: str
     reported_api_version: str | None = None
     endpoints: list[ApiEndpoint] = field(default_factory=list)
+
+    def __init__(
+        self,
+        public_api_version: str | None = None,
+        reported_api_version: str | None = None,
+        endpoints: list[ApiEndpoint] | None = None,
+        *,
+        api_version: str | None = None,
+    ) -> None:
+        """Initialize API info with backward-compatible api_version support."""
+        if api_version is not None:
+            caller = _compat_caller()
+            if caller is None:
+                _LOGGER.debug(
+                    "Compatibility constructor argument api_version used; "
+                    "mapping to public_api_version."
+                )
+            else:
+                _LOGGER.debug(
+                    "Compatibility constructor argument api_version used by %s; "
+                    "mapping to public_api_version.",
+                    caller,
+                )
+
+        resolved_public_api_version = public_api_version
+        if resolved_public_api_version is None:
+            resolved_public_api_version = api_version
+        elif api_version is not None and api_version != public_api_version:
+            msg = "api_version must match public_api_version when both are provided"
+            raise ValueError(msg)
+
+        if resolved_public_api_version is None:
+            msg = "public_api_version or api_version must be provided"
+            raise TypeError(msg)
+
+        object.__setattr__(self, "public_api_version", resolved_public_api_version)
+        object.__setattr__(self, "reported_api_version", reported_api_version)
+        object.__setattr__(self, "endpoints", [] if endpoints is None else endpoints)
+
+    @property
+    def api_version(self) -> str:
+        """Backward-compatible alias for the old api_version field name."""
+        caller = _compat_caller()
+        if caller is None:
+            _LOGGER.debug(
+                "Compatibility property api_version accessed; delegating to public_api_version."
+            )
+        else:
+            _LOGGER.debug(
+                "Compatibility property api_version accessed by %s; delegating to "
+                "public_api_version.",
+                caller,
+            )
+        return self.public_api_version
+
+
+ApiEndpointInfo = ApiEndpoint
 
 
 @dataclass(frozen=True, slots=True)

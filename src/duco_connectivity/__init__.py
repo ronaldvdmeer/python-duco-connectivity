@@ -3,9 +3,15 @@
 from importlib.metadata import PackageNotFoundError, version
 
 from .client import DucoClient
-from .exceptions import DucoConnectionError, DucoError, DucoWriteLimitError
+from .exceptions import (
+    DucoConnectionError,
+    DucoError,
+    DucoRateLimitError,
+    DucoWriteLimitError,
+)
 from .models import (
     ApiEndpoint,
+    ApiEndpointInfo,
     ApiInfo,
     BoardInfo,
     DiagComponent,
@@ -28,11 +34,13 @@ except PackageNotFoundError:
 
 __all__ = [
     "ApiEndpoint",
+    "ApiEndpointInfo",
     "ApiInfo",
     "BoardInfo",
     "DucoClient",
     "DucoConnectionError",
     "DucoError",
+    "DucoRateLimitError",
     "DucoWriteLimitError",
     "DiagComponent",
     "DiagStatus",

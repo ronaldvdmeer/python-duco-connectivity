@@ -1,5 +1,6 @@
 """Tests for the HTTP-only Duco connectivity client."""
 
+import logging
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import aiohttp
@@ -47,6 +48,13 @@ def _request_context(response: MagicMock) -> MagicMock:
 def _request(response: MagicMock) -> MagicMock:
     """Create a mock request callable returning a request context manager."""
     return MagicMock(return_value=_request_context(response))
+
+
+def _build_async_wrapper(module_name: str, source: str) -> object:
+    """Create an async wrapper function in a custom module namespace."""
+    namespace = {"__name__": module_name}
+    exec(source, namespace)
+    return namespace["external_wrapper"]
 
 
 async def test_https_is_rejected() -> None:
@@ -139,7 +147,30 @@ async def test_api_info_is_parsed(api_info_full_data: dict[str, object]) -> None
     assert api_info.reported_api_version == "MOCKAPI 2.6.0"
     assert len(api_info.endpoints) == 2
     assert api_info.endpoints[1].url == "/info"
-    assert api_info.endpoints[1].query_parameters == ["module", "submodule", "parameter"]
+    assert api_info.endpoints[1].query_parameters == [
+        "module",
+        "submodule",
+        "parameter",
+    ]
+
+
+async def test_request_logging_includes_method_path_and_status(
+    caplog: pytest.LogCaptureFixture,
+    api_info_full_data: dict[str, object],
+) -> None:
+    """Requests should emit debug logs for the request and response."""
+    mock_response = _response(json_payload=api_info_full_data)
+
+    async with aiohttp.ClientSession() as session:
+        with caplog.at_level(logging.DEBUG, logger="duco_connectivity.client"):
+            client = DucoClient(session=session, host="192.0.2.94")
+            with patch.object(session, "request", _request(mock_response)):
+                await client.async_get_api_info()
+
+    assert "Initialized DucoClient for http://192.0.2.94" in caplog.text
+    assert "Using HTTP-only duco_connectivity transport for http://192.0.2.94." in caplog.text
+    assert "Requesting GET http://192.0.2.94/api" in caplog.text
+    assert "Received response 200 for GET http://192.0.2.94/api" in caplog.text
 
 
 async def test_board_info_is_parsed(board_info_data: dict[str, object]) -> None:
@@ -305,6 +336,45 @@ async def test_get_nodes_unknown_network_type_falls_back_to_unknown() -> None:
     assert nodes[0].general.network_type == NetworkType.UNKNOWN
 
 
+async def test_get_nodes_unknown_network_type_logs_fallback(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Unknown enum fallbacks should emit a debug log for troubleshooting."""
+    payload: dict[str, object] = {
+        "Nodes": [
+            {
+                "Node": 4,
+                "General": {
+                    "Type": {"Val": "UCCO2"},
+                    "SubType": {"Val": 0},
+                    "NetworkType": {"Val": "FUTURE_TYPE"},
+                    "Parent": {"Val": 1},
+                    "Asso": {"Val": 1},
+                    "Name": {"Val": ""},
+                    "Identify": {"Val": 0},
+                },
+                "Ventilation": {
+                    "State": {"Val": "AUTO"},
+                    "TimeStateRemain": {"Val": 0},
+                    "TimeStateEnd": {"Val": 0},
+                    "Mode": {"Val": "-"},
+                },
+            }
+        ]
+    }
+    mock_response = _response(json_payload=payload)
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with (
+            caplog.at_level(logging.DEBUG, logger="duco_connectivity.client"),
+            patch.object(session, "request", _request(mock_response)),
+        ):
+            await client.async_get_nodes()
+
+    assert "Unknown network type 'FUTURE_TYPE' received from Duco API" in caplog.text
+
+
 async def test_get_nodes_mb_network_type_is_parsed() -> None:
     """Known MB network types should be parsed explicitly."""
     payload: dict[str, object] = {
@@ -380,6 +450,91 @@ async def test_get_write_requests_remaining_is_parsed() -> None:
             remaining = await client.async_get_write_requests_remaining()
 
     assert remaining == 197
+
+
+async def test_get_write_req_remaining_alias_is_parsed() -> None:
+    """The old write budget method name should remain available."""
+    payload: dict[str, object] = {"General": {"PublicApi": {"WriteReqCntRemain": {"Val": 197}}}}
+    mock_response = _response(json_payload=payload)
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with patch.object(session, "request", _request(mock_response)):
+            remaining = await client.async_get_write_req_remaining()
+
+    assert remaining == 197
+
+
+async def test_get_write_req_remaining_alias_logs_external_caller(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Compatibility logging should include the external caller path."""
+    payload: dict[str, object] = {"General": {"PublicApi": {"WriteReqCntRemain": {"Val": 197}}}}
+    mock_response = _response(json_payload=payload)
+
+    async def external_wrapper(client: DucoClient) -> int:
+        return await client.async_get_write_req_remaining()
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with (
+            caplog.at_level(logging.DEBUG, logger="duco_connectivity.client"),
+            patch.object(session, "request", _request(mock_response)),
+        ):
+            remaining = await external_wrapper(client)
+
+    assert remaining == 197
+    assert (
+        "Compatibility alias async_get_write_req_remaining() used by "
+        "test_client.external_wrapper; delegating to "
+        "async_get_write_requests_remaining()."
+    ) in caplog.text
+
+
+async def test_get_write_req_remaining_alias_treats_prefixed_external_module_as_external(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Modules like duco_connectivity_tools should not be treated as internal."""
+    payload: dict[str, object] = {"General": {"PublicApi": {"WriteReqCntRemain": {"Val": 197}}}}
+    mock_response = _response(json_payload=payload)
+    external_wrapper = _build_async_wrapper(
+        "duco_connectivity_tools",
+        "async def external_wrapper(client):\n"
+        "    return await client.async_get_write_req_remaining()\n",
+    )
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with (
+            caplog.at_level(logging.DEBUG, logger="duco_connectivity.client"),
+            patch.object(session, "request", _request(mock_response)),
+        ):
+            remaining = await external_wrapper(client)
+
+    assert remaining == 197
+    assert (
+        "Compatibility alias async_get_write_req_remaining() used by "
+        "duco_connectivity_tools.external_wrapper; delegating to "
+        "async_get_write_requests_remaining()."
+    ) in caplog.text
+
+
+async def test_get_write_req_remaining_alias_logs_compat_usage(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """The compatibility alias should emit a debug log when it is used."""
+    payload: dict[str, object] = {"General": {"PublicApi": {"WriteReqCntRemain": {"Val": 197}}}}
+    mock_response = _response(json_payload=payload)
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with (
+            caplog.at_level(logging.DEBUG, logger="duco_connectivity.client"),
+            patch.object(session, "request", _request(mock_response)),
+        ):
+            await client.async_get_write_req_remaining()
+
+    assert "Compatibility alias async_get_write_req_remaining() used" in caplog.text
 
 
 async def test_timed_manual_state_is_parsed() -> None:

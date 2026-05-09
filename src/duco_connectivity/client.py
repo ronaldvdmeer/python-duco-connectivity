@@ -1,6 +1,9 @@
 """Async client for the local Duco HTTP API."""
 
 import json
+import logging
+import sys
+from types import FrameType
 from typing import Any
 from urllib.parse import urlsplit
 
@@ -23,6 +26,21 @@ from .models import (
     VentilationMode,
     VentilationState,
 )
+
+_LOGGER = logging.getLogger(__name__)
+
+
+def _compat_caller() -> str | None:
+    """Return the first external caller that reached a compatibility path."""
+    frame: FrameType | None = sys._getframe(1)
+
+    while frame is not None:
+        module_name = frame.f_globals.get("__name__", "")
+        if module_name != "duco_connectivity" and not module_name.startswith("duco_connectivity."):
+            return f"{module_name}.{frame.f_code.co_name}"
+        frame = frame.f_back
+
+    return None
 
 
 class DucoClient:
@@ -94,27 +112,63 @@ class DucoClient:
         else:
             self._base_url = f"http://{normalized_host}:{resolved_port}"
 
+        _LOGGER.debug("Initialized DucoClient for %s", self._base_url)
+        _LOGGER.debug(
+            "Using HTTP-only duco_connectivity transport for %s.",
+            self._base_url,
+        )
+
     @property
     def base_url(self) -> str:
         """Normalized base URL used for requests."""
         return self._base_url
 
     async def _request_json(self, method: str, path: str, **kwargs: Any) -> Any:
+        json_payload = None
         if "json" in kwargs:
-            payload = kwargs.pop("json")
-            kwargs["data"] = json.dumps(payload, separators=(",", ":")).encode()
+            json_payload = kwargs.pop("json")
+            kwargs["data"] = json.dumps(json_payload, separators=(",", ":")).encode()
             kwargs.setdefault("headers", {})["Content-Type"] = "application/json"
         kwargs.setdefault("timeout", self._timeout)
+
+        _LOGGER.debug(
+            "Requesting %s %s%s with params=%s json=%s",
+            method,
+            self._base_url,
+            path,
+            kwargs.get("params"),
+            json_payload,
+        )
 
         try:
             request = self._session.request(method, f"{self._base_url}{path}", **kwargs)
         except (aiohttp.ClientError, TimeoutError) as err:
+            _LOGGER.debug(
+                "Request setup failed for %s %s%s: %s",
+                method,
+                self._base_url,
+                path,
+                err,
+            )
             msg = f"Could not reach Duco device at {self._base_url}: {err}"
             raise DucoConnectionError(msg) from err
 
         try:
             async with request as response:
+                _LOGGER.debug(
+                    "Received response %s for %s %s%s",
+                    response.status,
+                    method,
+                    self._base_url,
+                    path,
+                )
                 if response.status == 429:
+                    _LOGGER.debug(
+                        "Write limit reached for %s %s%s",
+                        method,
+                        self._base_url,
+                        path,
+                    )
                     raise DucoWriteLimitError()
 
                 if response.status >= 400:
@@ -130,6 +184,13 @@ class DucoClient:
         except DucoError:
             raise
         except (aiohttp.ClientError, TimeoutError) as err:
+            _LOGGER.debug(
+                "Request failed for %s %s%s: %s",
+                method,
+                self._base_url,
+                path,
+                err,
+            )
             msg = f"Could not reach Duco device at {self._base_url}: {err}"
             raise DucoConnectionError(msg) from err
 
@@ -142,6 +203,10 @@ class DucoClient:
         try:
             return NodeType(raw_value)
         except ValueError:
+            _LOGGER.debug(
+                "Unknown node type %r received from Duco API; falling back to UNKNOWN",
+                raw_value,
+            )
             return NodeType.UNKNOWN
 
     @staticmethod
@@ -149,6 +214,10 @@ class DucoClient:
         try:
             return NetworkType(raw_value)
         except ValueError:
+            _LOGGER.debug(
+                "Unknown network type %r received from Duco API; falling back to UNKNOWN",
+                raw_value,
+            )
             return NetworkType.UNKNOWN
 
     @staticmethod
@@ -156,6 +225,10 @@ class DucoClient:
         try:
             return DiagStatus(raw_value)
         except ValueError:
+            _LOGGER.debug(
+                "Unknown diagnostic status %r received from Duco API; falling back to UNKNOWN",
+                raw_value,
+            )
             return DiagStatus.UNKNOWN
 
     @staticmethod
@@ -163,6 +236,10 @@ class DucoClient:
         try:
             return VentilationState(raw_value)
         except ValueError:
+            _LOGGER.debug(
+                "Unknown ventilation state %r received from Duco API; falling back to UNKNOWN",
+                raw_value,
+            )
             return VentilationState.UNKNOWN
 
     @staticmethod
@@ -170,6 +247,10 @@ class DucoClient:
         try:
             return VentilationMode(raw_value)
         except ValueError:
+            _LOGGER.debug(
+                "Unknown ventilation mode %r received from Duco API; falling back to UNKNOWN",
+                raw_value,
+            )
             return VentilationMode.UNKNOWN
 
     async def async_get_api_info(self) -> ApiInfo:
@@ -262,6 +343,22 @@ class DucoClient:
         )
         return int(self._read_wrapped_value(payload["General"]["PublicApi"], "WriteReqCntRemain"))
 
+    async def async_get_write_req_remaining(self) -> int:
+        """Backward-compatible alias for the old write budget method name."""
+        caller = _compat_caller()
+        if caller is None:
+            _LOGGER.debug(
+                "Compatibility alias async_get_write_req_remaining() used; "
+                "delegating to async_get_write_requests_remaining()."
+            )
+        else:
+            _LOGGER.debug(
+                "Compatibility alias async_get_write_req_remaining() used by %s; "
+                "delegating to async_get_write_requests_remaining().",
+                caller,
+            )
+        return await self.async_get_write_requests_remaining()
+
     async def async_set_ventilation_state(
         self, node_id: int, state: VentilationState | str
     ) -> None:
@@ -300,13 +397,23 @@ class DucoClient:
 
         sensor = None
         if "Sensor" in payload:
-            sensor = payload["Sensor"]
+            sensor_payload = payload["Sensor"]
             sensor = NodeSensorInfo(
-                co2=self._read_wrapped_value(sensor, "Co2") if "Co2" in sensor else None,
-                iaq_co2=self._read_wrapped_value(sensor, "IaqCo2") if "IaqCo2" in sensor else None,
-                rh=self._read_wrapped_value(sensor, "Rh") if "Rh" in sensor else None,
-                iaq_rh=self._read_wrapped_value(sensor, "IaqRh") if "IaqRh" in sensor else None,
-                temp=self._read_wrapped_value(sensor, "Temp") if "Temp" in sensor else None,
+                co2=self._read_wrapped_value(sensor_payload, "Co2")
+                if "Co2" in sensor_payload
+                else None,
+                iaq_co2=self._read_wrapped_value(sensor_payload, "IaqCo2")
+                if "IaqCo2" in sensor_payload
+                else None,
+                rh=self._read_wrapped_value(sensor_payload, "Rh")
+                if "Rh" in sensor_payload
+                else None,
+                iaq_rh=self._read_wrapped_value(sensor_payload, "IaqRh")
+                if "IaqRh" in sensor_payload
+                else None,
+                temp=self._read_wrapped_value(sensor_payload, "Temp")
+                if "Temp" in sensor_payload
+                else None,
             )
 
         return Node(
