@@ -7,6 +7,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-05-09
+
+### Added
+
+- **Core migration compatibility**: Added backward-compatible aliases for old
+  `python-duco-client` names still used during the Home Assistant core
+  migration, including `ApiEndpointInfo`, `DucoRateLimitError`,
+  `ApiInfo(api_version=...)`, `ApiInfo.api_version`, and
+  `async_get_write_req_remaining()` ([#6](https://github.com/ronaldvdmeer/python-duco-connectivity/pull/6))
+
+### Changed
+
+- **Debug instrumentation**: Added targeted debug logging for client
+  initialization, request/response flow, enum fallbacks to `UNKNOWN`, and
+  compatibility-path usage to make migration troubleshooting easier
+  ([#6](https://github.com/ronaldvdmeer/python-duco-connectivity/pull/6))
+
+### Fixed
+
+- **`ApiInfo` constructor compatibility**: Preserved the previous positional
+  constructor shape for `reported_api_version` and `endpoints` while adding the
+  legacy `api_version` compatibility keyword
+  ([#6](https://github.com/ronaldvdmeer/python-duco-connectivity/pull/6))
+
+### Enhanced
+
+- **Regression coverage**: Expanded tests for compatibility aliases, caller
+  logging, and public model constructor compatibility
+  ([#6](https://github.com/ronaldvdmeer/python-duco-connectivity/pull/6))
+
+### Contributors
+
+- Thanks to [@ronaldvdmeer](https://github.com/ronaldvdmeer) for contributing
+  to this release.
+
 ## [0.1.1] - 2026-05-08
 
 ### Fixed
@@ -38,6 +73,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CI validation with pytest, Ruff, mypy, Bandit, and pip-audit.
 - PyPI Trusted Publishing workflow for tagged releases.
 
-[Unreleased]: https://github.com/ronaldvdmeer/python-duco-connectivity/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/ronaldvdmeer/python-duco-connectivity/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/ronaldvdmeer/python-duco-connectivity/releases/tag/v0.2.0
 [0.1.1]: https://github.com/ronaldvdmeer/python-duco-connectivity/releases/tag/v0.1.1
 [0.1.0]: https://github.com/ronaldvdmeer/python-duco-connectivity/releases/tag/v0.1.0
