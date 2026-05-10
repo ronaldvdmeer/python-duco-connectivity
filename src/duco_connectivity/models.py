@@ -130,6 +130,14 @@ class DiagStatus(StrEnum):
     UNKNOWN = "UNKNOWN"
 
 
+class ActionResultStatus(StrEnum):
+    """Status values returned by node action execution, plus a client-side fallback."""
+
+    SUCCESS = "SUCCESS"
+    FAILED = "FAILED"
+    UNKNOWN = "UNKNOWN"
+
+
 @dataclass(frozen=True, slots=True)
 class ApiEndpoint:
     """Capabilities advertised for a single API endpoint."""
@@ -321,3 +329,12 @@ class DiagComponent:
 
     component: str
     status: DiagStatus
+
+
+@dataclass(frozen=True, slots=True)
+class ActionResult:
+    """Outcome returned by a node action execution request."""
+
+    result: ActionResultStatus
+    code: int | None = None
+    message: str | None = None
