@@ -14,6 +14,10 @@ from .models import (
     ApiEndpoint,
     ApiInfo,
     BoardInfo,
+    Config,
+    ConfigSection,
+    ConfigValue,
+    ConfigValueString,
     DiagComponent,
     DiagStatus,
     LanInfo,
@@ -198,6 +202,73 @@ class DucoClient:
     def _read_wrapped_value(payload: dict[str, Any], key: str) -> Any:
         return payload[key]["Val"]
 
+    @classmethod
+    def _parse_config(cls, payload: Any) -> Config:
+        if not isinstance(payload, dict):
+            msg = f"Expected object payload from /config, got {type(payload).__name__}"
+            raise DucoError(msg)
+
+        return Config(
+            sections={
+                key: cls._parse_config_section(value, path=key) for key, value in payload.items()
+            }
+        )
+
+    @classmethod
+    def _parse_config_section(cls, payload: Any, *, path: str) -> ConfigSection:
+        if not isinstance(payload, dict):
+            msg = f"Expected object for config section {path}, got {type(payload).__name__}"
+            raise DucoError(msg)
+
+        return ConfigSection(
+            entries={
+                key: cls._parse_config_item(value, path=f"{path}.{key}")
+                for key, value in payload.items()
+            }
+        )
+
+    @classmethod
+    def _parse_config_item(
+        cls,
+        payload: Any,
+        *,
+        path: str,
+    ) -> ConfigSection | ConfigValue | ConfigValueString:
+        if not isinstance(payload, dict):
+            msg = f"Expected object for config entry {path}, got {type(payload).__name__}"
+            raise DucoError(msg)
+
+        if "Val" not in payload:
+            return cls._parse_config_section(payload, path=path)
+
+        raw_value = payload["Val"]
+        if isinstance(raw_value, str):
+            return ConfigValueString(value=raw_value)
+
+        if not isinstance(raw_value, int):
+            msg = f"Unsupported config value type {type(raw_value).__name__} for {path}"
+            raise DucoError(msg)
+
+        for key in ("Min", "Inc", "Max"):
+            if key in payload and not isinstance(payload[key], int):
+                msg = f"Expected integer {key} for config entry {path}"
+                raise DucoError(msg)
+
+        options = payload.get("Options")
+        if options is not None and (
+            not isinstance(options, list) or any(not isinstance(item, int) for item in options)
+        ):
+            msg = f"Expected integer option list for config entry {path}"
+            raise DucoError(msg)
+
+        return ConfigValue(
+            value=raw_value,
+            minimum=payload.get("Min"),
+            increment=payload.get("Inc"),
+            maximum=payload.get("Max"),
+            options=None if options is None else tuple(options),
+        )
+
     @staticmethod
     def _to_node_type(raw_value: str) -> NodeType:
         try:
@@ -294,6 +365,28 @@ class DucoClient:
             return await self._request_json("GET", "/info", params=params)
 
         return await self._request_json("GET", "/info")
+
+    async def async_get_config(
+        self,
+        module: str | None = None,
+        submodule: str | None = None,
+        parameter: str | None = None,
+    ) -> Config:
+        """Return configuration values from the generic config endpoint."""
+        params: dict[str, str] = {}
+        if module is not None:
+            params["module"] = module
+        if submodule is not None:
+            params["submodule"] = submodule
+        if parameter is not None:
+            params["parameter"] = parameter
+
+        if params:
+            payload = await self._request_json("GET", "/config", params=params)
+        else:
+            payload = await self._request_json("GET", "/config")
+
+        return self._parse_config(payload)
 
     async def async_get_board_info(self) -> BoardInfo:
         """Return identity and version details for the main unit."""

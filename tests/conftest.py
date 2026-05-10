@@ -109,6 +109,30 @@ def generic_info_board_data() -> dict[str, object]:
 
 
 @pytest.fixture
+def config_data() -> dict[str, object]:
+    """Mock response for GET /config."""
+    return {
+        "General": {
+            "Time": {
+                "TimeZone": {"Val": 1, "Min": -12, "Inc": 1, "Max": 12},
+                "Dst": {"Val": 1, "Min": 0, "Inc": 1, "Max": 1},
+            },
+            "Lan": {
+                "Mode": {"Val": 1, "Min": 1, "Inc": 1, "Max": 3},
+                "Dhcp": {"Val": 1, "Min": 0, "Inc": 1, "Max": 1},
+                "StaticIp": {"Val": "192.0.2.94"},
+                "WifiClientSsid": {"Val": "duco-test-net"},
+            },
+        },
+        "HeatRecovery": {
+            "Bypass": {
+                "TempSupTgtZone1": {"Val": 180, "Min": 120, "Inc": 5, "Max": 220},
+            }
+        },
+    }
+
+
+@pytest.fixture
 def board_info_data() -> dict[str, object]:
     """Mock response for GET /info?module=General&submodule=Board."""
     return {
