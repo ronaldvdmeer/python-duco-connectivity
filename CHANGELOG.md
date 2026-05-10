@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add generic `async_get_info()` support for `GET /info` with `module`,
+  `submodule`, and `parameter` queries.
+- Reuse the new generic `async_get_info()` entry point in the focused
+  `GET /info` convenience readers.
+- Expand `NodeType` to cover the broader Duco public API v2.5 node type set,
+  while preserving `UNKNOWN` fallback behavior for truly unmapped future
+  values.
+
 ## [0.2.0] - 2026-05-09
 
 ### Added
