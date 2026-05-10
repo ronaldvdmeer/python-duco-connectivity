@@ -245,18 +245,18 @@ class DucoClient:
         if isinstance(raw_value, str):
             return ConfigValueString(value=raw_value)
 
-        if not isinstance(raw_value, int):
+        if type(raw_value) is not int:
             msg = f"Unsupported config value type {type(raw_value).__name__} for {path}"
             raise DucoError(msg)
 
         for key in ("Min", "Inc", "Max"):
-            if key in payload and not isinstance(payload[key], int):
+            if key in payload and type(payload[key]) is not int:
                 msg = f"Expected integer {key} for config entry {path}"
                 raise DucoError(msg)
 
         options = payload.get("Options")
         if options is not None and (
-            not isinstance(options, list) or any(not isinstance(item, int) for item in options)
+            not isinstance(options, list) or any(type(item) is not int for item in options)
         ):
             msg = f"Expected integer option list for config entry {path}"
             raise DucoError(msg)

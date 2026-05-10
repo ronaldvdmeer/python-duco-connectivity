@@ -322,6 +322,66 @@ async def test_get_config_without_query_params_returns_typed_payload(
     assert static_ip.value == "192.0.2.94"
 
 
+async def test_get_config_parses_option_lists_as_tuples() -> None:
+    """Integer option lists should be preserved in the typed config value."""
+    mock_response = _response(
+        json_payload={
+            "General": {
+                "Lan": {
+                    "Mode": {
+                        "Val": 1,
+                        "Options": [1, 2, 4],
+                    }
+                }
+            }
+        }
+    )
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with patch.object(session, "request", _request(mock_response)):
+            payload = await client.async_get_config()
+
+    mode = payload.sections["General"].entries["Lan"]
+    assert isinstance(mode, ConfigSection)
+    mode_value = mode.entries["Mode"]
+    assert isinstance(mode_value, ConfigValue)
+    assert mode_value.options == (1, 2, 4)
+
+
+@pytest.mark.parametrize(
+    ("payload", "message"),
+    [
+        (
+            {"General": {"Lan": {"Dhcp": {"Val": False}}}},
+            "Unsupported config value type bool for General.Lan.Dhcp",
+        ),
+        (
+            {"General": {"Time": {"TimeZone": {"Val": 1, "Min": False}}}},
+            "Expected integer Min for config entry General.Time.TimeZone",
+        ),
+        (
+            {"General": {"Lan": {"Mode": {"Val": 1, "Options": [1, False]}}}},
+            "Expected integer option list for config entry General.Lan.Mode",
+        ),
+    ],
+)
+async def test_get_config_rejects_invalid_integer_payloads(
+    payload: dict[str, object],
+    message: str,
+) -> None:
+    """Invalid integer-like config payloads should raise DucoError."""
+    mock_response = _response(json_payload=payload)
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with (
+            patch.object(session, "request", _request(mock_response)),
+            pytest.raises(DucoError, match=message),
+        ):
+            await client.async_get_config()
+
+
 async def test_get_config_with_module_forwards_query_params(
     config_data: dict[str, object],
 ) -> None:
