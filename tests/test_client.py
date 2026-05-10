@@ -7,6 +7,7 @@ import aiohttp
 import pytest
 
 from duco_connectivity import (
+    ActionResultStatus,
     Config,
     ConfigSection,
     ConfigValue,
@@ -1088,9 +1089,87 @@ async def test_write_limit_error_is_raised() -> None:
     request_context.__aexit__.assert_awaited_once()
 
 
+async def test_set_node_action_returns_typed_result(
+    action_result_success_data: dict[str, object],
+) -> None:
+    """Generic node actions should parse a typed action result."""
+    mock_response = _response(json_payload=action_result_success_data)
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        request = MagicMock(return_value=_request_context(mock_response))
+        with patch.object(session, "request", request):
+            result = await client.async_set_node_action(1, "SetVentilationState", "MAN2")
+
+    assert result.result is ActionResultStatus.SUCCESS
+    assert result.code is None
+    assert result.message is None
+    _, kwargs = request.call_args
+    assert kwargs["data"] == b'{"Action":"SetVentilationState","Val":"MAN2"}'
+    assert kwargs["headers"] == {"Content-Type": "application/json"}
+
+
+async def test_set_node_action_omits_optional_value(
+    action_result_success_data: dict[str, object],
+) -> None:
+    """Generic node actions should omit Val when the action does not require one."""
+    mock_response = _response(json_payload=action_result_success_data)
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        request = MagicMock(return_value=_request_context(mock_response))
+        with patch.object(session, "request", request):
+            await client.async_set_node_action(1, "SetIdentify")
+
+    _, kwargs = request.call_args
+    assert kwargs["data"] == b'{"Action":"SetIdentify"}'
+    assert kwargs["headers"] == {"Content-Type": "application/json"}
+
+
+async def test_set_node_action_returns_failed_result(
+    action_result_failed_data: dict[str, object],
+) -> None:
+    """Generic node actions should preserve FAILED action responses."""
+    mock_response = _response(json_payload=action_result_failed_data)
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with patch.object(session, "request", _request(mock_response)):
+            result = await client.async_set_node_action(1, "SetPosMan", 2)
+
+    assert result.result is ActionResultStatus.FAILED
+    assert result.code == 12
+    assert result.message == "Action is not performed"
+
+
+async def test_set_node_action_invalid_result_raises_duco_error() -> None:
+    """Malformed node action responses should raise DucoError."""
+    mock_response = _response(json_payload={"Code": 12})
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with patch.object(session, "request", _request(mock_response)):
+            with pytest.raises(DucoError, match="Expected Result in node action response"):
+                await client.async_set_node_action(1, "SetIdentify")
+
+
+async def test_set_ventilation_state_delegates_to_generic_node_action() -> None:
+    """Ventilation writes should remain a thin wrapper over the generic node action path."""
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with patch.object(client, "async_set_node_action", AsyncMock()) as set_node_action:
+            await client.async_set_ventilation_state(1, VentilationState.MAN2)
+
+    set_node_action.assert_awaited_once_with(
+        node_id=1,
+        action="SetVentilationState",
+        val="MAN2",
+    )
+
+
 async def test_set_ventilation_state_uses_compact_json_body() -> None:
     """Write requests should use compact JSON with explicit content type."""
-    mock_response = _response(json_payload={})
+    mock_response = _response(json_payload={"Result": "SUCCESS"})
 
     async with aiohttp.ClientSession() as session:
         client = DucoClient(session=session, host="192.0.2.94")

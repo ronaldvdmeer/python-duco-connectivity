@@ -10,6 +10,8 @@ from .exceptions import (
     DucoWriteLimitError,
 )
 from .models import (
+    ActionResult,
+    ActionResultStatus,
     ApiEndpoint,
     ApiEndpointInfo,
     ApiInfo,
@@ -37,6 +39,8 @@ except PackageNotFoundError:
     __version__ = "0.0.0"
 
 __all__ = [
+    "ActionResult",
+    "ActionResultStatus",
     "ApiEndpoint",
     "ApiEndpointInfo",
     "ApiInfo",

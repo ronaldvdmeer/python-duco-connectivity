@@ -11,6 +11,8 @@ import aiohttp
 
 from .exceptions import DucoConnectionError, DucoError, DucoWriteLimitError
 from .models import (
+    ActionResult,
+    ActionResultStatus,
     ApiEndpoint,
     ApiInfo,
     BoardInfo,
@@ -202,6 +204,18 @@ class DucoClient:
     def _read_wrapped_value(payload: dict[str, Any], key: str) -> Any:
         return payload[key]["Val"]
 
+    @staticmethod
+    def _read_scalar_value(payload: dict[str, Any], key: str) -> Any:
+        raw_value = payload[key]
+        if not isinstance(raw_value, dict):
+            return raw_value
+
+        if "Val" not in raw_value:
+            msg = f"Expected direct value or wrapped Val object for {key}"
+            raise DucoError(msg)
+
+        return raw_value["Val"]
+
     @classmethod
     def _parse_config(cls, payload: Any) -> Config:
         if not isinstance(payload, dict):
@@ -303,6 +317,17 @@ class DucoClient:
             return DiagStatus.UNKNOWN
 
     @staticmethod
+    def _to_action_result_status(raw_value: str) -> ActionResultStatus:
+        try:
+            return ActionResultStatus(raw_value)
+        except ValueError:
+            _LOGGER.debug(
+                "Unknown action result status %r received from Duco API; falling back to UNKNOWN",
+                raw_value,
+            )
+            return ActionResultStatus.UNKNOWN
+
+    @staticmethod
     def _to_ventilation_state(raw_value: str) -> VentilationState:
         try:
             return VentilationState(raw_value)
@@ -323,6 +348,43 @@ class DucoClient:
                 raw_value,
             )
             return VentilationMode.UNKNOWN
+
+    @classmethod
+    def _parse_action_result(cls, payload: Any) -> ActionResult:
+        if not isinstance(payload, dict):
+            msg = f"Expected object payload from node action, got {type(payload).__name__}"
+            raise DucoError(msg)
+
+        if "Result" not in payload:
+            msg = "Expected Result in node action response"
+            raise DucoError(msg)
+
+        result = cls._read_scalar_value(payload, "Result")
+        if not isinstance(result, str):
+            msg = f"Expected string Result in node action response, got {type(result).__name__}"
+            raise DucoError(msg)
+
+        code: int | None = None
+        if "Code" in payload:
+            code = cls._read_scalar_value(payload, "Code")
+            if type(code) is not int:
+                msg = f"Expected integer Code in node action response, got {type(code).__name__}"
+                raise DucoError(msg)
+
+        message: str | None = None
+        if "Message" in payload:
+            message = cls._read_scalar_value(payload, "Message")
+            if not isinstance(message, str):
+                msg = (
+                    f"Expected string Message in node action response, got {type(message).__name__}"
+                )
+                raise DucoError(msg)
+
+        return ActionResult(
+            result=cls._to_action_result_status(result),
+            code=code,
+            message=message,
+        )
 
     async def async_get_api_info(self) -> ApiInfo:
         """Return API metadata advertised by the box."""
@@ -474,11 +536,29 @@ class DucoClient:
     ) -> None:
         """Request a ventilation state change for a node."""
         state_value = state.value if isinstance(state, VentilationState) else state
-        await self._request_json(
+        await self.async_set_node_action(
+            node_id=node_id,
+            action="SetVentilationState",
+            val=state_value,
+        )
+
+    async def async_set_node_action(
+        self,
+        node_id: int,
+        action: str,
+        val: str | int | bool | None = None,
+    ) -> ActionResult:
+        """Execute a generic node action through the local Duco API."""
+        payload: dict[str, str | int | bool] = {"Action": action}
+        if val is not None:
+            payload["Val"] = val
+
+        response = await self._request_json(
             "POST",
             f"/action/nodes/{node_id}",
-            json={"Action": "SetVentilationState", "Val": state_value},
+            json=payload,
         )
+        return self._parse_action_result(response)
 
     def _parse_node(self, payload: dict[str, Any]) -> Node:
         general = payload["General"]

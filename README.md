@@ -39,16 +39,23 @@ The current client exposes:
 - `async_get_nodes()` for `GET /info/nodes`
 - `async_get_diagnostics()` for `GET /info?module=Diag`
 - `async_get_write_requests_remaining()` for `GET /info?module=General&submodule=PublicApi`
+- `async_set_node_action()` for generic `POST /action/nodes/{node}` execution with a typed action result
 - `async_set_ventilation_state()` for `POST /action/nodes/{node}` with `SetVentilationState`
 
 The focused convenience readers remain available for the payloads that the
 library already models explicitly.
 
-The model layer includes `ApiInfo`, `BoardInfo`, `Config`, `ConfigSection`,
-`ConfigValue`, `ConfigValueString`, `LanInfo`, `Node`, `NodeGeneralInfo`,
-`NodeVentilationInfo`, and `NodeSensorInfo`.
+`async_set_ventilation_state()` remains available as a thin convenience wrapper
+over `async_set_node_action()` for callers that only need the existing
+ventilation state write.
+
+The model layer includes `ActionResult`, `ApiInfo`, `BoardInfo`, `Config`,
+`ConfigSection`, `ConfigValue`, `ConfigValueString`, `LanInfo`, `Node`,
+`NodeGeneralInfo`, `NodeVentilationInfo`, and `NodeSensorInfo`.
 The typed enum layer keeps `NodeType` closely aligned with the Duco public API
 notes while preserving `UNKNOWN` as a fallback for future unmapped values.
+
+More detail for node action execution is available in `docs/actions.md`.
 
 ## Development
 
