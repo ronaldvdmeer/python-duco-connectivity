@@ -42,6 +42,73 @@ def api_info_full_data() -> dict[str, object]:
 
 
 @pytest.fixture
+def generic_info_all_data() -> dict[str, object]:
+    """Mock response for GET /info without query parameters."""
+    return {
+        "General": {
+            "Board": {
+                "PublicApiVersion": {"Val": "2.6"},
+                "BoxName": {"Val": "SILENT_CONNECT"},
+                "BoxSubTypeName": {"Val": "Eu"},
+                "SerialBoardBox": {"Val": "RS2420002577"},
+                "SerialBoardComm": {"Val": "PS2424005629"},
+                "SerialDucoBox": {"Val": "n/a"},
+                "SerialDucoComm": {"Val": "P369348-241126-033"},
+                "Time": {"Val": 1778454913},
+            },
+            "Lan": {
+                "Mode": {"Val": "WIFI_CLIENT"},
+                "Ip": {"Val": "192.168.3.94"},
+                "NetMask": {"Val": "255.255.255.0"},
+                "DefaultGateway": {"Val": "192.168.3.1"},
+                "Dns": {"Val": "192.168.3.1"},
+                "Mac": {"Val": "a0:dd:6c:06:12:90"},
+                "HostName": {"Val": "duco_061293"},
+                "DucoClientIp": {"Val": "0.0.0.0"},
+                "WifiApSsid": {"Val": "DUCO"},
+                "WifiApKey": {"Val": "12345678"},
+                "RssiWifi": {"Val": -47},
+                "ScanWifi": [],
+            },
+            "PublicApi": {"WriteReqCntRemain": {"Val": 198}},
+            "Modbus": {"WriteReqCntRemain": {"Val": 200}},
+            "Cloud": {"RegistrationMode": {"Val": False}},
+        },
+        "Diag": {
+            "SubSystems": [
+                {"Component": "Ventilation", "Status": "Ok"},
+                {"Component": "VentCool", "Status": "Ok"},
+                {"Component": "SunCtrl", "Status": "Ok"},
+            ]
+        },
+    }
+
+
+@pytest.fixture
+def generic_info_general_data() -> dict[str, object]:
+    """Mock response for GET /info with a module query."""
+    return {
+        "General": {
+            "PublicApi": {
+                "WriteReqCntRemain": {"Val": 198},
+            }
+        }
+    }
+
+
+@pytest.fixture
+def generic_info_board_data() -> dict[str, object]:
+    """Mock response for GET /info with board-level queries."""
+    return {
+        "General": {
+            "Board": {
+                "PublicApiVersion": {"Val": "2.6"},
+            }
+        }
+    }
+
+
+@pytest.fixture
 def board_info_data() -> dict[str, object]:
     """Mock response for GET /info?module=General&submodule=Board."""
     return {

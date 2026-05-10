@@ -32,12 +32,16 @@ pip install python-duco-connectivity
 The current client exposes:
 
 - `async_get_api_info()` for `GET /api`
+- `async_get_info()` for generic `GET /info` access with optional `module`, `submodule`, and `parameter` query arguments
 - `async_get_board_info()` for `GET /info?module=General&submodule=Board`
 - `async_get_lan_info()` for `GET /info?module=General&submodule=Lan`
 - `async_get_nodes()` for `GET /info/nodes`
 - `async_get_diagnostics()` for `GET /info?module=Diag`
 - `async_get_write_requests_remaining()` for `GET /info?module=General&submodule=PublicApi`
 - `async_set_ventilation_state()` for `POST /action/nodes/{node}` with `SetVentilationState`
+
+The focused convenience readers remain available for the payloads that the
+library already models explicitly.
 
 The model layer includes `ApiInfo`, `BoardInfo`, `LanInfo`, `Node`,
 `NodeGeneralInfo`, `NodeVentilationInfo`, and `NodeSensorInfo`.
@@ -62,6 +66,7 @@ The current API surface was validated against a real Duco box during the first
 development pass, covering:
 
 - `GET /api`
+- `GET /info` with generic module, submodule, and parameter queries
 - `GET /info?module=General&submodule=Board`
 - `GET /info?module=General&submodule=Lan`
 - `GET /info/nodes`
