@@ -45,6 +45,8 @@ library already models explicitly.
 
 The model layer includes `ApiInfo`, `BoardInfo`, `LanInfo`, `Node`,
 `NodeGeneralInfo`, `NodeVentilationInfo`, and `NodeSensorInfo`.
+The typed enum layer keeps `NodeType` closely aligned with the Duco public API
+notes while preserving `UNKNOWN` as a fallback for future unmapped values.
 
 ## Development
 

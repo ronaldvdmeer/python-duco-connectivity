@@ -548,6 +548,80 @@ async def test_get_nodes_unknown_node_type_falls_back_to_unknown() -> None:
     assert nodes[0].general.node_type == NodeType.UNKNOWN
 
 
+@pytest.mark.parametrize(
+    "node_type",
+    [
+        "UNKN",
+        "IQ",
+        "CO2",
+        "RH",
+        "KLEP",
+        "TOP",
+        "COMB",
+        "CLIMA",
+        "UCVOC",
+        "UCSUN",
+        "UCVENT",
+        "VLVRH",
+        "VLVVOC",
+        "VLVCO2",
+        "SWITCH",
+        "ACTUAT",
+        "UCBATRH",
+        "PWMIN",
+        "IAV",
+        "IAVRH",
+        "IAVVOC",
+        "IAVCO2",
+        "EAV",
+        "EAVRH",
+        "EAVVOC",
+        "EAVCO2",
+        "BOIILER",
+        "TRONIC",
+        "VLVCO2RH",
+        "BSCO2",
+        "BSVOC",
+        "MOTORRLY",
+        "MOTORMB",
+        "WXSENSOR",
+        "DI",
+        "DO",
+        "COMM",
+        "RLYMB",
+        "PERILEX",
+        "RO",
+    ],
+)
+async def test_get_nodes_known_spec_node_types_are_parsed(node_type: str) -> None:
+    """Spec-defined node types should map to concrete enum members."""
+    payload: dict[str, object] = {
+        "Nodes": [
+            {
+                "Node": 5,
+                "General": {
+                    "Type": {"Val": node_type},
+                    "SubType": {"Val": 0},
+                    "NetworkType": {"Val": "RF"},
+                    "Parent": {"Val": 1},
+                    "Asso": {"Val": 1},
+                    "Name": {"Val": ""},
+                    "Identify": {"Val": 0},
+                },
+            }
+        ]
+    }
+    mock_response = _response(json_payload=payload)
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with patch.object(session, "request", _request(mock_response)):
+            nodes = await client.async_get_nodes()
+
+    assert len(nodes) == 1
+    assert nodes[0].general.node_type == NodeType[node_type]
+
+
 async def test_get_write_requests_remaining_is_parsed() -> None:
     """Test parsing of the remaining write budget."""
     payload: dict[str, object] = {"General": {"PublicApi": {"WriteReqCntRemain": {"Val": 197}}}}
