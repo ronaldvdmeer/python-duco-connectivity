@@ -275,12 +275,31 @@ class DucoClient:
             endpoints=endpoints,
         )
 
+    async def async_get_info(
+        self,
+        module: str | None = None,
+        submodule: str | None = None,
+        parameter: str | None = None,
+    ) -> Any:
+        """Return the raw payload from the generic info endpoint."""
+        params: dict[str, str] = {}
+        if module is not None:
+            params["module"] = module
+        if submodule is not None:
+            params["submodule"] = submodule
+        if parameter is not None:
+            params["parameter"] = parameter
+
+        if params:
+            return await self._request_json("GET", "/info", params=params)
+
+        return await self._request_json("GET", "/info")
+
     async def async_get_board_info(self) -> BoardInfo:
         """Return identity and version details for the main unit."""
-        payload = await self._request_json(
-            "GET",
-            "/info",
-            params={"module": "General", "submodule": "Board"},
+        payload = await self.async_get_info(
+            module="General",
+            submodule="Board",
         )
         board = payload["General"]["Board"]
         return BoardInfo(
@@ -301,10 +320,9 @@ class DucoClient:
 
     async def async_get_lan_info(self) -> LanInfo:
         """Return LAN settings reported by the box."""
-        payload = await self._request_json(
-            "GET",
-            "/info",
-            params={"module": "General", "submodule": "Lan"},
+        payload = await self.async_get_info(
+            module="General",
+            submodule="Lan",
         )
         lan = payload["General"]["Lan"]
         return LanInfo(
@@ -320,7 +338,7 @@ class DucoClient:
 
     async def async_get_diagnostics(self) -> list[DiagComponent]:
         """Return health states for diagnostic subsystems."""
-        payload = await self._request_json("GET", "/info", params={"module": "Diag"})
+        payload = await self.async_get_info(module="Diag")
         return [
             DiagComponent(
                 component=item["Component"],
@@ -336,10 +354,9 @@ class DucoClient:
 
     async def async_get_write_requests_remaining(self) -> int:
         """Return the remaining write budget reported by the box."""
-        payload = await self._request_json(
-            "GET",
-            "/info",
-            params={"module": "General", "submodule": "PublicApi"},
+        payload = await self.async_get_info(
+            module="General",
+            submodule="PublicApi",
         )
         return int(self._read_wrapped_value(payload["General"]["PublicApi"], "WriteReqCntRemain"))
 

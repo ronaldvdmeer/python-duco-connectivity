@@ -173,6 +173,115 @@ async def test_request_logging_includes_method_path_and_status(
     assert "Received response 200 for GET http://192.0.2.94/api" in caplog.text
 
 
+async def test_get_info_without_query_params_returns_raw_payload(
+    generic_info_all_data: dict[str, object],
+) -> None:
+    """The generic info reader should expose the raw payload unchanged."""
+    mock_response = _response(json_payload=generic_info_all_data)
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        request_mock = _request(mock_response)
+        with patch.object(session, "request", request_mock):
+            payload = await client.async_get_info()
+
+    assert payload == generic_info_all_data
+    assert "params" not in request_mock.call_args.kwargs
+
+
+async def test_get_info_with_module_forwards_query_params(
+    generic_info_general_data: dict[str, object],
+) -> None:
+    """A module query should be forwarded to the generic info endpoint."""
+    mock_response = _response(json_payload=generic_info_general_data)
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        request_mock = _request(mock_response)
+        with patch.object(session, "request", request_mock):
+            payload = await client.async_get_info(module="General")
+
+    assert payload == generic_info_general_data
+    assert request_mock.call_args.kwargs["params"] == {"module": "General"}
+
+
+async def test_get_info_with_module_and_submodule_forwards_query_params(
+    generic_info_board_data: dict[str, object],
+) -> None:
+    """Module and submodule queries should be forwarded unchanged."""
+    mock_response = _response(json_payload=generic_info_board_data)
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        request_mock = _request(mock_response)
+        with patch.object(session, "request", request_mock):
+            payload = await client.async_get_info(
+                module="General",
+                submodule="Board",
+            )
+
+    assert payload == generic_info_board_data
+    assert request_mock.call_args.kwargs["params"] == {
+        "module": "General",
+        "submodule": "Board",
+    }
+
+
+async def test_get_info_with_module_submodule_and_parameter_forwards_query_params(
+    generic_info_board_data: dict[str, object],
+) -> None:
+    """All supported info query parameters should be forwarded unchanged."""
+    mock_response = _response(json_payload=generic_info_board_data)
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        request_mock = _request(mock_response)
+        with patch.object(session, "request", request_mock):
+            payload = await client.async_get_info(
+                module="General",
+                submodule="Board",
+                parameter="PublicApiVersion",
+            )
+
+    assert payload == generic_info_board_data
+    assert request_mock.call_args.kwargs["params"] == {
+        "module": "General",
+        "submodule": "Board",
+        "parameter": "PublicApiVersion",
+    }
+
+
+async def test_get_info_api_error_raises_duco_error() -> None:
+    """HTTP errors from the generic info endpoint should surface as DucoError."""
+    mock_response = _response(status=400, text_payload="unsupported query")
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with (
+            patch.object(session, "request", _request(mock_response)),
+            pytest.raises(
+                DucoError,
+                match="Unexpected response 400 for /info: unsupported query",
+            ),
+        ):
+            await client.async_get_info(module="General")
+
+
+async def test_get_info_connection_error_raises_duco_connection_error() -> None:
+    """Transport failures from the generic info endpoint should surface as connection errors."""
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with (
+            patch.object(
+                session,
+                "request",
+                MagicMock(side_effect=aiohttp.ClientError("boom")),
+            ),
+            pytest.raises(DucoConnectionError, match="Could not reach Duco device"),
+        ):
+            await client.async_get_info(module="General")
+
+
 async def test_board_info_is_parsed(board_info_data: dict[str, object]) -> None:
     """Test board info parsing."""
     mock_response = _response(json_payload=board_info_data)
