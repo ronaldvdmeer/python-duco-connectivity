@@ -1142,6 +1142,25 @@ async def test_set_node_action_returns_failed_result(
     assert result.message == "Action is not performed"
 
 
+async def test_set_node_action_returns_unknown_result_for_unmapped_status() -> None:
+    """Unknown action result values should fall back to ActionResultStatus.UNKNOWN."""
+    mock_response = _response(
+        json_payload={
+            "Result": {"Val": "FUTURE_RESULT"},
+            "Code": {"Val": 7},
+        }
+    )
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with patch.object(session, "request", _request(mock_response)):
+            result = await client.async_set_node_action(1, "SetIdentify")
+
+    assert result.result is ActionResultStatus.UNKNOWN
+    assert result.code == 7
+    assert result.message is None
+
+
 async def test_set_node_action_invalid_result_raises_duco_error() -> None:
     """Malformed node action responses should raise DucoError."""
     mock_response = _response(json_payload={"Code": 12})

@@ -17,6 +17,8 @@ Behavior:
 Example:
 
 ```python
+from duco_connectivity import ActionResultStatus, DucoClient
+
 result = await client.async_set_node_action(1, "SetIdentify")
 
 if result.result is ActionResultStatus.SUCCESS:
