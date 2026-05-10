@@ -23,7 +23,11 @@ def _compat_caller() -> str | None:
 
 
 class NodeType(StrEnum):
-    """Node categories reported by the API, plus a client-side fallback."""
+    """Node categories reported by the API.
+
+    `UNKN` is an API-defined value, while `UNKNOWN` is the client fallback for
+    unmapped future values.
+    """
 
     UNKN = "UNKN"
     IQ = "IQ"

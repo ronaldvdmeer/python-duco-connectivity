@@ -619,7 +619,7 @@ async def test_get_nodes_known_spec_node_types_are_parsed(node_type: str) -> Non
             nodes = await client.async_get_nodes()
 
     assert len(nodes) == 1
-    assert nodes[0].general.node_type == NodeType[node_type]
+    assert nodes[0].general.node_type == NodeType(node_type)
 
 
 async def test_get_write_requests_remaining_is_parsed() -> None:
