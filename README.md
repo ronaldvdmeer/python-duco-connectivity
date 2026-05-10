@@ -33,6 +33,7 @@ The current client exposes:
 
 - `async_get_api_info()` for `GET /api`
 - `async_get_info()` for generic `GET /info` access with optional `module`, `submodule`, and `parameter` query arguments
+- `async_get_config()` for generic `GET /config` access with optional `module`, `submodule`, and `parameter` query arguments
 - `async_get_board_info()` for `GET /info?module=General&submodule=Board`
 - `async_get_lan_info()` for `GET /info?module=General&submodule=Lan`
 - `async_get_nodes()` for `GET /info/nodes`
@@ -43,8 +44,9 @@ The current client exposes:
 The focused convenience readers remain available for the payloads that the
 library already models explicitly.
 
-The model layer includes `ApiInfo`, `BoardInfo`, `LanInfo`, `Node`,
-`NodeGeneralInfo`, `NodeVentilationInfo`, and `NodeSensorInfo`.
+The model layer includes `ApiInfo`, `BoardInfo`, `Config`, `ConfigSection`,
+`ConfigValue`, `ConfigValueString`, `LanInfo`, `Node`, `NodeGeneralInfo`,
+`NodeVentilationInfo`, and `NodeSensorInfo`.
 The typed enum layer keeps `NodeType` closely aligned with the Duco public API
 notes while preserving `UNKNOWN` as a fallback for future unmapped values.
 

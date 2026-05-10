@@ -236,6 +236,41 @@ class LanInfo:
 
 
 @dataclass(frozen=True, slots=True)
+class ConfigValue:
+    """Integer config value reported by the local Duco API."""
+
+    value: int
+    minimum: int | None = None
+    increment: int | None = None
+    maximum: int | None = None
+    options: tuple[int, ...] | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class ConfigValueString:
+    """String config value reported by the local Duco API."""
+
+    value: str
+
+
+@dataclass(frozen=True, slots=True)
+class ConfigSection:
+    """Nested config section returned by the local Duco API."""
+
+    entries: dict[str, "ConfigItem"] = field(default_factory=dict)
+
+
+type ConfigItem = ConfigSection | ConfigValue | ConfigValueString
+
+
+@dataclass(frozen=True, slots=True)
+class Config:
+    """Top-level config payload returned by the local Duco API."""
+
+    sections: dict[str, ConfigSection] = field(default_factory=dict)
+
+
+@dataclass(frozen=True, slots=True)
 class NodeSensorInfo:
     """Sensor readings reported for a node."""
 

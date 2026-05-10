@@ -7,6 +7,10 @@ import aiohttp
 import pytest
 
 from duco_connectivity import (
+    Config,
+    ConfigSection,
+    ConfigValue,
+    ConfigValueString,
     DiagStatus,
     DucoClient,
     DucoConnectionError,
@@ -280,6 +284,195 @@ async def test_get_info_connection_error_raises_duco_connection_error() -> None:
             pytest.raises(DucoConnectionError, match="Could not reach Duco device"),
         ):
             await client.async_get_info(module="General")
+
+
+async def test_get_config_without_query_params_returns_typed_payload(
+    config_data: dict[str, object],
+) -> None:
+    """The generic config reader should expose a typed config tree."""
+    mock_response = _response(json_payload=config_data)
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        request_mock = _request(mock_response)
+        with patch.object(session, "request", request_mock):
+            payload = await client.async_get_config()
+
+    assert isinstance(payload, Config)
+    assert "params" not in request_mock.call_args.kwargs
+
+    general = payload.sections["General"]
+    assert isinstance(general, ConfigSection)
+
+    time_config = general.entries["Time"]
+    assert isinstance(time_config, ConfigSection)
+
+    time_zone = time_config.entries["TimeZone"]
+    assert isinstance(time_zone, ConfigValue)
+    assert time_zone.value == 1
+    assert time_zone.minimum == -12
+    assert time_zone.increment == 1
+    assert time_zone.maximum == 12
+
+    lan_config = general.entries["Lan"]
+    assert isinstance(lan_config, ConfigSection)
+
+    static_ip = lan_config.entries["StaticIp"]
+    assert isinstance(static_ip, ConfigValueString)
+    assert static_ip.value == "192.0.2.94"
+
+
+async def test_get_config_parses_option_lists_as_tuples() -> None:
+    """Integer option lists should be preserved in the typed config value."""
+    mock_response = _response(
+        json_payload={
+            "General": {
+                "Lan": {
+                    "Mode": {
+                        "Val": 1,
+                        "Options": [1, 2, 4],
+                    }
+                }
+            }
+        }
+    )
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with patch.object(session, "request", _request(mock_response)):
+            payload = await client.async_get_config()
+
+    mode = payload.sections["General"].entries["Lan"]
+    assert isinstance(mode, ConfigSection)
+    mode_value = mode.entries["Mode"]
+    assert isinstance(mode_value, ConfigValue)
+    assert mode_value.options == (1, 2, 4)
+
+
+@pytest.mark.parametrize(
+    ("payload", "message"),
+    [
+        (
+            {"General": {"Lan": {"Dhcp": {"Val": False}}}},
+            "Unsupported config value type bool for General.Lan.Dhcp",
+        ),
+        (
+            {"General": {"Time": {"TimeZone": {"Val": 1, "Min": False}}}},
+            "Expected integer Min for config entry General.Time.TimeZone",
+        ),
+        (
+            {"General": {"Lan": {"Mode": {"Val": 1, "Options": [1, False]}}}},
+            "Expected integer option list for config entry General.Lan.Mode",
+        ),
+    ],
+)
+async def test_get_config_rejects_invalid_integer_payloads(
+    payload: dict[str, object],
+    message: str,
+) -> None:
+    """Invalid integer-like config payloads should raise DucoError."""
+    mock_response = _response(json_payload=payload)
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with (
+            patch.object(session, "request", _request(mock_response)),
+            pytest.raises(DucoError, match=message),
+        ):
+            await client.async_get_config()
+
+
+async def test_get_config_with_module_forwards_query_params(
+    config_data: dict[str, object],
+) -> None:
+    """A module query should be forwarded to the generic config endpoint."""
+    mock_response = _response(json_payload=config_data)
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        request_mock = _request(mock_response)
+        with patch.object(session, "request", request_mock):
+            payload = await client.async_get_config(module="General")
+
+    assert isinstance(payload, Config)
+    assert request_mock.call_args.kwargs["params"] == {"module": "General"}
+
+
+async def test_get_config_with_module_and_submodule_forwards_query_params(
+    config_data: dict[str, object],
+) -> None:
+    """Module and submodule queries should be forwarded unchanged."""
+    mock_response = _response(json_payload=config_data)
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        request_mock = _request(mock_response)
+        with patch.object(session, "request", request_mock):
+            payload = await client.async_get_config(
+                module="General",
+                submodule="Lan",
+            )
+
+    assert isinstance(payload, Config)
+    assert request_mock.call_args.kwargs["params"] == {
+        "module": "General",
+        "submodule": "Lan",
+    }
+
+
+async def test_get_config_with_module_submodule_and_parameter_forwards_query_params(
+    config_data: dict[str, object],
+) -> None:
+    """All supported config query parameters should be forwarded unchanged."""
+    mock_response = _response(json_payload=config_data)
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        request_mock = _request(mock_response)
+        with patch.object(session, "request", request_mock):
+            payload = await client.async_get_config(
+                module="General",
+                submodule="Lan",
+                parameter="StaticIp",
+            )
+
+    assert isinstance(payload, Config)
+    assert request_mock.call_args.kwargs["params"] == {
+        "module": "General",
+        "submodule": "Lan",
+        "parameter": "StaticIp",
+    }
+
+
+async def test_get_config_api_error_raises_duco_error() -> None:
+    """HTTP errors from the generic config endpoint should surface as DucoError."""
+    mock_response = _response(status=400, text_payload="unsupported query")
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with (
+            patch.object(session, "request", _request(mock_response)),
+            pytest.raises(
+                DucoError,
+                match="Unexpected response 400 for /config: unsupported query",
+            ),
+        ):
+            await client.async_get_config(module="General")
+
+
+async def test_get_config_connection_error_raises_duco_connection_error() -> None:
+    """Transport failures from the generic config endpoint should surface as connection errors."""
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with (
+            patch.object(
+                session,
+                "request",
+                MagicMock(side_effect=aiohttp.ClientError("boom")),
+            ),
+            pytest.raises(DucoConnectionError, match="Could not reach Duco device"),
+        ):
+            await client.async_get_config(module="General")
 
 
 async def test_board_info_is_parsed(board_info_data: dict[str, object]) -> None:
