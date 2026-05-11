@@ -302,6 +302,34 @@ def nodes_data() -> dict[str, object]:
 
 
 @pytest.fixture
+def node_data() -> dict[str, object]:
+    """Mock response for GET /info/nodes/{node}."""
+    return {
+        "Node": 2,
+        "General": {
+            "Type": {"Val": "UCCO2"},
+            "SubType": {"Val": 0},
+            "NetworkType": {"Val": "RF"},
+            "Parent": {"Val": 1},
+            "Asso": {"Val": 1},
+            "Name": {"Val": ""},
+            "Identify": {"Val": 0},
+        },
+        "Ventilation": {
+            "State": {"Val": "CNT1"},
+            "TimeStateRemain": {"Val": 0},
+            "TimeStateEnd": {"Val": 0},
+            "Mode": {"Val": "-"},
+        },
+        "Sensor": {
+            "Temp": {"Val": 19.8},
+            "Co2": {"Val": 536},
+            "IaqCo2": {"Val": 100},
+        },
+    }
+
+
+@pytest.fixture
 def action_result_success_data() -> dict[str, object]:
     """Mock success response for POST /action/nodes/{node}."""
     return {"Result": "SUCCESS"}
