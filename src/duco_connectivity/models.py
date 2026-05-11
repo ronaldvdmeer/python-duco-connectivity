@@ -324,6 +324,13 @@ class Node:
 
 
 @dataclass(frozen=True, slots=True)
+class NodeOverview:
+    """Lightweight node identifier returned by the local Duco API."""
+
+    node_id: int
+
+
+@dataclass(frozen=True, slots=True)
 class DiagComponent:
     """Health state for a diagnostic subsystem."""
 

@@ -18,6 +18,7 @@ from duco_connectivity import (
     DucoError,
     DucoWriteLimitError,
     NetworkType,
+    NodeOverview,
     NodeType,
     VentilationMode,
     VentilationState,
@@ -602,6 +603,91 @@ async def test_get_nodes_parses_full_payload(nodes_data: dict[str, object]) -> N
     assert ucco2.sensor is not None
     assert ucco2.sensor.co2 == 536
     assert ucco2.sensor.iaq_co2 == 100
+
+
+async def test_get_nodes_overview_parses_payload(
+    nodes_overview_data: list[dict[str, int]],
+) -> None:
+    """Test lightweight node overview parsing."""
+    mock_response = _response(json_payload=nodes_overview_data)
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with patch.object(session, "request", _request(mock_response)):
+            nodes = await client.async_get_nodes_overview()
+
+    assert nodes == [
+        NodeOverview(node_id=1),
+        NodeOverview(node_id=2),
+        NodeOverview(node_id=113),
+    ]
+
+
+async def test_get_nodes_overview_handles_empty_payload() -> None:
+    """The lightweight node overview should allow empty responses."""
+    mock_response = _response(json_payload=[])
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with patch.object(session, "request", _request(mock_response)):
+            nodes = await client.async_get_nodes_overview()
+
+    assert nodes == []
+
+
+@pytest.mark.parametrize(
+    ("payload", "message"),
+    [
+        ({"Nodes": [{"Node": 1}]}, "Expected list payload from /nodes, got dict"),
+        ([{}], "Expected integer Node in /nodes item at index 0"),
+        ([{"Node": "1"}], "Expected integer Node in /nodes item at index 0, got str"),
+    ],
+)
+async def test_get_nodes_overview_malformed_payload_raises_duco_error(
+    payload: object,
+    message: str,
+) -> None:
+    """Malformed lightweight node overview payloads should raise DucoError."""
+    mock_response = _response(json_payload=payload)
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with (
+            patch.object(session, "request", _request(mock_response)),
+            pytest.raises(DucoError, match=message),
+        ):
+            await client.async_get_nodes_overview()
+
+
+async def test_get_nodes_overview_api_error_raises_duco_error() -> None:
+    """HTTP errors from the lightweight node overview should surface as DucoError."""
+    mock_response = _response(status=503, text_payload="service unavailable")
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with (
+            patch.object(session, "request", _request(mock_response)),
+            pytest.raises(
+                DucoError,
+                match="Unexpected response 503 for /nodes: service unavailable",
+            ),
+        ):
+            await client.async_get_nodes_overview()
+
+
+async def test_get_nodes_overview_connection_error_raises_duco_connection_error() -> None:
+    """Transport failures from the lightweight node overview should surface as connection errors."""
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with (
+            patch.object(
+                session,
+                "request",
+                MagicMock(side_effect=aiohttp.ClientError("boom")),
+            ),
+            pytest.raises(DucoConnectionError, match="Could not reach Duco device"),
+        ):
+            await client.async_get_nodes_overview()
 
 
 async def test_get_node_info_parses_payload(node_data: dict[str, object]) -> None:

@@ -26,6 +26,7 @@ from .models import (
     NetworkType,
     Node,
     NodeGeneralInfo,
+    NodeOverview,
     NodeSensorInfo,
     NodeType,
     NodeVentilationInfo,
@@ -507,6 +508,11 @@ class DucoClient:
         payload = await self._request_json("GET", "/info/nodes")
         return [self._parse_node(item) for item in payload["Nodes"]]
 
+    async def async_get_nodes_overview(self) -> list[NodeOverview]:
+        """Return lightweight node identifiers reported by the local API."""
+        payload = await self._request_json("GET", "/nodes")
+        return self._parse_nodes_overview(payload)
+
     async def async_get_node_info(
         self,
         node_id: int,
@@ -636,3 +642,33 @@ class DucoClient:
             ventilation=ventilation,
             sensor=sensor,
         )
+
+    @classmethod
+    def _parse_nodes_overview(cls, payload: Any) -> list[NodeOverview]:
+        if not isinstance(payload, list):
+            msg = f"Expected list payload from /nodes, got {type(payload).__name__}"
+            raise DucoError(msg)
+
+        nodes: list[NodeOverview] = []
+        for index, item in enumerate(payload):
+            if not isinstance(item, dict):
+                msg = (
+                    f"Expected object item at index {index} from /nodes, got {type(item).__name__}"
+                )
+                raise DucoError(msg)
+
+            if "Node" not in item:
+                msg = f"Expected integer Node in /nodes item at index {index}"
+                raise DucoError(msg)
+
+            node_id = cls._read_scalar_value(item, "Node")
+            if type(node_id) is not int:
+                msg = (
+                    f"Expected integer Node in /nodes item at index {index}, "
+                    f"got {type(node_id).__name__}"
+                )
+                raise DucoError(msg)
+
+            nodes.append(NodeOverview(node_id=node_id))
+
+        return nodes
