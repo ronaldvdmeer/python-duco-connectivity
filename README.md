@@ -37,7 +37,7 @@ The current client exposes:
 - `async_set_config()` for generic `PATCH /config` access with optional `module`, `submodule`, and `parameter` query arguments plus sparse config payloads built from `PatchConfigValue` leaves or raw API-shaped `{"Val": ...}` objects
 - `async_get_node_configs()` for `GET /config/nodes`; when `parameter` is provided, the typed reader currently supports only `Name`
 - `async_get_node_config()` for `GET /config/nodes/{node}`; when `parameter` is provided, the typed reader currently supports only `Name`
-- `async_set_node_config()` for `PATCH /config/nodes/{node}`; when `parameter` is provided, the typed writer currently supports only `Name`, and accepts sparse payloads built from `PatchConfigNodeValue` leaves or raw API-shaped `{"Val": ...}` objects
+- `async_set_node_config()` for `PATCH /config/nodes/{node}`; the typed writer always requests `parameter=Name` so it can return a `ConfigNode`, and accepts sparse payloads built from `PatchConfigNodeValue` leaves or raw API-shaped `{"Val": ...}` objects
 - `async_get_board_info()` for `GET /info?module=General&submodule=Board`
 - `async_get_lan_info()` for `GET /info?module=General&submodule=Lan`
 - `async_get_nodes_overview()` for `GET /nodes` when you only need lightweight node IDs

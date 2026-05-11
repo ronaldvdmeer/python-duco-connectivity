@@ -968,7 +968,7 @@ async def test_set_node_config_returns_typed_payload_and_compact_json_body(
 async def test_set_node_config_accepts_api_shaped_leaf_payloads(
     node_config_data: dict[str, object],
 ) -> None:
-    """Node config writes should also accept pre-wrapped API-shaped leaf payloads."""
+    """Node config writes should default to `parameter=Name` for typed responses."""
     mock_response = _response(json_payload=node_config_data)
 
     async with aiohttp.ClientSession() as session:
@@ -982,12 +982,15 @@ async def test_set_node_config_accepts_api_shaped_leaf_payloads(
         name=ConfigValueString(value="Kitchen valve"),
     )
     _, kwargs = request.call_args
-    assert "params" not in kwargs
+    assert kwargs["params"] == {"parameter": "Name"}
     assert kwargs["data"] == b'{"Name":{"Val":"Kitchen valve"}}'
 
 
-async def test_set_node_config_rejects_unsupported_parameter() -> None:
-    """Only node fields represented by the typed models should be accepted for PATCH."""
+@pytest.mark.parametrize("parameter", [None, "FlowLvlTgt"])
+async def test_set_node_config_rejects_unsupported_parameter(
+    parameter: object,
+) -> None:
+    """Only the typed Name field should be accepted for node config PATCH."""
     async with aiohttp.ClientSession() as session:
         client = DucoClient(session=session, host="192.0.2.94")
         request_mock = _request(_response(json_payload={"Node": 7}))
@@ -1001,7 +1004,7 @@ async def test_set_node_config_rejects_unsupported_parameter() -> None:
             await client.async_set_node_config(
                 7,
                 {"Name": {"Val": "Kitchen valve"}},
-                parameter="FlowLvlTgt",
+                parameter=parameter,
             )
 
     request_mock.assert_not_called()

@@ -56,14 +56,14 @@ The Duco public API also exposes `PATCH /config/nodes/{node}` for single-node
 configuration changes.
 
 `python-duco-connectivity` exposes this through
-`DucoClient.async_set_node_config(node_id, payload, parameter=None)`.
+`DucoClient.async_set_node_config(node_id, payload, parameter="Name")`.
 
 Behavior:
 
 - Sends `PATCH /config/nodes/{node}`
 - Forwards the node path parameter directly
-- Forwards `parameter` when provided; the typed writer currently supports only
-    `Name`
+- Always sends `parameter=Name` so the endpoint returns a payload that can be
+    parsed as a typed `ConfigNode`
 - Accepts sparse payloads built from `PatchConfigNodeValue(...)` leaves or raw
     API-shaped `{"Val": ...}` leaf objects
 - Returns a typed `ConfigNode` response

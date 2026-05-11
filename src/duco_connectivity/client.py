@@ -702,19 +702,21 @@ class DucoClient:
         self,
         node_id: int,
         payload: dict[str, Any],
-        parameter: Literal["Name"] | None = None,
+        parameter: Literal["Name"] = "Name",
     ) -> ConfigNode:
         """Patch node-level configuration values through `/config/nodes/{node}`.
 
-        When provided, `parameter` currently supports only `Name`, which is the
-        node-level field exposed by the typed config node models.
+        The Duco API returns no node payload for this PATCH endpoint when no
+        query parameter is requested, so the typed writer always targets the
+        `Name` field that is covered by the current node config models.
         """
-        params: dict[str, str] = {}
-        if parameter is not None:
-            if parameter != "Name":
-                msg = "async_set_node_config only supports parameter='Name'"
-                raise ValueError(msg)
-            params["parameter"] = parameter
+        if parameter != "Name":
+            msg = "async_set_node_config only supports parameter='Name'"
+            raise ValueError(msg)
+
+        # Keep the return type stable: without `parameter=Name`, this endpoint
+        # may succeed without returning a node payload that can be parsed.
+        params = {"parameter": parameter}
 
         normalized_payload = self._normalize_patch_config_payload(
             payload,
@@ -722,19 +724,12 @@ class DucoClient:
         )
 
         path = f"/config/nodes/{node_id}"
-        if params:
-            response = await self._request_json(
-                "PATCH",
-                path,
-                params=params,
-                json=normalized_payload,
-            )
-        else:
-            response = await self._request_json(
-                "PATCH",
-                path,
-                json=normalized_payload,
-            )
+        response = await self._request_json(
+            "PATCH",
+            path,
+            params=params,
+            json=normalized_payload,
+        )
 
         return self._parse_config_node(response, path=path)
 
