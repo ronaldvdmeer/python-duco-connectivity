@@ -26,6 +26,8 @@ from duco_connectivity import (
     DucoError,
     DucoWriteLimitError,
     NetworkType,
+    NodeActionItemList,
+    NodeListActionItemList,
     NodeOverview,
     NodeType,
     PatchConfigNodeValue,
@@ -127,6 +129,33 @@ ACTION_DISCOVERY_MALFORMED_PAYLOADS: list[tuple[object, str]] = [
     (
         [{"Action": "SetWifiApMode", "ValType": "Enum", "Enum": [1]}],
         "Expected string Enum value at /action item at index 0.Enum[0], got int",
+    ),
+]
+
+NODE_ACTION_DISCOVERY_MALFORMED_PAYLOADS: list[tuple[object, str]] = [
+    (None, "Expected object payload from /action/nodes, got NoneType"),
+    ([], "Expected object payload from /action/nodes, got list"),
+    ({}, "Expected Nodes in /action/nodes response"),
+    ({"Nodes": {}}, "Expected list Nodes in /action/nodes response, got dict"),
+    (
+        {"Nodes": [False]},
+        "Expected object /action/nodes item at index 0 in /action/nodes response, got bool",
+    ),
+    ({"Nodes": [{}]}, "Expected Node in /action/nodes item at index 0"),
+    (
+        {"Nodes": [{"Node": "1"}]},
+        "Expected integer Node in /action/nodes item at index 0, got str",
+    ),
+    (
+        {"Nodes": [{"Node": 1, "Actions": {}}]},
+        "Expected list Actions in /action/nodes item at index 0, got dict",
+    ),
+    (
+        {"Nodes": [{"Node": 1, "Actions": [False]}]},
+        (
+            "Expected object /action/nodes item at index 0.Actions item at index 0 "
+            "in /action/nodes response, got bool"
+        ),
     ),
 ]
 
@@ -2117,6 +2146,91 @@ async def test_get_actions_connection_error_raises_duco_connection_error() -> No
             pytest.raises(DucoConnectionError, match="Could not reach Duco device"),
         ):
             await client.async_get_actions()
+
+
+async def test_get_node_actions_returns_typed_items(
+    node_action_items_data: dict[str, object],
+) -> None:
+    """Node action discovery should parse the nested NodeListActionItemList payload."""
+    mock_response = _response(json_payload=node_action_items_data)
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        request = MagicMock(return_value=_request_context(mock_response))
+        with patch.object(session, "request", request):
+            result = await client.async_get_node_actions()
+
+    assert result == NodeListActionItemList(
+        nodes=[
+            NodeActionItemList(
+                node_id=1,
+                actions=[ActionItem(action="SetIdentify", val_type=ActionValueType.NONE)],
+            ),
+            NodeActionItemList(
+                node_id=7,
+                actions=[
+                    ActionItem(
+                        action="SetVentilationState",
+                        val_type=ActionValueType.ENUM,
+                        enum_values=["AUTO", "MAN1", "MAN2", "MAN3"],
+                    )
+                ],
+            ),
+            NodeActionItemList(node_id=113),
+        ]
+    )
+    assert request.call_args.args[:2] == ("GET", "http://192.0.2.94/action/nodes")
+
+
+@pytest.mark.parametrize(
+    ("payload", "message"),
+    NODE_ACTION_DISCOVERY_MALFORMED_PAYLOADS,
+)
+async def test_get_node_actions_rejects_malformed_payloads(
+    payload: object,
+    message: str,
+) -> None:
+    """Malformed node action discovery payloads should raise DucoError."""
+    mock_response = _response(json_payload=payload)
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with (
+            patch.object(session, "request", _request(mock_response)),
+            pytest.raises(DucoError, match=re.escape(message)),
+        ):
+            await client.async_get_node_actions()
+
+
+async def test_get_node_actions_api_error_raises_duco_error() -> None:
+    """HTTP errors from node action discovery should surface as DucoError."""
+    mock_response = _response(status=404, text_payload="node action endpoint missing")
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with (
+            patch.object(session, "request", _request(mock_response)),
+            pytest.raises(
+                DucoError,
+                match="Unexpected response 404 for /action/nodes: node action endpoint missing",
+            ),
+        ):
+            await client.async_get_node_actions()
+
+
+async def test_get_node_actions_connection_error_raises_duco_connection_error() -> None:
+    """Transport failures from node action discovery should surface as connection errors."""
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with (
+            patch.object(
+                session,
+                "request",
+                MagicMock(side_effect=aiohttp.ClientError("boom")),
+            ),
+            pytest.raises(DucoConnectionError, match="Could not reach Duco device"),
+        ):
+            await client.async_get_node_actions()
 
 
 async def test_set_node_action_returns_typed_result(

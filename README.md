@@ -49,6 +49,7 @@ The current client exposes:
 - `async_get_diagnostics()` for `GET /info?module=Diag`
 - `async_get_write_requests_remaining()` for `GET /info?module=General&submodule=PublicApi`
 - `async_get_actions()` for typed `GET /action` system action discovery
+- `async_get_node_actions()` for typed `GET /action/nodes` node action discovery
 - `async_set_node_action()` for generic `POST /action/nodes/{node}` execution with a typed action result
 - `async_set_ventilation_state()` for `POST /action/nodes/{node}` with `SetVentilationState`
 
@@ -74,6 +75,12 @@ the box exposes before attempting higher-level workflows. The returned
 `Enum` fields, with `ActionValueType.UNKNOWN` reserved for future unmapped
 value kinds.
 
+Use `async_get_node_actions()` when you need to inspect node-level action
+capabilities across all reported nodes. The typed response keeps the API's
+nested `Nodes` and per-node `Actions` structure via `NodeListActionItemList`
+and `NodeActionItemList`, while reusing `ActionItem` for the leaf action
+definitions.
+
 The model layer includes `Action`, `ActionNode`, `ActionItem`,
 `ActionItemList`, `ActionResult`, `ApiInfo`, `BoardInfo`, `Config`,
 `ConfigNode`, `ConfigNodeOverview`, `ConfigNodeStruct`, `ConfigSection`,
@@ -86,7 +93,8 @@ notes while preserving `UNKNOWN` as a fallback for future unmapped values.
 Action discovery also exposes `ActionValueType` for the `ValType` values
 described in the public API notes.
 
-More detail for node action execution is available in `docs/actions.md`.
+More detail for action discovery and node action execution is available in
+`docs/actions.md`.
 System and node config writes are documented in `docs/config.md`.
 
 ## Development

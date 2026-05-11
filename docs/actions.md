@@ -1,8 +1,8 @@
 # Action support
 
-The Duco public API exposes both system-level action discovery through
-`GET /action` and node-level action execution through
-`POST /action/nodes/{node}`.
+The Duco public API exposes system-level action discovery through `GET /action`,
+node-level action discovery through `GET /action/nodes`, and node-level action
+execution through `POST /action/nodes/{node}`.
 
 ## System action discovery
 
@@ -30,6 +30,31 @@ for item in actions:
 ```
 
 System-level `POST /action` execution is not exposed yet.
+
+## Node action discovery
+
+`python-duco-connectivity` exposes node action discovery through
+`DucoClient.async_get_node_actions()`.
+
+Behavior:
+
+- Calls `GET /action/nodes`
+- Returns a typed `NodeListActionItemList`
+- Preserves the nested API structure of `Nodes`, `Node`, and `Actions`
+- Reuses `ActionItem` for each per-node action definition
+- Falls back to `ActionValueType.UNKNOWN` when the device reports a future
+  unmapped `ValType`
+
+Example:
+
+```python
+node_actions = await client.async_get_node_actions()
+
+for node in node_actions.nodes:
+    print(node.node_id, [item.action for item in node.actions])
+```
+
+Per-node `GET /action/nodes/{node}` discovery is not exposed yet.
 
 ## Node action execution
 

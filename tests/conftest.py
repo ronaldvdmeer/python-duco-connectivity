@@ -424,3 +424,34 @@ def action_items_data() -> list[dict[str, object]]:
             "Enum": ["Off", "On"],
         },
     ]
+
+
+@pytest.fixture
+def node_action_items_data() -> dict[str, object]:
+    """Mock response for GET /action/nodes."""
+    return {
+        "Nodes": [
+            {
+                "Node": 1,
+                "Actions": [
+                    {
+                        "Action": "SetIdentify",
+                        "ValType": "None",
+                    }
+                ],
+            },
+            {
+                "Node": 7,
+                "Actions": [
+                    {
+                        "Action": "SetVentilationState",
+                        "ValType": "Enum",
+                        "Enum": ["AUTO", "MAN1", "MAN2", "MAN3"],
+                    }
+                ],
+            },
+            {
+                "Node": 113,
+            },
+        ]
+    }
