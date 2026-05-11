@@ -35,6 +35,9 @@ The current client exposes:
 - `async_get_info()` for generic `GET /info` access with optional `module`, `submodule`, and `parameter` query arguments
 - `async_get_config()` for generic `GET /config` access with optional `module`, `submodule`, and `parameter` query arguments
 - `async_set_config()` for generic `PATCH /config` access with optional `module`, `submodule`, and `parameter` query arguments plus sparse config payloads built from `PatchConfigValue` leaves or raw API-shaped `{"Val": ...}` objects
+- `async_get_node_configs_raw()` for broader raw `GET /config/nodes` access with any `parameter` value
+- `async_get_node_config_raw()` for broader raw `GET /config/nodes/{node}` access with any `parameter` value
+- `async_set_node_config_raw()` for broader raw `PATCH /config/nodes/{node}` access with any `parameter` value; when the API acknowledges a write without a JSON body, this method returns `None`
 - `async_get_node_configs()` for `GET /config/nodes`; when `parameter` is provided, the typed reader currently supports only `Name`
 - `async_get_node_config()` for `GET /config/nodes/{node}`; when `parameter` is provided, the typed reader currently supports only `Name`
 - `async_set_node_config()` for `PATCH /config/nodes/{node}`; the typed writer always requests `parameter=Name` so it can return a `ConfigNode`, and accepts sparse payloads built from `PatchConfigNodeValue` leaves or raw API-shaped `{"Val": ...}` objects
@@ -50,6 +53,11 @@ The current client exposes:
 
 The focused convenience readers remain available for the payloads that the
 library already models explicitly.
+
+Node config access is split between broader raw API access and the existing
+typed `Name` helpers. Use the `*_raw()` methods when you need non-`Name`
+parameters like `FlowLvlTgt`, and use the typed helpers when you want a stable
+`ConfigNode` or `ConfigNodeOverview` response.
 
 Use `async_get_nodes_overview()` when you only need the lightweight node list
 from `GET /nodes`, and `async_get_nodes()` when you need the richer

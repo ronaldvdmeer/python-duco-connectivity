@@ -1,6 +1,7 @@
 """Tests for the HTTP-only Duco connectivity client."""
 
 import logging
+from typing import Any, cast
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import aiohttp
@@ -67,6 +68,34 @@ def _build_async_wrapper(module_name: str, source: str) -> object:
     namespace = {"__name__": module_name}
     exec(source, namespace)
     return namespace["external_wrapper"]
+
+
+NODE_CONFIG_MALFORMED_PAYLOADS: list[tuple[object, str]] = [
+    ([], "Expected object payload from /config/nodes, got list"),
+    ({}, "Expected list Nodes in /config/nodes response"),
+    ({"Nodes": {}}, "Expected list Nodes in /config/nodes response"),
+    (
+        {"Nodes": [False]},
+        "Expected object item at index 0 in /config/nodes response, got bool",
+    ),
+    ({"Nodes": [{}]}, "Expected integer Node in /config/nodes item at index 0"),
+    (
+        {"Nodes": [{"Node": "1"}]},
+        "Expected integer Node in /config/nodes item at index 0, got str",
+    ),
+    (
+        {"Nodes": [{"Node": 1, "Name": "DucoBox"}]},
+        "Expected object for node config value /config/nodes item at index 0.Name, got str",
+    ),
+    (
+        {"Nodes": [{"Node": 1, "Name": {}}]},
+        "Expected Val in node config value /config/nodes item at index 0.Name",
+    ),
+    (
+        {"Nodes": [{"Node": 1, "Name": {"Val": 1}}]},
+        "Expected string Val for node config value /config/nodes item at index 0.Name, got int",
+    ),
+]
 
 
 async def test_https_is_rejected() -> None:
@@ -701,6 +730,22 @@ async def test_get_node_configs_allows_empty_payload() -> None:
     assert payload == ConfigNodeOverview(nodes=[])
 
 
+async def test_get_node_configs_raw_allows_non_name_parameter(
+    node_configs_flow_target_data: dict[str, object],
+) -> None:
+    """The broader raw node config reader should allow non-Name parameters."""
+    mock_response = _response(json_payload=node_configs_flow_target_data)
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        request_mock = _request(mock_response)
+        with patch.object(session, "request", request_mock):
+            payload = await client.async_get_node_configs_raw(parameter="FlowLvlTgt")
+
+    assert payload == node_configs_flow_target_data
+    assert request_mock.call_args.kwargs["params"] == {"parameter": "FlowLvlTgt"}
+
+
 async def test_get_node_configs_forwards_parameter_query(
     node_configs_data: dict[str, object],
 ) -> None:
@@ -729,39 +774,14 @@ async def test_get_node_configs_rejects_unsupported_parameter() -> None:
                 match="async_get_node_configs only supports parameter='Name'",
             ),
         ):
-            await client.async_get_node_configs(parameter="FlowLvlTgt")
+            await client.async_get_node_configs(parameter=cast(Any, "FlowLvlTgt"))
 
     request_mock.assert_not_called()
 
 
 @pytest.mark.parametrize(
     ("payload", "message"),
-    [
-        ([], "Expected object payload from /config/nodes, got list"),
-        ({}, "Expected list Nodes in /config/nodes response"),
-        ({"Nodes": {}}, "Expected list Nodes in /config/nodes response"),
-        (
-            {"Nodes": [False]},
-            "Expected object item at index 0 in /config/nodes response, got bool",
-        ),
-        ({"Nodes": [{}]}, "Expected integer Node in /config/nodes item at index 0"),
-        (
-            {"Nodes": [{"Node": "1"}]},
-            "Expected integer Node in /config/nodes item at index 0, got str",
-        ),
-        (
-            {"Nodes": [{"Node": 1, "Name": "DucoBox"}]},
-            "Expected object for node config value /config/nodes item at index 0.Name, got str",
-        ),
-        (
-            {"Nodes": [{"Node": 1, "Name": {}}]},
-            "Expected Val in node config value /config/nodes item at index 0.Name",
-        ),
-        (
-            {"Nodes": [{"Node": 1, "Name": {"Val": 1}}]},
-            "Expected string Val for node config value /config/nodes item at index 0.Name, got int",
-        ),
-    ],
+    NODE_CONFIG_MALFORMED_PAYLOADS,
 )
 async def test_get_node_configs_rejects_malformed_payloads(
     payload: object,
@@ -852,6 +872,22 @@ async def test_get_node_config_forwards_parameter_query(
     assert request_mock.call_args.kwargs["params"] == {"parameter": "Name"}
 
 
+async def test_get_node_config_raw_allows_non_name_parameter(
+    node_config_flow_target_data: dict[str, object],
+) -> None:
+    """The broader raw single-node reader should allow non-Name parameters."""
+    mock_response = _response(json_payload=node_config_flow_target_data)
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        request_mock = _request(mock_response)
+        with patch.object(session, "request", request_mock):
+            payload = await client.async_get_node_config_raw(7, parameter="FlowLvlTgt")
+
+    assert payload == node_config_flow_target_data
+    assert request_mock.call_args.kwargs["params"] == {"parameter": "FlowLvlTgt"}
+
+
 async def test_get_node_config_rejects_unsupported_parameter() -> None:
     """Only single-node config fields represented by the typed models should be accepted."""
     async with aiohttp.ClientSession() as session:
@@ -864,7 +900,7 @@ async def test_get_node_config_rejects_unsupported_parameter() -> None:
                 match="async_get_node_config only supports parameter='Name'",
             ),
         ):
-            await client.async_get_node_config(7, parameter="FlowLvlTgt")
+            await client.async_get_node_config(7, parameter=cast(Any, "FlowLvlTgt"))
 
     request_mock.assert_not_called()
 
@@ -994,6 +1030,55 @@ async def test_set_node_config_accepts_api_shaped_leaf_payloads(
     assert kwargs["data"] == b'{"Name":{"Val":"Kitchen valve"}}'
 
 
+async def test_set_node_config_raw_allows_non_name_parameter(
+    node_config_flow_target_data: dict[str, object],
+) -> None:
+    """The broader raw node config writer should allow non-Name parameters."""
+    mock_response = _response(json_payload=node_config_flow_target_data)
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        request = MagicMock(return_value=_request_context(mock_response))
+        with patch.object(session, "request", request):
+            payload = await client.async_set_node_config_raw(
+                7,
+                {"FlowLvlTgt": PatchConfigNodeValue(value=125)},
+                parameter="FlowLvlTgt",
+            )
+
+    assert payload == node_config_flow_target_data
+    assert request.call_args.args[:2] == (
+        "PATCH",
+        "http://192.0.2.94/config/nodes/7",
+    )
+    _, kwargs = request.call_args
+    assert kwargs["params"] == {"parameter": "FlowLvlTgt"}
+    assert kwargs["data"] == b'{"FlowLvlTgt":{"Val":125}}'
+    assert kwargs["headers"] == {"Content-Type": "application/json"}
+
+
+async def test_set_node_config_raw_returns_none_for_empty_success_response() -> None:
+    """The raw node config writer should tolerate empty success responses."""
+    mock_response = _response(
+        json_side_effect=ValueError("Expecting value: line 1 column 1 (char 0)"),
+        text_payload="",
+    )
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        request = MagicMock(return_value=_request_context(mock_response))
+        with patch.object(session, "request", request):
+            payload = await client.async_set_node_config_raw(
+                7,
+                {"FlowLvlTgt": PatchConfigNodeValue(value=125)},
+            )
+
+    assert payload is None
+    _, kwargs = request.call_args
+    assert "params" not in kwargs
+    assert kwargs["data"] == b'{"FlowLvlTgt":{"Val":125}}'
+
+
 @pytest.mark.parametrize("parameter", [None, "FlowLvlTgt"])
 async def test_set_node_config_rejects_unsupported_parameter(
     parameter: object,
@@ -1012,7 +1097,7 @@ async def test_set_node_config_rejects_unsupported_parameter(
             await client.async_set_node_config(
                 7,
                 {"Name": {"Val": "Kitchen valve"}},
-                parameter=parameter,
+                parameter=cast(Any, parameter),
             )
 
     request_mock.assert_not_called()
@@ -1047,7 +1132,7 @@ async def test_set_node_config_rejects_invalid_patch_payloads(
     async with aiohttp.ClientSession() as session:
         client = DucoClient(session=session, host="192.0.2.94")
         with pytest.raises(ValueError, match=message):
-            await client.async_set_node_config(7, payload)
+            await client.async_set_node_config(7, cast(Any, payload))
 
 
 async def test_set_node_config_invalid_response_raises_duco_error() -> None:

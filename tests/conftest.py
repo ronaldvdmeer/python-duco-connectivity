@@ -162,6 +162,32 @@ def node_config_data() -> dict[str, object]:
 
 
 @pytest.fixture
+def node_configs_flow_target_data() -> dict[str, object]:
+    """Mock response for GET /config/nodes?parameter=FlowLvlTgt."""
+    return {
+        "Nodes": [
+            {
+                "Node": 1,
+                "FlowLvlTgt": {"Val": 250},
+            },
+            {
+                "Node": 7,
+                "FlowLvlTgt": {"Val": 125, "Min": 0, "Inc": 5, "Max": 255},
+            },
+        ]
+    }
+
+
+@pytest.fixture
+def node_config_flow_target_data() -> dict[str, object]:
+    """Mock response for GET or PATCH /config/nodes/{node}?parameter=FlowLvlTgt."""
+    return {
+        "Node": 7,
+        "FlowLvlTgt": {"Val": 125, "Min": 0, "Inc": 5, "Max": 255},
+    }
+
+
+@pytest.fixture
 def board_info_data() -> dict[str, object]:
     """Mock response for GET /info?module=General&submodule=Board."""
     return {
