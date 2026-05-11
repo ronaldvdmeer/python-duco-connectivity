@@ -959,6 +959,10 @@ async def test_set_node_config_returns_typed_payload_and_compact_json_body(
         node_id=7,
         name=ConfigValueString(value="Kitchen valve"),
     )
+    assert request.call_args.args[:2] == (
+        "PATCH",
+        "http://192.0.2.94/config/nodes/7",
+    )
     _, kwargs = request.call_args
     assert kwargs["params"] == {"parameter": "Name"}
     assert kwargs["data"] == b'{"Name":{"Val":"Kitchen valve"}}'
@@ -980,6 +984,10 @@ async def test_set_node_config_accepts_api_shaped_leaf_payloads(
     assert payload == ConfigNode(
         node_id=7,
         name=ConfigValueString(value="Kitchen valve"),
+    )
+    assert request.call_args.args[:2] == (
+        "PATCH",
+        "http://192.0.2.94/config/nodes/7",
     )
     _, kwargs = request.call_args
     assert kwargs["params"] == {"parameter": "Name"}
