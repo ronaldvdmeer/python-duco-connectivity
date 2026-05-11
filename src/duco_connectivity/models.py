@@ -138,6 +138,17 @@ class ActionResultStatus(StrEnum):
     UNKNOWN = "UNKNOWN"
 
 
+class ActionValueType(StrEnum):
+    """Value kinds reported for action discovery, plus a client-side fallback."""
+
+    NONE = "None"
+    BOOLEAN = "Boolean"
+    INTEGER = "Integer"
+    STRING = "String"
+    ENUM = "Enum"
+    UNKNOWN = "UNKNOWN"
+
+
 @dataclass(frozen=True, slots=True)
 class ApiEndpoint:
     """Capabilities advertised for a single API endpoint."""
@@ -382,8 +393,51 @@ class DiagComponent:
 
 
 @dataclass(frozen=True, slots=True)
+class Action:
+    """System action request payload."""
+
+    action: str
+    val: str | int | bool | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class ActionNode:
+    """Node action request payload."""
+
+    action: str
+    val: str | int | bool | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class ActionItem:
+    """Action definition returned by action discovery endpoints."""
+
+    action: str
+    val_type: ActionValueType
+    enum_values: list[str] = field(default_factory=list)
+
+
+ActionItemList = list[ActionItem]
+
+
+@dataclass(frozen=True, slots=True)
+class NodeActionItemList:
+    """Node-scoped action discovery entry."""
+
+    node: int
+    actions: list[ActionItem] = field(default_factory=list)
+
+
+@dataclass(frozen=True, slots=True)
+class NodeListActionItemList:
+    """Collection of node-scoped action discovery entries."""
+
+    nodes: list[NodeActionItemList] = field(default_factory=list)
+
+
+@dataclass(frozen=True, slots=True)
 class ActionResult:
-    """Outcome returned by a node action execution request."""
+    """Outcome returned by an action execution request."""
 
     result: ActionResultStatus
     code: int | None = None

@@ -5,13 +5,19 @@ import logging
 import pytest
 
 from duco_connectivity import (
+    Action,
+    ActionItem,
+    ActionNode,
+    ActionValueType,
     ApiEndpoint,
     ApiEndpointInfo,
     ApiInfo,
     BoardInfo,
     NetworkType,
     Node,
+    NodeActionItemList,
     NodeGeneralInfo,
+    NodeListActionItemList,
     NodeSensorInfo,
     NodeType,
     NodeVentilationInfo,
@@ -33,6 +39,51 @@ def test_api_endpoint_defaults() -> None:
     assert endpoint.methods == []
     assert endpoint.query_parameters == []
     assert endpoint.modules == []
+
+
+def test_action_defaults() -> None:
+    """Action should allow omitted optional values."""
+    action = Action(action="SetTime")
+    assert action.action == "SetTime"
+    assert action.val is None
+
+
+def test_action_node_defaults() -> None:
+    """ActionNode should allow omitted optional values."""
+    action = ActionNode(action="SetIdentify")
+    assert action.action == "SetIdentify"
+    assert action.val is None
+
+
+def test_action_item_defaults() -> None:
+    """ActionItem should default enum values to an empty list."""
+    item = ActionItem(action="SetIdentify", val_type=ActionValueType.NONE)
+    assert item.action == "SetIdentify"
+    assert item.val_type is ActionValueType.NONE
+    assert item.enum_values == []
+
+
+def test_node_action_item_list_defaults() -> None:
+    """NodeActionItemList should default actions to an empty list."""
+    item_list = NodeActionItemList(node=1)
+    assert item_list.node == 1
+    assert item_list.actions == []
+
+
+def test_node_list_action_item_list_defaults() -> None:
+    """NodeListActionItemList should default nodes to an empty list."""
+    item_list = NodeListActionItemList()
+    assert item_list.nodes == []
+
+
+def test_action_value_type_values() -> None:
+    """ActionValueType should expose the API-defined discovery values."""
+    assert ActionValueType.NONE.value == "None"
+    assert ActionValueType.BOOLEAN.value == "Boolean"
+    assert ActionValueType.INTEGER.value == "Integer"
+    assert ActionValueType.STRING.value == "String"
+    assert ActionValueType.ENUM.value == "Enum"
+    assert ActionValueType.UNKNOWN.value == "UNKNOWN"
 
 
 def test_api_info_defaults() -> None:
