@@ -48,6 +48,7 @@ The current client exposes:
 - `async_get_node_info()` for `GET /info/nodes/{node}` with optional `module` and `parameter` query arguments
 - `async_get_diagnostics()` for `GET /info?module=Diag`
 - `async_get_write_requests_remaining()` for `GET /info?module=General&submodule=PublicApi`
+- `async_get_actions()` for typed `GET /action` system action discovery
 - `async_set_node_action()` for generic `POST /action/nodes/{node}` execution with a typed action result
 - `async_set_ventilation_state()` for `POST /action/nodes/{node}` with `SetVentilationState`
 
@@ -66,6 +67,12 @@ from `GET /nodes`, and `async_get_nodes()` when you need the richer
 `async_set_ventilation_state()` remains available as a thin convenience wrapper
 over `async_set_node_action()` for callers that only need the existing
 ventilation state write.
+
+Use `async_get_actions()` when you need to inspect which system-level actions
+the box exposes before attempting higher-level workflows. The returned
+`ActionItem` entries preserve the API-shaped `Action`, `ValType`, and optional
+`Enum` fields, with `ActionValueType.UNKNOWN` reserved for future unmapped
+value kinds.
 
 The model layer includes `Action`, `ActionNode`, `ActionItem`,
 `ActionItemList`, `ActionResult`, `ApiInfo`, `BoardInfo`, `Config`,
