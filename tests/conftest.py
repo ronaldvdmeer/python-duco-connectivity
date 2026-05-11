@@ -302,6 +302,16 @@ def nodes_data() -> dict[str, object]:
 
 
 @pytest.fixture
+def nodes_overview_data() -> list[dict[str, int]]:
+    """Mock response for GET /nodes."""
+    return [
+        {"Node": 1},
+        {"Node": 2},
+        {"Node": 113},
+    ]
+
+
+@pytest.fixture
 def node_data() -> dict[str, object]:
     """Mock response for GET /info/nodes/{node}."""
     return {

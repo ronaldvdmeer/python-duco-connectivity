@@ -26,6 +26,7 @@ from .models import (
     NetworkType,
     Node,
     NodeGeneralInfo,
+    NodeOverview,
     NodeSensorInfo,
     NodeType,
     NodeVentilationInfo,
@@ -506,6 +507,11 @@ class DucoClient:
         """Return nodes reported by the local API."""
         payload = await self._request_json("GET", "/info/nodes")
         return [self._parse_node(item) for item in payload["Nodes"]]
+
+    async def async_get_nodes_overview(self) -> list[NodeOverview]:
+        """Return lightweight node identifiers reported by the local API."""
+        payload = await self._request_json("GET", "/nodes")
+        return [NodeOverview(node_id=item["Node"]) for item in payload]
 
     async def async_get_node_info(
         self,

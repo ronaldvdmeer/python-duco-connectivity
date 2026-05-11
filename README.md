@@ -36,6 +36,7 @@ The current client exposes:
 - `async_get_config()` for generic `GET /config` access with optional `module`, `submodule`, and `parameter` query arguments
 - `async_get_board_info()` for `GET /info?module=General&submodule=Board`
 - `async_get_lan_info()` for `GET /info?module=General&submodule=Lan`
+- `async_get_nodes_overview()` for `GET /nodes` when you only need lightweight node IDs
 - `async_get_nodes()` for `GET /info/nodes`
 - `async_get_node_info()` for `GET /info/nodes/{node}` with optional `module` and `parameter` query arguments
 - `async_get_diagnostics()` for `GET /info?module=Diag`
@@ -46,12 +47,16 @@ The current client exposes:
 The focused convenience readers remain available for the payloads that the
 library already models explicitly.
 
+Use `async_get_nodes_overview()` when you only need the lightweight node list
+from `GET /nodes`, and `async_get_nodes()` when you need the richer
+`GET /info/nodes` payload with general, ventilation, and sensor details.
+
 `async_set_ventilation_state()` remains available as a thin convenience wrapper
 over `async_set_node_action()` for callers that only need the existing
 ventilation state write.
 
 The model layer includes `ActionResult`, `ApiInfo`, `BoardInfo`, `Config`,
-`ConfigSection`, `ConfigValue`, `ConfigValueString`, `LanInfo`, `Node`,
+`ConfigSection`, `ConfigValue`, `ConfigValueString`, `LanInfo`, `Node`, `NodeOverview`,
 `NodeGeneralInfo`, `NodeVentilationInfo`, and `NodeSensorInfo`.
 The typed enum layer keeps `NodeType` closely aligned with the Duco public API
 notes while preserving `UNKNOWN` as a fallback for future unmapped values.
