@@ -23,7 +23,8 @@ state values:
 - `-`
 
 The library exposes the `-` state as `VentilationState.NONE` so callers can use
-it as a first-class enum member instead of falling back to a raw string.
+it as a first-class enum member instead of losing that value to the generic
+`VentilationState.UNKNOWN` fallback.
 
 ## Compatibility states
 
