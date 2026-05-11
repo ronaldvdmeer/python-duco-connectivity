@@ -585,6 +585,10 @@ async def test_set_config_accepts_api_shaped_leaf_payloads(
             "Unsupported patch config value type bool for config.General.Time.TimeZone",
         ),
         (
+            {"General": {1: {"Val": 2}}},
+            "Expected string key for config.General, got int",
+        ),
+        (
             {"General": {"Time": {"TimeZone": {"Val": 1, "Min": 0}}}},
             "Patch config leaf config.General.Time.TimeZone may only contain Val",
         ),

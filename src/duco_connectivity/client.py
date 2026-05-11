@@ -319,6 +319,10 @@ class DucoClient:
 
         normalized: dict[str, Any] = {}
         for key, value in payload.items():
+            if not isinstance(key, str):
+                msg = f"Expected string key for {path}, got {type(key).__name__}"
+                raise ValueError(msg)
+
             item_path = f"{path}.{key}"
             if isinstance(value, PatchConfigValue):
                 normalized[key] = {
