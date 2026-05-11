@@ -638,6 +638,26 @@ async def test_get_node_info_uses_node_path(node_data: dict[str, object]) -> Non
     assert "params" not in request_mock.call_args.kwargs
 
 
+async def test_get_node_info_forwards_query_params(node_data: dict[str, object]) -> None:
+    """The single-node reader should forward optional query parameters."""
+    mock_response = _response(json_payload=node_data)
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        request_mock = _request(mock_response)
+        with patch.object(session, "request", request_mock):
+            await client.async_get_node_info(2, module="Sensor", parameter="Co2")
+
+    assert request_mock.call_args.args[:2] == (
+        "GET",
+        "http://192.0.2.94/info/nodes/2",
+    )
+    assert request_mock.call_args.kwargs["params"] == {
+        "module": "Sensor",
+        "parameter": "Co2",
+    }
+
+
 async def test_get_node_info_api_error_raises_duco_error() -> None:
     """HTTP errors from the single-node endpoint should surface as DucoError."""
     mock_response = _response(status=404, text_payload="node not found")

@@ -37,7 +37,7 @@ The current client exposes:
 - `async_get_board_info()` for `GET /info?module=General&submodule=Board`
 - `async_get_lan_info()` for `GET /info?module=General&submodule=Lan`
 - `async_get_nodes()` for `GET /info/nodes`
-- `async_get_node_info()` for `GET /info/nodes/{node}`
+- `async_get_node_info()` for `GET /info/nodes/{node}` with optional `module` and `parameter` query arguments
 - `async_get_diagnostics()` for `GET /info?module=Diag`
 - `async_get_write_requests_remaining()` for `GET /info?module=General&submodule=PublicApi`
 - `async_set_node_action()` for generic `POST /action/nodes/{node}` execution with a typed action result
