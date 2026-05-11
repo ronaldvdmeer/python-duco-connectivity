@@ -635,6 +635,30 @@ async def test_get_nodes_overview_handles_empty_payload() -> None:
     assert nodes == []
 
 
+@pytest.mark.parametrize(
+    ("payload", "message"),
+    [
+        ({"Nodes": [{"Node": 1}]}, "Expected list payload from /nodes, got dict"),
+        ([{}], "Expected integer Node in /nodes item at index 0"),
+        ([{"Node": "1"}], "Expected integer Node in /nodes item at index 0, got str"),
+    ],
+)
+async def test_get_nodes_overview_malformed_payload_raises_duco_error(
+    payload: object,
+    message: str,
+) -> None:
+    """Malformed lightweight node overview payloads should raise DucoError."""
+    mock_response = _response(json_payload=payload)
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with (
+            patch.object(session, "request", _request(mock_response)),
+            pytest.raises(DucoError, match=message),
+        ):
+            await client.async_get_nodes_overview()
+
+
 async def test_get_nodes_overview_api_error_raises_duco_error() -> None:
     """HTTP errors from the lightweight node overview should surface as DucoError."""
     mock_response = _response(status=503, text_payload="service unavailable")
