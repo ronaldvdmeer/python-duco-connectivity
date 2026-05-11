@@ -51,7 +51,7 @@ from duco_connectivity import ActionResultStatus
 result = await client.async_set_action("SetIdentify")
 
 if result.result is ActionResultStatus.SUCCESS:
-  ...
+    ...
 ```
 
 ## Node action discovery
