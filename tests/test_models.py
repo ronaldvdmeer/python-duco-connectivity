@@ -65,8 +65,8 @@ def test_action_item_defaults() -> None:
 
 def test_node_action_item_list_defaults() -> None:
     """NodeActionItemList should default actions to an empty list."""
-    item_list = NodeActionItemList(node=1)
-    assert item_list.node == 1
+    item_list = NodeActionItemList(node_id=1)
+    assert item_list.node_id == 1
     assert item_list.actions == []
 
 

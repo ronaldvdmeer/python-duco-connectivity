@@ -417,14 +417,14 @@ class ActionItem:
     enum_values: list[str] = field(default_factory=list)
 
 
-ActionItemList = list[ActionItem]
+type ActionItemList = list[ActionItem]
 
 
 @dataclass(frozen=True, slots=True)
 class NodeActionItemList:
     """Node-scoped action discovery entry."""
 
-    node: int
+    node_id: int
     actions: list[ActionItem] = field(default_factory=list)
 
 
