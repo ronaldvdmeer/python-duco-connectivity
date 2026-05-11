@@ -138,6 +138,7 @@ class DucoClient:
         return self._base_url
 
     async def _request_json(self, method: str, path: str, **kwargs: Any) -> Any:
+        allow_empty_response = kwargs.pop("allow_empty_response", False)
         json_payload = None
         if "json" in kwargs:
             json_payload = kwargs.pop("json")
@@ -193,6 +194,10 @@ class DucoClient:
                 try:
                     return await response.json(content_type=None)
                 except ValueError as err:
+                    if allow_empty_response:
+                        body = await response.text()
+                        if not body.strip():
+                            return None
                     msg = f"Expected JSON response from {path}: {err}"
                     raise DucoError(msg) from err
         except DucoError:
@@ -649,6 +654,74 @@ class DucoClient:
             )
 
         return self._parse_config(response)
+
+    async def async_get_node_configs_raw(
+        self,
+        parameter: str | None = None,
+    ) -> Any:
+        """Return the raw payload from `/config/nodes`."""
+        params: dict[str, str] = {}
+        if parameter is not None:
+            params["parameter"] = parameter
+
+        if params:
+            return await self._request_json("GET", "/config/nodes", params=params)
+
+        return await self._request_json("GET", "/config/nodes")
+
+    async def async_get_node_config_raw(
+        self,
+        node_id: int,
+        parameter: str | None = None,
+    ) -> Any:
+        """Return the raw payload from `/config/nodes/{node}`."""
+        params: dict[str, str] = {}
+        if parameter is not None:
+            params["parameter"] = parameter
+
+        path = f"/config/nodes/{node_id}"
+        if params:
+            return await self._request_json("GET", path, params=params)
+
+        return await self._request_json("GET", path)
+
+    async def async_set_node_config_raw(
+        self,
+        node_id: int,
+        payload: dict[str, Any],
+        parameter: str | None = None,
+    ) -> Any | None:
+        """Patch `/config/nodes/{node}` and return the raw API payload.
+
+        When no query parameter is requested, the Duco API may acknowledge the
+        PATCH without returning a JSON body. In that case this method returns
+        `None`.
+        """
+        params: dict[str, str] = {}
+        if parameter is not None:
+            params["parameter"] = parameter
+
+        normalized_payload = self._normalize_patch_config_payload(
+            payload,
+            path=f"config.nodes.{node_id}",
+        )
+
+        path = f"/config/nodes/{node_id}"
+        if params:
+            return await self._request_json(
+                "PATCH",
+                path,
+                params=params,
+                json=normalized_payload,
+                allow_empty_response=True,
+            )
+
+        return await self._request_json(
+            "PATCH",
+            path,
+            json=normalized_payload,
+            allow_empty_response=True,
+        )
 
     async def async_get_node_configs(
         self,

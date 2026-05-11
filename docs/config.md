@@ -50,6 +50,26 @@ await client.async_set_config(
 
 ```
 
+## Node config access
+
+For node-level config endpoints, the client now exposes two layers:
+
+- broader raw API access for any node config parameter through
+    `async_get_node_configs_raw()`, `async_get_node_config_raw()`, and
+    `async_set_node_config_raw()`
+- stable typed `Name` helpers through `async_get_node_configs()`,
+    `async_get_node_config()`, and `async_set_node_config()`
+
+Use the raw methods when you need parameters that are not yet represented by
+the typed `ConfigNode` models.
+
+Example:
+
+```python
+payload = await client.async_get_node_config_raw(7, parameter="FlowLvlTgt")
+flow_target = payload["FlowLvlTgt"]["Val"]
+```
+
 ## Node config writes
 
 The Duco public API also exposes `PATCH /config/nodes/{node}` for single-node
@@ -57,6 +77,30 @@ configuration changes.
 
 `python-duco-connectivity` exposes this through
 `DucoClient.async_set_node_config(node_id, payload, parameter="Name")`.
+
+For broader writes, use `DucoClient.async_set_node_config_raw(...)`.
+
+Behavior of the raw writer:
+
+- Sends `PATCH /config/nodes/{node}`
+- Forwards any `parameter` query value unchanged when provided
+- Accepts sparse payloads built from `PatchConfigNodeValue(...)` leaves or raw
+    API-shaped `{"Val": ...}` leaf objects
+- Returns the raw API payload when the box responds with JSON
+- Returns `None` when the box acknowledges the write without a JSON body
+
+Example:
+
+```python
+result = await client.async_set_node_config_raw(
+        7,
+        {"FlowLvlTgt": PatchConfigNodeValue(value=125)},
+        parameter="FlowLvlTgt",
+)
+
+if result is not None:
+        flow_target = result["FlowLvlTgt"]["Val"]
+```
 
 Behavior:
 
