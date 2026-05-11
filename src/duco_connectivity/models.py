@@ -255,6 +255,13 @@ class ConfigValue:
 
 
 @dataclass(frozen=True, slots=True)
+class ConfigValueOptions(ConfigValue):
+    """Integer config value with an explicit option list."""
+
+    options: tuple[int, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
 class ConfigValueString:
     """String config value reported by the local Duco API."""
 
@@ -268,7 +275,7 @@ class ConfigSection:
     entries: dict[str, "ConfigItem"] = field(default_factory=dict)
 
 
-type ConfigItem = ConfigSection | ConfigValue | ConfigValueString
+type ConfigItem = ConfigSection | ConfigValue | ConfigValueOptions | ConfigValueString
 
 
 @dataclass(frozen=True, slots=True)
@@ -276,6 +283,42 @@ class Config:
     """Top-level config payload returned by the local Duco API."""
 
     sections: dict[str, ConfigSection] = field(default_factory=dict)
+
+
+@dataclass(frozen=True, slots=True)
+class ConfigNodeStruct:
+    """Writable or readable node config fields."""
+
+    name: ConfigValueString | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class ConfigNode:
+    """Node-scoped config payload returned by the local Duco API."""
+
+    node_id: int
+    name: ConfigValueString | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class ConfigNodeOverview:
+    """Collection of node-scoped config payloads."""
+
+    nodes: list[ConfigNode] = field(default_factory=list)
+
+
+@dataclass(frozen=True, slots=True)
+class PatchConfigValue:
+    """Leaf config payload used by future config write methods."""
+
+    value: int | str
+
+
+@dataclass(frozen=True, slots=True)
+class PatchConfigNodeValue:
+    """Leaf node config payload used by future node config write methods."""
+
+    value: int | str
 
 
 @dataclass(frozen=True, slots=True)

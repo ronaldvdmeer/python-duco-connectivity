@@ -118,7 +118,7 @@ def config_data() -> dict[str, object]:
                 "Dst": {"Val": 1, "Min": 0, "Inc": 1, "Max": 1},
             },
             "Lan": {
-                "Mode": {"Val": 1, "Min": 1, "Inc": 1, "Max": 3},
+                "Mode": {"Val": 1, "Options": [1, 2, 4]},
                 "Dhcp": {"Val": 1, "Min": 0, "Inc": 1, "Max": 1},
                 "StaticIp": {"Val": "192.0.2.94"},
                 "WifiClientSsid": {"Val": "duco-test-net"},
