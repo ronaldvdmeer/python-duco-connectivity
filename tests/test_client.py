@@ -604,6 +604,71 @@ async def test_get_nodes_parses_full_payload(nodes_data: dict[str, object]) -> N
     assert ucco2.sensor.iaq_co2 == 100
 
 
+async def test_get_node_info_parses_payload(node_data: dict[str, object]) -> None:
+    """Test single-node detail parsing."""
+    mock_response = _response(json_payload=node_data)
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with patch.object(session, "request", _request(mock_response)):
+            node = await client.async_get_node_info(2)
+
+    assert node.node_id == 2
+    assert node.general.node_type == NodeType.UCCO2
+    assert node.general.network_type == NetworkType.RF
+    assert node.sensor is not None
+    assert node.sensor.co2 == 536
+    assert node.sensor.iaq_co2 == 100
+
+
+async def test_get_node_info_uses_node_path(node_data: dict[str, object]) -> None:
+    """The single-node reader should request the node-specific endpoint."""
+    mock_response = _response(json_payload=node_data)
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        request_mock = _request(mock_response)
+        with patch.object(session, "request", request_mock):
+            await client.async_get_node_info(2)
+
+    assert request_mock.call_args.args[:2] == (
+        "GET",
+        "http://192.0.2.94/info/nodes/2",
+    )
+    assert "params" not in request_mock.call_args.kwargs
+
+
+async def test_get_node_info_api_error_raises_duco_error() -> None:
+    """HTTP errors from the single-node endpoint should surface as DucoError."""
+    mock_response = _response(status=404, text_payload="node not found")
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with (
+            patch.object(session, "request", _request(mock_response)),
+            pytest.raises(
+                DucoError,
+                match="Unexpected response 404 for /info/nodes/2: node not found",
+            ),
+        ):
+            await client.async_get_node_info(2)
+
+
+async def test_get_node_info_connection_error_raises_duco_connection_error() -> None:
+    """Transport failures from the single-node endpoint should surface as connection errors."""
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with (
+            patch.object(
+                session,
+                "request",
+                MagicMock(side_effect=aiohttp.ClientError("boom")),
+            ),
+            pytest.raises(DucoConnectionError, match="Could not reach Duco device"),
+        ):
+            await client.async_get_node_info(2)
+
+
 async def test_get_nodes_unknown_network_type_falls_back_to_unknown() -> None:
     """Test that unknown network types do not crash parsing."""
     payload: dict[str, object] = {

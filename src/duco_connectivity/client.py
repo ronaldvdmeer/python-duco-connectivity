@@ -507,6 +507,11 @@ class DucoClient:
         payload = await self._request_json("GET", "/info/nodes")
         return [self._parse_node(item) for item in payload["Nodes"]]
 
+    async def async_get_node_info(self, node_id: int) -> Node:
+        """Return detailed information for a specific node."""
+        payload = await self._request_json("GET", f"/info/nodes/{node_id}")
+        return self._parse_node(payload)
+
     async def async_get_write_requests_remaining(self) -> int:
         """Return the remaining write budget reported by the box."""
         payload = await self.async_get_info(
