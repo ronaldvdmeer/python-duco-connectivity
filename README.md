@@ -50,6 +50,7 @@ The current client exposes:
 - `async_get_write_requests_remaining()` for `GET /info?module=General&submodule=PublicApi`
 - `async_get_actions()` for typed `GET /action` system action discovery
 - `async_get_node_actions()` for typed `GET /action/nodes` node action discovery
+- `async_get_node_actions_for_node()` for typed `GET /action/nodes/{node}` per-node action discovery
 - `async_set_node_action()` for generic `POST /action/nodes/{node}` execution with a typed action result
 - `async_set_ventilation_state()` for `POST /action/nodes/{node}` with `SetVentilationState`
 
@@ -80,6 +81,11 @@ capabilities across all reported nodes. The typed response keeps the API's
 nested `Nodes` and per-node `Actions` structure via `NodeListActionItemList`
 and `NodeActionItemList`, while reusing `ActionItem` for the leaf action
 definitions.
+
+Use `async_get_node_actions_for_node()` when you only need the discovery data
+for one node. The typed response returns the same `NodeActionItemList` wrapper
+used inside the broader `async_get_node_actions()` result, so callers can keep
+one consistent per-node model regardless of which discovery endpoint they use.
 
 The model layer includes `Action`, `ActionNode`, `ActionItem`,
 `ActionItemList`, `ActionResult`, `ApiInfo`, `BoardInfo`, `Config`,
