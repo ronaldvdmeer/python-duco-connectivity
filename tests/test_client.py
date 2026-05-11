@@ -2327,6 +2327,121 @@ async def test_get_node_actions_for_node_connection_error_raises_duco_connection
             await client.async_get_node_actions_for_node(7)
 
 
+async def test_set_action_returns_typed_result(
+    action_result_success_data: dict[str, object],
+) -> None:
+    """Generic system actions should parse a typed action result."""
+    mock_response = _response(json_payload=action_result_success_data)
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        request = MagicMock(return_value=_request_context(mock_response))
+        with patch.object(session, "request", request):
+            result = await client.async_set_action("SetWifiApMode", "On")
+
+    assert result.result is ActionResultStatus.SUCCESS
+    assert result.code is None
+    assert result.message is None
+    assert request.call_args.args[:2] == ("POST", "http://192.0.2.94/action")
+    _, kwargs = request.call_args
+    assert kwargs["data"] == b'{"Action":"SetWifiApMode","Val":"On"}'
+    assert kwargs["headers"] == {"Content-Type": "application/json"}
+
+
+async def test_set_action_omits_optional_value(
+    action_result_success_data: dict[str, object],
+) -> None:
+    """Generic system actions should omit Val when the action does not require one."""
+    mock_response = _response(json_payload=action_result_success_data)
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        request = MagicMock(return_value=_request_context(mock_response))
+        with patch.object(session, "request", request):
+            await client.async_set_action("SetIdentify")
+
+    _, kwargs = request.call_args
+    assert kwargs["data"] == b'{"Action":"SetIdentify"}'
+    assert kwargs["headers"] == {"Content-Type": "application/json"}
+
+
+async def test_set_action_returns_failed_result(
+    action_result_failed_data: dict[str, object],
+) -> None:
+    """Generic system actions should preserve FAILED action responses."""
+    mock_response = _response(json_payload=action_result_failed_data)
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with patch.object(session, "request", _request(mock_response)):
+            result = await client.async_set_action("SetWifiApMode", "Off")
+
+    assert result.result is ActionResultStatus.FAILED
+    assert result.code == 12
+    assert result.message == "Action is not performed"
+
+
+async def test_set_action_returns_unknown_result_for_unmapped_status() -> None:
+    """Unknown system action result values should fall back to ActionResultStatus.UNKNOWN."""
+    mock_response = _response(
+        json_payload={
+            "Result": {"Val": "FUTURE_RESULT"},
+            "Code": {"Val": 7},
+        }
+    )
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with patch.object(session, "request", _request(mock_response)):
+            result = await client.async_set_action("SetIdentify")
+
+    assert result.result is ActionResultStatus.UNKNOWN
+    assert result.code == 7
+    assert result.message is None
+
+
+async def test_set_action_invalid_result_raises_duco_error() -> None:
+    """Malformed system action responses should raise DucoError."""
+    mock_response = _response(json_payload={"Code": 12})
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with patch.object(session, "request", _request(mock_response)):
+            with pytest.raises(DucoError, match="Expected Result in system action response"):
+                await client.async_set_action("SetIdentify")
+
+
+async def test_set_action_api_error_raises_duco_error() -> None:
+    """HTTP errors from system action execution should surface as DucoError."""
+    mock_response = _response(status=404, text_payload="action endpoint missing")
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with (
+            patch.object(session, "request", _request(mock_response)),
+            pytest.raises(
+                DucoError,
+                match="Unexpected response 404 for /action: action endpoint missing",
+            ),
+        ):
+            await client.async_set_action("SetIdentify")
+
+
+async def test_set_action_connection_error_raises_duco_connection_error() -> None:
+    """Transport failures from system action execution should surface as connection errors."""
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with (
+            patch.object(
+                session,
+                "request",
+                MagicMock(side_effect=aiohttp.ClientError("boom")),
+            ),
+            pytest.raises(DucoConnectionError, match="Could not reach Duco device"),
+        ):
+            await client.async_set_action("SetIdentify")
+
+
 async def test_set_node_action_returns_typed_result(
     action_result_success_data: dict[str, object],
 ) -> None:
