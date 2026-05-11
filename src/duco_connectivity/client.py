@@ -35,6 +35,7 @@ from .models import (
     NodeSensorInfo,
     NodeType,
     NodeVentilationInfo,
+    PatchConfigNodeValue,
     PatchConfigValue,
     VentilationMode,
     VentilationState,
@@ -324,7 +325,7 @@ class DucoClient:
                 raise ValueError(msg)
 
             item_path = f"{path}.{key}"
-            if isinstance(value, PatchConfigValue):
+            if isinstance(value, (PatchConfigValue, PatchConfigNodeValue)):
                 normalized[key] = {
                     "Val": cls._normalize_patch_config_scalar(value.value, path=item_path)
                 }
@@ -696,6 +697,41 @@ class DucoClient:
             payload = await self._request_json("GET", path)
 
         return self._parse_config_node(payload, path=path)
+
+    async def async_set_node_config(
+        self,
+        node_id: int,
+        payload: dict[str, Any],
+        parameter: Literal["Name"] = "Name",
+    ) -> ConfigNode:
+        """Patch node-level configuration values through `/config/nodes/{node}`.
+
+        The Duco API returns no node payload for this PATCH endpoint when no
+        query parameter is requested, so the typed writer always targets the
+        `Name` field that is covered by the current node config models.
+        """
+        if parameter != "Name":
+            msg = "async_set_node_config only supports parameter='Name'"
+            raise ValueError(msg)
+
+        # Keep the return type stable: without `parameter=Name`, this endpoint
+        # may succeed without returning a node payload that can be parsed.
+        params = {"parameter": parameter}
+
+        normalized_payload = self._normalize_patch_config_payload(
+            payload,
+            path=f"config.nodes.{node_id}",
+        )
+
+        path = f"/config/nodes/{node_id}"
+        response = await self._request_json(
+            "PATCH",
+            path,
+            params=params,
+            json=normalized_payload,
+        )
+
+        return self._parse_config_node(response, path=path)
 
     async def async_get_board_info(self) -> BoardInfo:
         """Return identity and version details for the main unit."""

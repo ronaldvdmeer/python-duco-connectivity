@@ -939,6 +939,184 @@ async def test_get_node_config_connection_error_raises_duco_connection_error() -
             await client.async_get_node_config(7, parameter="Name")
 
 
+async def test_set_node_config_returns_typed_payload_and_compact_json_body(
+    node_config_data: dict[str, object],
+) -> None:
+    """Node config writes should return a typed payload and compact JSON."""
+    mock_response = _response(json_payload=node_config_data)
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        request = MagicMock(return_value=_request_context(mock_response))
+        with patch.object(session, "request", request):
+            payload = await client.async_set_node_config(
+                7,
+                {"Name": PatchConfigNodeValue(value="Kitchen valve")},
+                parameter="Name",
+            )
+
+    assert payload == ConfigNode(
+        node_id=7,
+        name=ConfigValueString(value="Kitchen valve"),
+    )
+    _, kwargs = request.call_args
+    assert kwargs["params"] == {"parameter": "Name"}
+    assert kwargs["data"] == b'{"Name":{"Val":"Kitchen valve"}}'
+    assert kwargs["headers"] == {"Content-Type": "application/json"}
+
+
+async def test_set_node_config_accepts_api_shaped_leaf_payloads(
+    node_config_data: dict[str, object],
+) -> None:
+    """Node config writes should default to `parameter=Name` for typed responses."""
+    mock_response = _response(json_payload=node_config_data)
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        request = MagicMock(return_value=_request_context(mock_response))
+        with patch.object(session, "request", request):
+            payload = await client.async_set_node_config(7, {"Name": {"Val": "Kitchen valve"}})
+
+    assert payload == ConfigNode(
+        node_id=7,
+        name=ConfigValueString(value="Kitchen valve"),
+    )
+    _, kwargs = request.call_args
+    assert kwargs["params"] == {"parameter": "Name"}
+    assert kwargs["data"] == b'{"Name":{"Val":"Kitchen valve"}}'
+
+
+@pytest.mark.parametrize("parameter", [None, "FlowLvlTgt"])
+async def test_set_node_config_rejects_unsupported_parameter(
+    parameter: object,
+) -> None:
+    """Only the typed Name field should be accepted for node config PATCH."""
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        request_mock = _request(_response(json_payload={"Node": 7}))
+        with (
+            patch.object(session, "request", request_mock),
+            pytest.raises(
+                ValueError,
+                match="async_set_node_config only supports parameter='Name'",
+            ),
+        ):
+            await client.async_set_node_config(
+                7,
+                {"Name": {"Val": "Kitchen valve"}},
+                parameter=parameter,
+            )
+
+    request_mock.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    ("payload", "message"),
+    [
+        (
+            {"Name": "Kitchen valve"},
+            "Unsupported patch config payload type str for config.nodes.7.Name",
+        ),
+        (
+            {"Name": {"Val": False}},
+            "Unsupported patch config value type bool for config.nodes.7.Name",
+        ),
+        (
+            {1: {"Val": "Kitchen valve"}},
+            "Expected string key for config.nodes.7, got int",
+        ),
+        (
+            {"Name": {"Val": "Kitchen valve", "Min": 0}},
+            "Patch config leaf config.nodes.7.Name may only contain Val",
+        ),
+    ],
+)
+async def test_set_node_config_rejects_invalid_patch_payloads(
+    payload: object,
+    message: str,
+) -> None:
+    """Invalid node config patch payloads should fail before the request is sent."""
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with pytest.raises(ValueError, match=message):
+            await client.async_set_node_config(7, payload)
+
+
+async def test_set_node_config_invalid_response_raises_duco_error() -> None:
+    """Malformed node config PATCH responses should raise DucoError."""
+    mock_response = _response(json_payload={"Node": 7, "Name": {"Val": 1}})
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with (
+            patch.object(session, "request", _request(mock_response)),
+            pytest.raises(
+                DucoError,
+                match="Expected string Val for node config value /config/nodes/7.Name, got int",
+            ),
+        ):
+            await client.async_set_node_config(
+                7,
+                {"Name": PatchConfigNodeValue(value="Kitchen valve")},
+            )
+
+
+async def test_set_node_config_api_error_raises_duco_error() -> None:
+    """HTTP errors from the node config PATCH endpoint should surface as DucoError."""
+    mock_response = _response(status=400, text_payload="unsupported patch")
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with (
+            patch.object(session, "request", _request(mock_response)),
+            pytest.raises(
+                DucoError,
+                match="Unexpected response 400 for /config/nodes/7: unsupported patch",
+            ),
+        ):
+            await client.async_set_node_config(
+                7,
+                {"Name": PatchConfigNodeValue(value="Kitchen valve")},
+            )
+
+
+async def test_set_node_config_connection_error_raises_duco_connection_error() -> None:
+    """Transport failures from node config PATCH should surface as connection errors."""
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with (
+            patch.object(
+                session,
+                "request",
+                MagicMock(side_effect=aiohttp.ClientError("boom")),
+            ),
+            pytest.raises(DucoConnectionError, match="Could not reach Duco device"),
+        ):
+            await client.async_set_node_config(
+                7,
+                {"Name": PatchConfigNodeValue(value="Kitchen valve")},
+            )
+
+
+async def test_set_node_config_write_limit_raises_duco_write_limit_error() -> None:
+    """HTTP 429 from node config PATCH should surface as DucoWriteLimitError."""
+    mock_response = _response(status=429)
+    request_context = _request_context(mock_response)
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with (
+            patch.object(session, "request", MagicMock(return_value=request_context)),
+            pytest.raises(DucoWriteLimitError, match="Duco write capacity exhausted"),
+        ):
+            await client.async_set_node_config(
+                7,
+                {"Name": PatchConfigNodeValue(value="Kitchen valve")},
+            )
+
+    request_context.__aexit__.assert_awaited_once()
+
+
 async def test_board_info_is_parsed(board_info_data: dict[str, object]) -> None:
     """Test board info parsing."""
     mock_response = _response(json_payload=board_info_data)
