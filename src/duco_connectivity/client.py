@@ -18,6 +18,9 @@ from .models import (
     BoardInfo,
     Config,
     ConfigItem,
+    ConfigNode,
+    ConfigNodeOverview,
+    ConfigNodeStruct,
     ConfigSection,
     ConfigValue,
     ConfigValueOptions,
@@ -296,6 +299,86 @@ class DucoClient:
             maximum=payload.get("Max"),
         )
 
+    @classmethod
+    def _parse_config_node_string_value(
+        cls,
+        payload: Any,
+        *,
+        path: str,
+    ) -> ConfigValueString:
+        if not isinstance(payload, dict):
+            msg = f"Expected object for node config value {path}, got {type(payload).__name__}"
+            raise DucoError(msg)
+
+        if "Val" not in payload:
+            msg = f"Expected Val in node config value {path}"
+            raise DucoError(msg)
+
+        raw_value = payload["Val"]
+        if not isinstance(raw_value, str):
+            msg = (
+                f"Expected string Val for node config value {path}, got {type(raw_value).__name__}"
+            )
+            raise DucoError(msg)
+
+        return ConfigValueString(value=raw_value)
+
+    @classmethod
+    def _parse_config_node_struct(
+        cls,
+        payload: Any,
+        *,
+        path: str,
+    ) -> ConfigNodeStruct:
+        if not isinstance(payload, dict):
+            msg = f"Expected object for node config struct {path}, got {type(payload).__name__}"
+            raise DucoError(msg)
+
+        name = None
+        if "Name" in payload:
+            name = cls._parse_config_node_string_value(payload["Name"], path=f"{path}.Name")
+
+        return ConfigNodeStruct(name=name)
+
+    @classmethod
+    def _parse_config_node_overview(cls, payload: Any) -> ConfigNodeOverview:
+        if not isinstance(payload, dict):
+            msg = f"Expected object payload from /config/nodes, got {type(payload).__name__}"
+            raise DucoError(msg)
+
+        if "Nodes" not in payload or not isinstance(payload["Nodes"], list):
+            msg = "Expected list Nodes in /config/nodes response"
+            raise DucoError(msg)
+
+        nodes: list[ConfigNode] = []
+        for index, item in enumerate(payload["Nodes"]):
+            if not isinstance(item, dict):
+                msg = (
+                    f"Expected object item at index {index} in /config/nodes response, "
+                    f"got {type(item).__name__}"
+                )
+                raise DucoError(msg)
+
+            if "Node" not in item:
+                msg = f"Expected integer Node in /config/nodes item at index {index}"
+                raise DucoError(msg)
+
+            node_id = cls._read_scalar_value(item, "Node")
+            if type(node_id) is not int:
+                msg = (
+                    f"Expected integer Node in /config/nodes item at index {index}, "
+                    f"got {type(node_id).__name__}"
+                )
+                raise DucoError(msg)
+
+            node_struct = cls._parse_config_node_struct(
+                item,
+                path=f"/config/nodes item at index {index}",
+            )
+            nodes.append(ConfigNode(node_id=node_id, name=node_struct.name))
+
+        return ConfigNodeOverview(nodes=nodes)
+
     @staticmethod
     def _to_node_type(raw_value: str) -> NodeType:
         try:
@@ -462,6 +545,22 @@ class DucoClient:
             payload = await self._request_json("GET", "/config")
 
         return self._parse_config(payload)
+
+    async def async_get_node_configs(
+        self,
+        parameter: str | None = None,
+    ) -> ConfigNodeOverview:
+        """Return node-level configuration values from the generic config endpoint."""
+        params: dict[str, str] = {}
+        if parameter is not None:
+            params["parameter"] = parameter
+
+        if params:
+            payload = await self._request_json("GET", "/config/nodes", params=params)
+        else:
+            payload = await self._request_json("GET", "/config/nodes")
+
+        return self._parse_config_node_overview(payload)
 
     async def async_get_board_info(self) -> BoardInfo:
         """Return identity and version details for the main unit."""

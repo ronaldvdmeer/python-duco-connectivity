@@ -34,6 +34,7 @@ The current client exposes:
 - `async_get_api_info()` for `GET /api`
 - `async_get_info()` for generic `GET /info` access with optional `module`, `submodule`, and `parameter` query arguments
 - `async_get_config()` for generic `GET /config` access with optional `module`, `submodule`, and `parameter` query arguments
+- `async_get_node_configs()` for `GET /config/nodes` with an optional `parameter` query argument
 - `async_get_board_info()` for `GET /info?module=General&submodule=Board`
 - `async_get_lan_info()` for `GET /info?module=General&submodule=Lan`
 - `async_get_nodes_overview()` for `GET /nodes` when you only need lightweight node IDs

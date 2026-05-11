@@ -513,6 +513,131 @@ async def test_get_config_connection_error_raises_duco_connection_error() -> Non
             await client.async_get_config(module="General")
 
 
+async def test_get_node_configs_returns_typed_payload(
+    node_configs_data: dict[str, object],
+) -> None:
+    """The node config reader should expose the API-shaped overview payload."""
+    mock_response = _response(json_payload=node_configs_data)
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        request_mock = _request(mock_response)
+        with patch.object(session, "request", request_mock):
+            payload = await client.async_get_node_configs()
+
+    assert isinstance(payload, ConfigNodeOverview)
+    assert "params" not in request_mock.call_args.kwargs
+    assert payload.nodes == [
+        ConfigNode(node_id=1, name=ConfigValueString(value="DucoBox")),
+        ConfigNode(node_id=7, name=ConfigValueString(value="Kitchen valve")),
+        ConfigNode(node_id=113, name=None),
+    ]
+
+
+async def test_get_node_configs_allows_empty_payload() -> None:
+    """An empty node config overview should remain a valid typed response."""
+    mock_response = _response(json_payload={"Nodes": []})
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with patch.object(session, "request", _request(mock_response)):
+            payload = await client.async_get_node_configs()
+
+    assert payload == ConfigNodeOverview(nodes=[])
+
+
+async def test_get_node_configs_forwards_parameter_query(
+    node_configs_data: dict[str, object],
+) -> None:
+    """The optional parameter query should be forwarded unchanged."""
+    mock_response = _response(json_payload=node_configs_data)
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        request_mock = _request(mock_response)
+        with patch.object(session, "request", request_mock):
+            payload = await client.async_get_node_configs(parameter="Name")
+
+    assert isinstance(payload, ConfigNodeOverview)
+    assert request_mock.call_args.kwargs["params"] == {"parameter": "Name"}
+
+
+@pytest.mark.parametrize(
+    ("payload", "message"),
+    [
+        ([], "Expected object payload from /config/nodes, got list"),
+        ({}, "Expected list Nodes in /config/nodes response"),
+        ({"Nodes": {}}, "Expected list Nodes in /config/nodes response"),
+        (
+            {"Nodes": [False]},
+            "Expected object item at index 0 in /config/nodes response, got bool",
+        ),
+        ({"Nodes": [{}]}, "Expected integer Node in /config/nodes item at index 0"),
+        (
+            {"Nodes": [{"Node": "1"}]},
+            "Expected integer Node in /config/nodes item at index 0, got str",
+        ),
+        (
+            {"Nodes": [{"Node": 1, "Name": "DucoBox"}]},
+            "Expected object for node config value /config/nodes item at index 0.Name, got str",
+        ),
+        (
+            {"Nodes": [{"Node": 1, "Name": {}}]},
+            "Expected Val in node config value /config/nodes item at index 0.Name",
+        ),
+        (
+            {"Nodes": [{"Node": 1, "Name": {"Val": 1}}]},
+            "Expected string Val for node config value /config/nodes item at index 0.Name, got int",
+        ),
+    ],
+)
+async def test_get_node_configs_rejects_malformed_payloads(
+    payload: object,
+    message: str,
+) -> None:
+    """Malformed node config payloads should raise DucoError."""
+    mock_response = _response(json_payload=payload)
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with (
+            patch.object(session, "request", _request(mock_response)),
+            pytest.raises(DucoError, match=message),
+        ):
+            await client.async_get_node_configs()
+
+
+async def test_get_node_configs_api_error_raises_duco_error() -> None:
+    """HTTP errors from the node config reader should surface as DucoError."""
+    mock_response = _response(status=400, text_payload="unsupported parameter")
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with (
+            patch.object(session, "request", _request(mock_response)),
+            pytest.raises(
+                DucoError,
+                match="Unexpected response 400 for /config/nodes: unsupported parameter",
+            ),
+        ):
+            await client.async_get_node_configs(parameter="Name")
+
+
+async def test_get_node_configs_connection_error_raises_duco_connection_error() -> None:
+    """Transport failures from the node config reader should surface as connection errors."""
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with (
+            patch.object(
+                session,
+                "request",
+                MagicMock(side_effect=aiohttp.ClientError("boom")),
+            ),
+            pytest.raises(DucoConnectionError, match="Could not reach Duco device"),
+        ):
+            await client.async_get_node_configs(parameter="Name")
+
+
 async def test_board_info_is_parsed(board_info_data: dict[str, object]) -> None:
     """Test board info parsing."""
     mock_response = _response(json_payload=board_info_data)
