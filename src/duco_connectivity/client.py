@@ -4,7 +4,7 @@ import json
 import logging
 import sys
 from types import FrameType
-from typing import Any
+from typing import Any, Literal
 from urllib.parse import urlsplit
 
 import aiohttp
@@ -548,7 +548,7 @@ class DucoClient:
 
     async def async_get_node_configs(
         self,
-        parameter: str | None = None,
+        parameter: Literal["Name"] | None = None,
     ) -> ConfigNodeOverview:
         """Return node-level configuration values from `/config/nodes`.
 
