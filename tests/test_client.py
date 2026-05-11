@@ -9,8 +9,12 @@ import pytest
 from duco_connectivity import (
     ActionResultStatus,
     Config,
+    ConfigNode,
+    ConfigNodeOverview,
+    ConfigNodeStruct,
     ConfigSection,
     ConfigValue,
+    ConfigValueOptions,
     ConfigValueString,
     DiagStatus,
     DucoClient,
@@ -20,6 +24,8 @@ from duco_connectivity import (
     NetworkType,
     NodeOverview,
     NodeType,
+    PatchConfigNodeValue,
+    PatchConfigValue,
     VentilationMode,
     VentilationState,
 )
@@ -319,6 +325,11 @@ async def test_get_config_without_query_params_returns_typed_payload(
     lan_config = general.entries["Lan"]
     assert isinstance(lan_config, ConfigSection)
 
+    mode = lan_config.entries["Mode"]
+    assert isinstance(mode, ConfigValueOptions)
+    assert isinstance(mode, ConfigValue)
+    assert mode.options == (1, 2, 4)
+
     static_ip = lan_config.entries["StaticIp"]
     assert isinstance(static_ip, ConfigValueString)
     assert static_ip.value == "192.0.2.94"
@@ -347,7 +358,7 @@ async def test_get_config_parses_option_lists_as_tuples() -> None:
     mode = payload.sections["General"].entries["Lan"]
     assert isinstance(mode, ConfigSection)
     mode_value = mode.entries["Mode"]
-    assert isinstance(mode_value, ConfigValue)
+    assert isinstance(mode_value, ConfigValueOptions)
     assert mode_value.options == (1, 2, 4)
 
 
@@ -366,6 +377,14 @@ async def test_get_config_parses_option_lists_as_tuples() -> None:
             {"General": {"Lan": {"Mode": {"Val": 1, "Options": [1, False]}}}},
             "Expected integer option list for config entry General.Lan.Mode",
         ),
+        (
+            {
+                "General": {
+                    "Lan": {"Mode": {"Val": 1, "Min": 1, "Inc": 1, "Max": 4, "Options": [1, 2, 4]}}
+                }
+            },
+            "Config entry General.Lan.Mode cannot combine range metadata with Options",
+        ),
     ],
 )
 async def test_get_config_rejects_invalid_integer_payloads(
@@ -382,6 +401,23 @@ async def test_get_config_rejects_invalid_integer_payloads(
             pytest.raises(DucoError, match=message),
         ):
             await client.async_get_config()
+
+
+def test_generic_config_models_cover_node_and_patch_shapes() -> None:
+    """Generic config models should cover future read and write payload shapes."""
+    name = ConfigValueString(value="Kitchen valve")
+    node_struct = ConfigNodeStruct(name=name)
+    node = ConfigNode(node_id=7, name=name)
+    overview = ConfigNodeOverview(nodes=[node])
+    patch_value = PatchConfigValue(value=2)
+    patch_node_value = PatchConfigNodeValue(value="Boost")
+
+    assert node_struct.name is name
+    assert node.node_id == 7
+    assert node.name is name
+    assert overview.nodes == [node]
+    assert patch_value.value == 2
+    assert patch_node_value.value == "Boost"
 
 
 async def test_get_config_with_module_forwards_query_params(

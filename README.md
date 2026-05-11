@@ -56,8 +56,10 @@ over `async_set_node_action()` for callers that only need the existing
 ventilation state write.
 
 The model layer includes `ActionResult`, `ApiInfo`, `BoardInfo`, `Config`,
-`ConfigSection`, `ConfigValue`, `ConfigValueString`, `LanInfo`, `Node`, `NodeOverview`,
-`NodeGeneralInfo`, `NodeVentilationInfo`, and `NodeSensorInfo`.
+`ConfigNode`, `ConfigNodeOverview`, `ConfigNodeStruct`, `ConfigSection`,
+`ConfigValue`, `ConfigValueOptions`, `ConfigValueString`, `PatchConfigValue`,
+`PatchConfigNodeValue`, `LanInfo`, `Node`, `NodeOverview`, `NodeGeneralInfo`,
+`NodeVentilationInfo`, and `NodeSensorInfo`.
 The typed enum layer keeps `NodeType` closely aligned with the Duco public API
 notes while preserving `UNKNOWN` as a fallback for future unmapped values.
 

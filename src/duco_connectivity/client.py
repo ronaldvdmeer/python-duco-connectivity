@@ -17,8 +17,10 @@ from .models import (
     ApiInfo,
     BoardInfo,
     Config,
+    ConfigItem,
     ConfigSection,
     ConfigValue,
+    ConfigValueOptions,
     ConfigValueString,
     DiagComponent,
     DiagStatus,
@@ -248,7 +250,7 @@ class DucoClient:
         payload: Any,
         *,
         path: str,
-    ) -> ConfigSection | ConfigValue | ConfigValueString:
+    ) -> ConfigItem:
         if not isinstance(payload, dict):
             msg = f"Expected object for config entry {path}, got {type(payload).__name__}"
             raise DucoError(msg)
@@ -276,12 +278,22 @@ class DucoClient:
             msg = f"Expected integer option list for config entry {path}"
             raise DucoError(msg)
 
+        has_range_metadata = any(key in payload for key in ("Min", "Inc", "Max"))
+        if options is not None and has_range_metadata:
+            msg = f"Config entry {path} cannot combine range metadata with Options"
+            raise DucoError(msg)
+
+        if options is not None:
+            return ConfigValueOptions(
+                value=raw_value,
+                options=tuple(options),
+            )
+
         return ConfigValue(
             value=raw_value,
             minimum=payload.get("Min"),
             increment=payload.get("Inc"),
             maximum=payload.get("Max"),
-            options=None if options is None else tuple(options),
         )
 
     @staticmethod
