@@ -396,13 +396,13 @@ def node_data() -> dict[str, object]:
 
 @pytest.fixture
 def action_result_success_data() -> dict[str, object]:
-    """Mock success response for POST /action/nodes/{node}."""
+    """Mock success response for action execution endpoints."""
     return {"Result": "SUCCESS"}
 
 
 @pytest.fixture
 def action_result_failed_data() -> dict[str, object]:
-    """Mock failed response for POST /action/nodes/{node}."""
+    """Mock failed response for action execution endpoints."""
     return {
         "Result": "FAILED",
         "Code": 12,

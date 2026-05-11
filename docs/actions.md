@@ -1,9 +1,10 @@
 # Action support
 
 The Duco public API exposes system-level action discovery through `GET /action`,
-node-level action discovery through `GET /action/nodes`, per-node action
-discovery through `GET /action/nodes/{node}`, and node-level action execution
-through `POST /action/nodes/{node}`.
+system-level action execution through `POST /action`, node-level action
+discovery through `GET /action/nodes`, per-node action discovery through
+`GET /action/nodes/{node}`, and node-level action execution through
+`POST /action/nodes/{node}`.
 
 ## System action discovery
 
@@ -30,7 +31,28 @@ for item in actions:
         print(item.action, item.enum_values)
 ```
 
-System-level `POST /action` execution is not exposed yet.
+## System action execution
+
+`python-duco-connectivity` exposes generic system action execution through
+`DucoClient.async_set_action(action, val=None)`.
+
+Behavior:
+
+- Sends the `Action` field exactly as requested
+- Sends `Val` only when a value is provided
+- Returns a typed `ActionResult`
+- Reuses the same action-result contract as node action execution
+
+Example:
+
+```python
+from duco_connectivity import ActionResultStatus
+
+result = await client.async_set_action("SetIdentify")
+
+if result.result is ActionResultStatus.SUCCESS:
+  ...
+```
 
 ## Node action discovery
 
@@ -95,6 +117,7 @@ for the structures described in `notes/public_api_v2.5.yaml`:
 - `Action` for system action request payloads
 - `ActionNode` for node action request payloads
 - `ActionItem` and `ActionItemList` for action discovery results
+- `ActionResult` and `ActionResultStatus` for action execution results
 - `NodeActionItemList` and `NodeListActionItemList` for node-scoped action
   discovery results
 - `ActionValueType` for the `ValType` enum values used in action discovery

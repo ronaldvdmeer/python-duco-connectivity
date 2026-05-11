@@ -537,34 +537,37 @@ class DucoClient:
             return VentilationMode.UNKNOWN
 
     @classmethod
-    def _parse_action_result(cls, payload: Any) -> ActionResult:
+    def _parse_action_result(
+        cls,
+        payload: Any,
+        *,
+        response_context: str = "action response",
+    ) -> ActionResult:
         if not isinstance(payload, dict):
-            msg = f"Expected object payload from node action, got {type(payload).__name__}"
+            msg = f"Expected object payload from {response_context}, got {type(payload).__name__}"
             raise DucoError(msg)
 
         if "Result" not in payload:
-            msg = "Expected Result in node action response"
+            msg = f"Expected Result in {response_context}"
             raise DucoError(msg)
 
         result = cls._read_scalar_value(payload, "Result")
         if not isinstance(result, str):
-            msg = f"Expected string Result in node action response, got {type(result).__name__}"
+            msg = f"Expected string Result in {response_context}, got {type(result).__name__}"
             raise DucoError(msg)
 
         code: int | None = None
         if "Code" in payload:
             code = cls._read_scalar_value(payload, "Code")
             if type(code) is not int:
-                msg = f"Expected integer Code in node action response, got {type(code).__name__}"
+                msg = f"Expected integer Code in {response_context}, got {type(code).__name__}"
                 raise DucoError(msg)
 
         message: str | None = None
         if "Message" in payload:
             message = cls._read_scalar_value(payload, "Message")
             if not isinstance(message, str):
-                msg = (
-                    f"Expected string Message in node action response, got {type(message).__name__}"
-                )
+                msg = f"Expected string Message in {response_context}, got {type(message).__name__}"
                 raise DucoError(msg)
 
         return ActionResult(
@@ -1110,6 +1113,23 @@ class DucoClient:
             )
         return await self.async_get_write_requests_remaining()
 
+    async def async_set_action(
+        self,
+        action: str,
+        val: str | int | bool | None = None,
+    ) -> ActionResult:
+        """Execute a generic system action through the local Duco API."""
+        payload: dict[str, str | int | bool] = {"Action": action}
+        if val is not None:
+            payload["Val"] = val
+
+        response = await self._request_json(
+            "POST",
+            "/action",
+            json=payload,
+        )
+        return self._parse_action_result(response, response_context="system action response")
+
     async def async_set_ventilation_state(
         self, node_id: int, state: VentilationState | str
     ) -> None:
@@ -1137,7 +1157,7 @@ class DucoClient:
             f"/action/nodes/{node_id}",
             json=payload,
         )
-        return self._parse_action_result(response)
+        return self._parse_action_result(response, response_context="node action response")
 
     def _parse_node(self, payload: dict[str, Any]) -> Node:
         general = payload["General"]
