@@ -513,6 +513,161 @@ async def test_get_config_connection_error_raises_duco_connection_error() -> Non
             await client.async_get_config(module="General")
 
 
+async def test_set_config_returns_typed_payload_and_compact_json_body() -> None:
+    """Generic config writes should return a typed config tree and compact JSON."""
+    mock_response = _response(
+        json_payload={
+            "General": {
+                "Lan": {
+                    "Mode": {
+                        "Val": 2,
+                        "Options": [1, 2, 4],
+                    }
+                }
+            }
+        }
+    )
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        request = MagicMock(return_value=_request_context(mock_response))
+        with patch.object(session, "request", request):
+            payload = await client.async_set_config(
+                {"General": {"Lan": {"Mode": PatchConfigValue(value=2)}}},
+                module="General",
+                submodule="Lan",
+                parameter="Mode",
+            )
+
+    assert isinstance(payload, Config)
+    mode = payload.sections["General"].entries["Lan"]
+    assert isinstance(mode, ConfigSection)
+    mode_value = mode.entries["Mode"]
+    assert isinstance(mode_value, ConfigValueOptions)
+    assert mode_value.value == 2
+    _, kwargs = request.call_args
+    assert kwargs["params"] == {
+        "module": "General",
+        "submodule": "Lan",
+        "parameter": "Mode",
+    }
+    assert kwargs["data"] == b'{"General":{"Lan":{"Mode":{"Val":2}}}}'
+    assert kwargs["headers"] == {"Content-Type": "application/json"}
+
+
+async def test_set_config_accepts_api_shaped_leaf_payloads(
+    config_data: dict[str, object],
+) -> None:
+    """Generic config writes should also accept pre-wrapped API-shaped leaf payloads."""
+    mock_response = _response(json_payload=config_data)
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        request = MagicMock(return_value=_request_context(mock_response))
+        with patch.object(session, "request", request):
+            payload = await client.async_set_config({"General": {"Time": {"TimeZone": {"Val": 1}}}})
+
+    assert isinstance(payload, Config)
+    _, kwargs = request.call_args
+    assert "params" not in kwargs
+    assert kwargs["data"] == b'{"General":{"Time":{"TimeZone":{"Val":1}}}}'
+
+
+@pytest.mark.parametrize(
+    ("payload", "message"),
+    [
+        (
+            {"General": {"Time": {"TimeZone": 1}}},
+            "Unsupported patch config payload type int for config.General.Time.TimeZone",
+        ),
+        (
+            {"General": {"Time": {"TimeZone": {"Val": False}}}},
+            "Unsupported patch config value type bool for config.General.Time.TimeZone",
+        ),
+        (
+            {"General": {1: {"Val": 2}}},
+            "Expected string key for config.General, got int",
+        ),
+        (
+            {"General": {"Time": {"TimeZone": {"Val": 1, "Min": 0}}}},
+            "Patch config leaf config.General.Time.TimeZone may only contain Val",
+        ),
+    ],
+)
+async def test_set_config_rejects_invalid_patch_payloads(
+    payload: dict[str, object],
+    message: str,
+) -> None:
+    """Invalid generic config patch payloads should fail before the request is sent."""
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with pytest.raises(ValueError, match=message):
+            await client.async_set_config(payload)
+
+
+async def test_set_config_invalid_response_raises_duco_error() -> None:
+    """Malformed config PATCH responses should raise DucoError."""
+    mock_response = _response(json_payload={"General": {"Lan": {"Mode": {"Val": False}}}})
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with (
+            patch.object(session, "request", _request(mock_response)),
+            pytest.raises(
+                DucoError,
+                match="Unsupported config value type bool for General.Lan.Mode",
+            ),
+        ):
+            await client.async_set_config({"General": {"Lan": {"Mode": PatchConfigValue(value=2)}}})
+
+
+async def test_set_config_api_error_raises_duco_error() -> None:
+    """HTTP errors from the generic config PATCH endpoint should surface as DucoError."""
+    mock_response = _response(status=400, text_payload="unsupported patch")
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with (
+            patch.object(session, "request", _request(mock_response)),
+            pytest.raises(
+                DucoError,
+                match="Unexpected response 400 for /config: unsupported patch",
+            ),
+        ):
+            await client.async_set_config({"General": {"Lan": {"Mode": PatchConfigValue(value=2)}}})
+
+
+async def test_set_config_connection_error_raises_duco_connection_error() -> None:
+    """Transport failures from generic config PATCH should surface as connection errors."""
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with (
+            patch.object(
+                session,
+                "request",
+                MagicMock(side_effect=aiohttp.ClientError("boom")),
+            ),
+            pytest.raises(DucoConnectionError, match="Could not reach Duco device"),
+        ):
+            await client.async_set_config({"General": {"Lan": {"Mode": PatchConfigValue(value=2)}}})
+
+
+async def test_set_config_write_limit_raises_duco_write_limit_error() -> None:
+    """HTTP 429 from generic config PATCH should surface as DucoWriteLimitError."""
+    mock_response = _response(status=429)
+    request_context = _request_context(mock_response)
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with (
+            patch.object(session, "request", MagicMock(return_value=request_context)),
+            pytest.raises(DucoWriteLimitError, match="Duco write capacity exhausted"),
+        ):
+            await client.async_set_config({"General": {"Lan": {"Mode": PatchConfigValue(value=2)}}})
+
+    request_context.__aexit__.assert_awaited_once()
+
+
 async def test_get_node_configs_returns_typed_payload(
     node_configs_data: dict[str, object],
 ) -> None:

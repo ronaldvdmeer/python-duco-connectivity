@@ -35,6 +35,7 @@ from .models import (
     NodeSensorInfo,
     NodeType,
     NodeVentilationInfo,
+    PatchConfigValue,
     VentilationMode,
     VentilationState,
 )
@@ -298,6 +299,56 @@ class DucoClient:
             increment=payload.get("Inc"),
             maximum=payload.get("Max"),
         )
+
+    @staticmethod
+    def _normalize_patch_config_scalar(raw_value: Any, *, path: str) -> int | str:
+        if isinstance(raw_value, str):
+            return raw_value
+
+        if type(raw_value) is int:
+            return raw_value
+
+        msg = f"Unsupported patch config value type {type(raw_value).__name__} for {path}"
+        raise ValueError(msg)
+
+    @classmethod
+    def _normalize_patch_config_payload(cls, payload: Any, *, path: str) -> dict[str, Any]:
+        if not isinstance(payload, dict):
+            msg = f"Expected object payload for {path}, got {type(payload).__name__}"
+            raise ValueError(msg)
+
+        normalized: dict[str, Any] = {}
+        for key, value in payload.items():
+            if not isinstance(key, str):
+                msg = f"Expected string key for {path}, got {type(key).__name__}"
+                raise ValueError(msg)
+
+            item_path = f"{path}.{key}"
+            if isinstance(value, PatchConfigValue):
+                normalized[key] = {
+                    "Val": cls._normalize_patch_config_scalar(value.value, path=item_path)
+                }
+                continue
+
+            if not isinstance(value, dict):
+                msg = (
+                    f"Unsupported patch config payload type {type(value).__name__} for {item_path}"
+                )
+                raise ValueError(msg)
+
+            if "Val" in value:
+                if tuple(value) != ("Val",):
+                    msg = f"Patch config leaf {item_path} may only contain Val"
+                    raise ValueError(msg)
+
+                normalized[key] = {
+                    "Val": cls._normalize_patch_config_scalar(value["Val"], path=item_path)
+                }
+                continue
+
+            normalized[key] = cls._normalize_patch_config_payload(value, path=item_path)
+
+        return normalized
 
     @classmethod
     def _parse_config_node_string_value(
@@ -563,6 +614,40 @@ class DucoClient:
             payload = await self._request_json("GET", "/config")
 
         return self._parse_config(payload)
+
+    async def async_set_config(
+        self,
+        payload: dict[str, Any],
+        module: str | None = None,
+        submodule: str | None = None,
+        parameter: str | None = None,
+    ) -> Config:
+        """Patch configuration values through the generic config endpoint."""
+        params: dict[str, str] = {}
+        if module is not None:
+            params["module"] = module
+        if submodule is not None:
+            params["submodule"] = submodule
+        if parameter is not None:
+            params["parameter"] = parameter
+
+        normalized_payload = self._normalize_patch_config_payload(payload, path="config")
+
+        if params:
+            response = await self._request_json(
+                "PATCH",
+                "/config",
+                params=params,
+                json=normalized_payload,
+            )
+        else:
+            response = await self._request_json(
+                "PATCH",
+                "/config",
+                json=normalized_payload,
+            )
+
+        return self._parse_config(response)
 
     async def async_get_node_configs(
         self,

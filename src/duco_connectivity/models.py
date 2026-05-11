@@ -309,7 +309,7 @@ class ConfigNodeOverview:
 
 @dataclass(frozen=True, slots=True)
 class PatchConfigValue:
-    """Leaf config payload used by future config write methods."""
+    """Leaf config payload used by generic config write methods."""
 
     value: int | str
 
