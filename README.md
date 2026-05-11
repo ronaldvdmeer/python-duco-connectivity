@@ -34,6 +34,7 @@ The current client exposes:
 - `async_get_api_info()` for `GET /api`
 - `async_get_info()` for generic `GET /info` access with optional `module`, `submodule`, and `parameter` query arguments
 - `async_get_config()` for generic `GET /config` access with optional `module`, `submodule`, and `parameter` query arguments
+- `async_set_config()` for generic `PATCH /config` access with optional `module`, `submodule`, and `parameter` query arguments plus sparse config payloads built from `PatchConfigValue` leaves or raw API-shaped `{"Val": ...}` objects
 - `async_get_node_configs()` for `GET /config/nodes`; when `parameter` is provided, the typed reader currently supports only `Name`
 - `async_get_node_config()` for `GET /config/nodes/{node}`; when `parameter` is provided, the typed reader currently supports only `Name`
 - `async_get_board_info()` for `GET /info?module=General&submodule=Board`
@@ -66,6 +67,7 @@ The typed enum layer keeps `NodeType` closely aligned with the Duco public API
 notes while preserving `UNKNOWN` as a fallback for future unmapped values.
 
 More detail for node action execution is available in `docs/actions.md`.
+Generic system config writes are documented in `docs/config.md`.
 
 ## Development
 
@@ -88,6 +90,8 @@ development pass, covering:
 
 - `GET /api`
 - `GET /info` with generic module, submodule, and parameter queries
+- `GET /config` with generic module, submodule, and parameter queries
+- `PATCH /config` with a no-op `TimeZone` write against the current value
 - `GET /info?module=General&submodule=Board`
 - `GET /info?module=General&submodule=Lan`
 - `GET /info/nodes`
