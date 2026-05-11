@@ -35,6 +35,7 @@ from .models import (
     NodeSensorInfo,
     NodeType,
     NodeVentilationInfo,
+    PatchConfigNodeValue,
     PatchConfigValue,
     VentilationMode,
     VentilationState,
@@ -324,7 +325,7 @@ class DucoClient:
                 raise ValueError(msg)
 
             item_path = f"{path}.{key}"
-            if isinstance(value, PatchConfigValue):
+            if isinstance(value, (PatchConfigValue, PatchConfigNodeValue)):
                 normalized[key] = {
                     "Val": cls._normalize_patch_config_scalar(value.value, path=item_path)
                 }
@@ -696,6 +697,46 @@ class DucoClient:
             payload = await self._request_json("GET", path)
 
         return self._parse_config_node(payload, path=path)
+
+    async def async_set_node_config(
+        self,
+        node_id: int,
+        payload: dict[str, Any],
+        parameter: Literal["Name"] | None = None,
+    ) -> ConfigNode:
+        """Patch node-level configuration values through `/config/nodes/{node}`.
+
+        When provided, `parameter` currently supports only `Name`, which is the
+        node-level field exposed by the typed config node models.
+        """
+        params: dict[str, str] = {}
+        if parameter is not None:
+            if parameter != "Name":
+                msg = "async_set_node_config only supports parameter='Name'"
+                raise ValueError(msg)
+            params["parameter"] = parameter
+
+        normalized_payload = self._normalize_patch_config_payload(
+            payload,
+            path=f"config.nodes.{node_id}",
+        )
+
+        path = f"/config/nodes/{node_id}"
+        if params:
+            response = await self._request_json(
+                "PATCH",
+                path,
+                params=params,
+                json=normalized_payload,
+            )
+        else:
+            response = await self._request_json(
+                "PATCH",
+                path,
+                json=normalized_payload,
+            )
+
+        return self._parse_config_node(response, path=path)
 
     async def async_get_board_info(self) -> BoardInfo:
         """Return identity and version details for the main unit."""
