@@ -379,6 +379,24 @@ class DucoClient:
 
         return ConfigNodeOverview(nodes=nodes)
 
+    @classmethod
+    def _parse_config_node(cls, payload: Any, *, path: str) -> ConfigNode:
+        if not isinstance(payload, dict):
+            msg = f"Expected object payload from {path}, got {type(payload).__name__}"
+            raise DucoError(msg)
+
+        if "Node" not in payload:
+            msg = f"Expected integer Node in {path} response"
+            raise DucoError(msg)
+
+        node_id = cls._read_scalar_value(payload, "Node")
+        if type(node_id) is not int:
+            msg = f"Expected integer Node in {path} response, got {type(node_id).__name__}"
+            raise DucoError(msg)
+
+        node_struct = cls._parse_config_node_struct(payload, path=path)
+        return ConfigNode(node_id=node_id, name=node_struct.name)
+
     @staticmethod
     def _to_node_type(raw_value: str) -> NodeType:
         try:
@@ -568,6 +586,31 @@ class DucoClient:
             payload = await self._request_json("GET", "/config/nodes")
 
         return self._parse_config_node_overview(payload)
+
+    async def async_get_node_config(
+        self,
+        node_id: int,
+        parameter: Literal["Name"] | None = None,
+    ) -> ConfigNode:
+        """Return node-level configuration values from `/config/nodes/{node}`.
+
+        When provided, `parameter` currently supports only `Name`, which is the
+        node-level field exposed by the typed config node models.
+        """
+        params: dict[str, str] = {}
+        if parameter is not None:
+            if parameter != "Name":
+                msg = "async_get_node_config only supports parameter='Name'"
+                raise ValueError(msg)
+            params["parameter"] = parameter
+
+        path = f"/config/nodes/{node_id}"
+        if params:
+            payload = await self._request_json("GET", path, params=params)
+        else:
+            payload = await self._request_json("GET", path)
+
+        return self._parse_config_node(payload, path=path)
 
     async def async_get_board_info(self) -> BoardInfo:
         """Return identity and version details for the main unit."""

@@ -153,6 +153,15 @@ def node_configs_data() -> dict[str, object]:
 
 
 @pytest.fixture
+def node_config_data() -> dict[str, object]:
+    """Mock response for GET /config/nodes/{node}."""
+    return {
+        "Node": 7,
+        "Name": {"Val": "Kitchen valve"},
+    }
+
+
+@pytest.fixture
 def board_info_data() -> dict[str, object]:
     """Mock response for GET /info?module=General&submodule=Board."""
     return {
