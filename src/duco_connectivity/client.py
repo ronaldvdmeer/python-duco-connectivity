@@ -11,8 +11,11 @@ import aiohttp
 
 from .exceptions import DucoConnectionError, DucoError, DucoWriteLimitError
 from .models import (
+    ActionItem,
+    ActionItemList,
     ActionResult,
     ActionResultStatus,
+    ActionValueType,
     ApiEndpoint,
     ApiInfo,
     BoardInfo,
@@ -499,6 +502,17 @@ class DucoClient:
             return ActionResultStatus.UNKNOWN
 
     @staticmethod
+    def _to_action_value_type(raw_value: str) -> ActionValueType:
+        try:
+            return ActionValueType(raw_value)
+        except ValueError:
+            _LOGGER.debug(
+                "Unknown action value type %r received from Duco API; falling back to UNKNOWN",
+                raw_value,
+            )
+            return ActionValueType.UNKNOWN
+
+    @staticmethod
     def _to_ventilation_state(raw_value: str) -> VentilationState:
         try:
             return VentilationState(raw_value)
@@ -557,6 +571,64 @@ class DucoClient:
             message=message,
         )
 
+    @classmethod
+    def _parse_action_item_list(cls, payload: Any) -> ActionItemList:
+        if not isinstance(payload, list):
+            msg = f"Expected list payload from /action, got {type(payload).__name__}"
+            raise DucoError(msg)
+
+        return [
+            cls._parse_action_item(item, path=f"/action item at index {index}")
+            for index, item in enumerate(payload)
+        ]
+
+    @classmethod
+    def _parse_action_item(cls, payload: Any, *, path: str) -> ActionItem:
+        if not isinstance(payload, dict):
+            msg = f"Expected object {path} in /action response, got {type(payload).__name__}"
+            raise DucoError(msg)
+
+        if "Action" not in payload:
+            msg = f"Expected Action in {path}"
+            raise DucoError(msg)
+
+        action = cls._read_scalar_value(payload, "Action")
+        if not isinstance(action, str):
+            msg = f"Expected string Action in {path}, got {type(action).__name__}"
+            raise DucoError(msg)
+
+        if "ValType" not in payload:
+            msg = f"Expected ValType in {path}"
+            raise DucoError(msg)
+
+        val_type = cls._read_scalar_value(payload, "ValType")
+        if not isinstance(val_type, str):
+            msg = f"Expected string ValType in {path}, got {type(val_type).__name__}"
+            raise DucoError(msg)
+
+        enum_values: list[str] = []
+        if "Enum" in payload:
+            raw_enum_values = cls._read_scalar_value(payload, "Enum")
+            if not isinstance(raw_enum_values, list):
+                msg = f"Expected list Enum in {path}, got {type(raw_enum_values).__name__}"
+                raise DucoError(msg)
+
+            enum_values = []
+            for index, item in enumerate(raw_enum_values):
+                if not isinstance(item, str):
+                    msg = (
+                        f"Expected string Enum value at {path}.Enum[{index}], "
+                        f"got {type(item).__name__}"
+                    )
+                    raise DucoError(msg)
+                enum_values.append(item)
+
+        return ActionItem(
+            action=action,
+            val_type=cls._to_action_value_type(val_type),
+            enum_values=enum_values,
+        )
+
     async def async_get_api_info(self) -> ApiInfo:
         """Return API metadata advertised by the box."""
         payload = await self._request_json("GET", "/api")
@@ -578,6 +650,11 @@ class DucoClient:
             reported_api_version=reported_api_version,
             endpoints=endpoints,
         )
+
+    async def async_get_actions(self) -> ActionItemList:
+        """Return supported system actions reported by the local API."""
+        payload = await self._request_json("GET", "/action")
+        return self._parse_action_item_list(payload)
 
     async def async_get_info(
         self,

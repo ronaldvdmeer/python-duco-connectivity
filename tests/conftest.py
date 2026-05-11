@@ -408,3 +408,19 @@ def action_result_failed_data() -> dict[str, object]:
         "Code": 12,
         "Message": "Action is not performed",
     }
+
+
+@pytest.fixture
+def action_items_data() -> list[dict[str, object]]:
+    """Mock response for GET /action."""
+    return [
+        {
+            "Action": "SetIdentify",
+            "ValType": "None",
+        },
+        {
+            "Action": "SetWifiApMode",
+            "ValType": "Enum",
+            "Enum": ["Off", "On"],
+        },
+    ]
