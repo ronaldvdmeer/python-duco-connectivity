@@ -550,9 +550,16 @@ class DucoClient:
         self,
         parameter: str | None = None,
     ) -> ConfigNodeOverview:
-        """Return node-level configuration values from the generic config endpoint."""
+        """Return node-level configuration values from `/config/nodes`.
+
+        When provided, `parameter` currently supports only `Name`, which is the
+        node-level field exposed by the typed config node models.
+        """
         params: dict[str, str] = {}
         if parameter is not None:
+            if parameter != "Name":
+                msg = "async_get_node_configs only supports parameter='Name'"
+                raise ValueError(msg)
             params["parameter"] = parameter
 
         if params:

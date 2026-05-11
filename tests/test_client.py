@@ -562,6 +562,23 @@ async def test_get_node_configs_forwards_parameter_query(
     assert request_mock.call_args.kwargs["params"] == {"parameter": "Name"}
 
 
+async def test_get_node_configs_rejects_unsupported_parameter() -> None:
+    """Only node fields represented by the typed models should be accepted."""
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        request_mock = _request(_response(json_payload={"Nodes": []}))
+        with (
+            patch.object(session, "request", request_mock),
+            pytest.raises(
+                ValueError,
+                match="async_get_node_configs only supports parameter='Name'",
+            ),
+        ):
+            await client.async_get_node_configs(parameter="FlowLvlTgt")
+
+    request_mock.assert_not_called()
+
+
 @pytest.mark.parametrize(
     ("payload", "message"),
     [
