@@ -650,31 +650,65 @@ class DucoClient:
         )
 
     @classmethod
-    def _parse_node_action_item_list(cls, payload: Any) -> NodeListActionItemList:
+    def _parse_node_action_item_list(
+        cls,
+        payload: Any,
+        *,
+        response_path: str = "/action/nodes",
+    ) -> NodeListActionItemList:
         if not isinstance(payload, dict):
-            msg = f"Expected object payload from /action/nodes, got {type(payload).__name__}"
+            msg = f"Expected object payload from {response_path}, got {type(payload).__name__}"
             raise DucoError(msg)
 
         if "Nodes" not in payload:
-            msg = "Expected Nodes in /action/nodes response"
+            msg = f"Expected Nodes in {response_path} response"
             raise DucoError(msg)
 
         nodes = payload["Nodes"]
         if not isinstance(nodes, list):
-            msg = f"Expected list Nodes in /action/nodes response, got {type(nodes).__name__}"
+            msg = f"Expected list Nodes in {response_path} response, got {type(nodes).__name__}"
             raise DucoError(msg)
 
         return NodeListActionItemList(
             nodes=[
-                cls._parse_node_action_item(item, path=f"/action/nodes item at index {index}")
+                cls._parse_node_action_item(
+                    item,
+                    path=f"{response_path} item at index {index}",
+                    response_path=response_path,
+                )
                 for index, item in enumerate(nodes)
             ]
         )
 
     @classmethod
-    def _parse_node_action_item(cls, payload: Any, *, path: str) -> NodeActionItemList:
+    def _parse_single_node_action_item(
+        cls,
+        payload: Any,
+        *,
+        response_path: str,
+    ) -> NodeActionItemList:
         if not isinstance(payload, dict):
-            msg = f"Expected object {path} in /action/nodes response, got {type(payload).__name__}"
+            msg = f"Expected object payload from {response_path}, got {type(payload).__name__}"
+            raise DucoError(msg)
+
+        return cls._parse_node_action_item(
+            payload,
+            path=f"{response_path} payload",
+            response_path=response_path,
+        )
+
+    @classmethod
+    def _parse_node_action_item(
+        cls,
+        payload: Any,
+        *,
+        path: str,
+        response_path: str = "/action/nodes",
+    ) -> NodeActionItemList:
+        if not isinstance(payload, dict):
+            msg = (
+                f"Expected object {path} in {response_path} response, got {type(payload).__name__}"
+            )
             raise DucoError(msg)
 
         if "Node" not in payload:
@@ -695,7 +729,7 @@ class DucoClient:
 
             actions = cls._parse_action_item_list(
                 raw_actions,
-                response_path="/action/nodes",
+                response_path=response_path,
                 item_path_prefix=f"{path}.Actions item",
             )
 
@@ -732,6 +766,12 @@ class DucoClient:
         """Return supported node actions reported by the local API."""
         payload = await self._request_json("GET", "/action/nodes")
         return self._parse_node_action_item_list(payload)
+
+    async def async_get_node_actions_for_node(self, node_id: int) -> NodeActionItemList:
+        """Return supported actions for a specific node."""
+        response_path = f"/action/nodes/{node_id}"
+        payload = await self._request_json("GET", response_path)
+        return self._parse_single_node_action_item(payload, response_path=response_path)
 
     async def async_get_info(
         self,

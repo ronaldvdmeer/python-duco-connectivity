@@ -159,6 +159,24 @@ NODE_ACTION_DISCOVERY_MALFORMED_PAYLOADS: list[tuple[object, str]] = [
     ),
 ]
 
+NODE_ACTION_DISCOVERY_FOR_NODE_MALFORMED_PAYLOADS: list[tuple[object, str]] = [
+    (None, "Expected object payload from /action/nodes/7, got NoneType"),
+    ([], "Expected object payload from /action/nodes/7, got list"),
+    ({}, "Expected Node in /action/nodes/7 payload"),
+    ({"Node": "7"}, "Expected integer Node in /action/nodes/7 payload, got str"),
+    (
+        {"Node": 7, "Actions": {}},
+        "Expected list Actions in /action/nodes/7 payload, got dict",
+    ),
+    (
+        {"Node": 7, "Actions": [False]},
+        (
+            "Expected object /action/nodes/7 payload.Actions item at index 0 "
+            "in /action/nodes/7 response, got bool"
+        ),
+    ),
+]
+
 
 async def test_https_is_rejected() -> None:
     """HTTPS hosts should be rejected during client construction."""
@@ -2231,6 +2249,82 @@ async def test_get_node_actions_connection_error_raises_duco_connection_error() 
             pytest.raises(DucoConnectionError, match="Could not reach Duco device"),
         ):
             await client.async_get_node_actions()
+
+
+async def test_get_node_actions_for_node_returns_typed_items(
+    node_action_item_data: dict[str, object],
+) -> None:
+    """Per-node action discovery should parse the NodeActionItemList payload."""
+    mock_response = _response(json_payload=node_action_item_data)
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        request = MagicMock(return_value=_request_context(mock_response))
+        with patch.object(session, "request", request):
+            result = await client.async_get_node_actions_for_node(7)
+
+    assert result == NodeActionItemList(
+        node_id=7,
+        actions=[
+            ActionItem(
+                action="SetVentilationState",
+                val_type=ActionValueType.ENUM,
+                enum_values=["AUTO", "MAN1", "MAN2", "MAN3"],
+            )
+        ],
+    )
+    assert request.call_args.args[:2] == ("GET", "http://192.0.2.94/action/nodes/7")
+
+
+@pytest.mark.parametrize(
+    ("payload", "message"),
+    NODE_ACTION_DISCOVERY_FOR_NODE_MALFORMED_PAYLOADS,
+)
+async def test_get_node_actions_for_node_rejects_malformed_payloads(
+    payload: object,
+    message: str,
+) -> None:
+    """Malformed per-node action discovery payloads should raise DucoError."""
+    mock_response = _response(json_payload=payload)
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with (
+            patch.object(session, "request", _request(mock_response)),
+            pytest.raises(DucoError, match=re.escape(message)),
+        ):
+            await client.async_get_node_actions_for_node(7)
+
+
+async def test_get_node_actions_for_node_api_error_raises_duco_error() -> None:
+    """HTTP errors from per-node action discovery should surface as DucoError."""
+    mock_response = _response(status=404, text_payload="node not found")
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with (
+            patch.object(session, "request", _request(mock_response)),
+            pytest.raises(
+                DucoError,
+                match="Unexpected response 404 for /action/nodes/7: node not found",
+            ),
+        ):
+            await client.async_get_node_actions_for_node(7)
+
+
+async def test_get_node_actions_for_node_connection_error_raises_duco_connection_error() -> None:
+    """Transport failures from per-node action discovery should surface as connection errors."""
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with (
+            patch.object(
+                session,
+                "request",
+                MagicMock(side_effect=aiohttp.ClientError("boom")),
+            ),
+            pytest.raises(DucoConnectionError, match="Could not reach Duco device"),
+        ):
+            await client.async_get_node_actions_for_node(7)
 
 
 async def test_set_node_action_returns_typed_result(
