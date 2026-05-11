@@ -1898,8 +1898,19 @@ async def test_get_write_req_remaining_alias_logs_compat_usage(
     assert "Compatibility alias async_get_write_req_remaining() used" in caplog.text
 
 
-async def test_timed_manual_state_is_parsed() -> None:
-    """Test that timed manual ventilation states are accepted from the API."""
+@pytest.mark.parametrize(
+    ("raw_state", "mode", "expected_state"),
+    [
+        ("MAN3x2", "MANU", VentilationState.MAN3x2),
+        ("-", "AUTO", VentilationState.NONE),
+    ],
+)
+async def test_known_ventilation_state_is_parsed(
+    raw_state: str,
+    mode: str,
+    expected_state: VentilationState,
+) -> None:
+    """Documented and compatibility ventilation states should parse without fallback."""
     payload: dict[str, object] = {
         "Nodes": [
             {
@@ -1914,8 +1925,8 @@ async def test_timed_manual_state_is_parsed() -> None:
                     "Identify": {"Val": 0},
                 },
                 "Ventilation": {
-                    "State": {"Val": "MAN3x2"},
-                    "Mode": {"Val": "MANU"},
+                    "State": {"Val": raw_state},
+                    "Mode": {"Val": mode},
                     "TimeStateRemain": {"Val": 1200},
                     "TimeStateEnd": {"Val": 1778269000},
                     "FlowLvlTgt": {"Val": 100},
@@ -1933,7 +1944,7 @@ async def test_timed_manual_state_is_parsed() -> None:
 
     assert len(nodes) == 1
     assert nodes[0].ventilation is not None
-    assert nodes[0].ventilation.state is VentilationState.MAN3x2
+    assert nodes[0].ventilation.state is expected_state
 
 
 async def test_get_nodes_unknown_ventilation_state_falls_back_to_unknown() -> None:

@@ -99,7 +99,13 @@ class VentilationMode(StrEnum):
 
 
 class VentilationState(StrEnum):
-    """Ventilation states reported by the API, plus a client-side fallback."""
+    """Ventilation states reported by the API, plus compatibility and fallback values.
+
+    The public API notes explicitly define the base AUTO/AUT*/MAN*/EMPT/CNT*
+    values plus `-`. Timed manual variants are retained as compatibility
+    members because they have appeared in observed payloads and Duco action
+    discovery responses.
+    """
 
     AUTO = "AUTO"
     AUT1 = "AUT1"
@@ -112,6 +118,7 @@ class VentilationState(StrEnum):
     CNT1 = "CNT1"
     CNT2 = "CNT2"
     CNT3 = "CNT3"
+    NONE = "-"
     MAN1x2 = "MAN1x2"
     MAN2x2 = "MAN2x2"
     MAN3x2 = "MAN3x2"

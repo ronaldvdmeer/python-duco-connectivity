@@ -86,6 +86,31 @@ def test_action_value_type_values() -> None:
     assert ActionValueType.UNKNOWN.value == "UNKNOWN"
 
 
+def test_ventilation_state_values() -> None:
+    """VentilationState should expose documented and compatibility members explicitly."""
+    assert [state.value for state in VentilationState] == [
+        "AUTO",
+        "AUT1",
+        "AUT2",
+        "AUT3",
+        "MAN1",
+        "MAN2",
+        "MAN3",
+        "EMPT",
+        "CNT1",
+        "CNT2",
+        "CNT3",
+        "-",
+        "MAN1x2",
+        "MAN2x2",
+        "MAN3x2",
+        "MAN1x3",
+        "MAN2x3",
+        "MAN3x3",
+        "UNKNOWN",
+    ]
+
+
 def test_api_info_defaults() -> None:
     """ApiInfo should allow omitted optional fields."""
     info = ApiInfo(public_api_version="2.5")
