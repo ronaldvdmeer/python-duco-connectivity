@@ -59,6 +59,7 @@ public client methods, exports, compatibility aliases, and construction rules.
 
 - `docs/api-reference.md` for the central public API inventory
 - `docs/config.md` for system, node, and zone config reads and writes
+- `docs/live-testing.md` for local opt-in tests against a real Duco device
 - `docs/actions.md` for action discovery and execution
 - `docs/nodes.md` for node models and node information readers
 - `docs/zones.md` for zone and group info and config readers
@@ -78,22 +79,26 @@ The compact API reference is generated from the published exports and public
 async client methods. Regenerate it after public surface changes with:
 
 ```bash
-python tools/api_reference.py write
+.venv/bin/python tools/api_reference.py write
 ```
 
 ## Development
 
-Install the development dependencies and run the same checks as CI:
+From the repository root, install the development dependencies into the local
+virtual environment and run the same checks as CI:
 
 ```bash
-pip install ".[dev]"
-pytest
-ruff check src tests
-ruff format --check src tests
-mypy src
-bandit -r src -ll
-pip-audit --desc on
+.venv/bin/python -m pip install -e ".[dev]"
+.venv/bin/pytest
+.venv/bin/ruff check src tests
+.venv/bin/ruff format --check src tests
+.venv/bin/mypy src
+.venv/bin/bandit -r src -ll
+.venv/bin/pip-audit --desc on
 ```
+
+For local real-device validation against your own Duco box, use the opt-in
+workflow documented in `docs/live-testing.md`.
 
 ## Validation
 
@@ -109,3 +114,7 @@ development pass, covering:
 - `GET /info/nodes`
 - `GET /info?module=General&submodule=PublicApi`
 - `POST /action/nodes/{node}` with a no-op `SetVentilationState`
+
+The repository now also includes opt-in local live tests so the same read and
+safe-write checks can be repeated against your own device without changing the
+default mock-only test workflow.

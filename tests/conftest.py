@@ -3,6 +3,55 @@
 import pytest
 
 
+def pytest_addoption(parser: pytest.Parser) -> None:
+    """Register opt-in flags for real-device tests."""
+    group = parser.getgroup("duco-live")
+    group.addoption(
+        "--live",
+        action="store_true",
+        default=False,
+        help="run tests against a real Duco device",
+    )
+    group.addoption(
+        "--live-writes",
+        action="store_true",
+        default=False,
+        help="allow no-op or reversible writes in live Duco tests",
+    )
+    group.addoption(
+        "--live-performance",
+        action="store_true",
+        default=False,
+        help="run live Duco performance probes",
+    )
+
+
+def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item]) -> None:
+    """Skip live-device tests unless they are requested explicitly."""
+    run_live = config.getoption("--live")
+    run_live_writes = config.getoption("--live-writes")
+    run_live_performance = config.getoption("--live-performance")
+
+    if run_live_writes and not run_live:
+        raise pytest.UsageError("--live-writes requires --live")
+    if run_live_performance and not run_live:
+        raise pytest.UsageError("--live-performance requires --live")
+
+    skip_live = pytest.mark.skip(reason="need --live to run live Duco device tests")
+    skip_live_writes = pytest.mark.skip(reason="need --live-writes to run live Duco write tests")
+    skip_live_performance = pytest.mark.skip(
+        reason="need --live-performance to run live Duco performance probes"
+    )
+
+    for item in items:
+        if "live" in item.keywords and not run_live:
+            item.add_marker(skip_live)
+        if "writes" in item.keywords and not run_live_writes:
+            item.add_marker(skip_live_writes)
+        if "performance" in item.keywords and not run_live_performance:
+            item.add_marker(skip_live_performance)
+
+
 @pytest.fixture
 def mock_host() -> str:
     """Return the mock Duco host."""

@@ -52,6 +52,11 @@ duco_connectivity = ["py.typed"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
+markers = [
+    "live: requires --live and a configured local Duco device",
+    "writes: requires --live-writes and may send no-op or reversible writes to a live Duco device",
+    "performance: requires --live-performance and runs local Duco latency probes",
+]
 addopts = [
     "--cov=duco_connectivity",
     "--cov-report=term-missing",
