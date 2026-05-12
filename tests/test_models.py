@@ -13,6 +13,17 @@ from duco_connectivity import (
     ApiEndpointInfo,
     ApiInfo,
     BoardInfo,
+    ConfigGroup,
+    ConfigGroupStruct,
+    ConfigValueString,
+    ConfigZone,
+    ConfigZonesOverview,
+    ConfigZoneStruct,
+    InfoGroup,
+    InfoGroupStruct,
+    InfoZone,
+    InfoZonesOverview,
+    InfoZoneStruct,
     NetworkType,
     Node,
     NodeActionItemList,
@@ -249,6 +260,92 @@ def test_board_info_optional_software_version() -> None:
     )
     assert board.software_version is None
     assert board.raw_payload == {}
+
+
+def test_info_group_struct_defaults() -> None:
+    """InfoGroupStruct should default to an empty node list."""
+    group = InfoGroupStruct()
+    assert group.nodes == []
+    assert group.raw_payload == {}
+
+
+def test_info_group_defaults() -> None:
+    """InfoGroup should keep the group identifier and default fields."""
+    group = InfoGroup(group_id=4)
+    assert group.group_id == 4
+    assert group.nodes == []
+    assert group.raw_payload == {}
+
+
+def test_info_zone_struct_defaults() -> None:
+    """InfoZoneStruct should default optional fields to empty values."""
+    zone = InfoZoneStruct()
+    assert zone.name is None
+    assert zone.groups == []
+    assert zone.raw_payload == {}
+
+
+def test_info_zone_defaults() -> None:
+    """InfoZone should expose the typed zone identifier and info fields."""
+    zone = InfoZone(zone_id=2)
+    assert zone.zone_id == 2
+    assert zone.name is None
+    assert zone.groups == []
+    assert zone.raw_payload == {}
+
+
+def test_info_zones_overview_defaults() -> None:
+    """InfoZonesOverview should default zones to an empty list."""
+    overview = InfoZonesOverview()
+    assert overview.zones == []
+    assert overview.raw_payload == {}
+
+
+def test_config_group_struct_defaults() -> None:
+    """ConfigGroupStruct should preserve an empty raw payload by default."""
+    group = ConfigGroupStruct()
+    assert group.raw_payload == {}
+
+
+def test_config_group_struct_uses_identity_equality() -> None:
+    """ConfigGroupStruct should not compare equal solely because it has no comparable fields."""
+    assert ConfigGroupStruct() != ConfigGroupStruct()
+
+
+def test_config_group_defaults() -> None:
+    """ConfigGroup should keep the group identifier and default raw payload."""
+    group = ConfigGroup(group_id=7)
+    assert group.group_id == 7
+    assert group.raw_payload == {}
+
+
+def test_config_zone_struct_defaults() -> None:
+    """ConfigZoneStruct should default optional fields to empty values."""
+    zone = ConfigZoneStruct()
+    assert zone.name is None
+    assert zone.raw_payload == {}
+
+
+def test_config_zone_uses_typed_name_and_groups() -> None:
+    """ConfigZone should keep config names wrapped and groups typed."""
+    group = ConfigGroup(group_id=3)
+    zone = ConfigZone(
+        zone_id=1,
+        name=ConfigValueString(value="Living room"),
+        groups=[group],
+    )
+    assert zone.zone_id == 1
+    assert zone.name is not None
+    assert zone.name.value == "Living room"
+    assert zone.groups == [group]
+    assert zone.raw_payload == {}
+
+
+def test_config_zones_overview_defaults() -> None:
+    """ConfigZonesOverview should default zones to an empty list."""
+    overview = ConfigZonesOverview()
+    assert overview.zones == []
+    assert overview.raw_payload == {}
 
 
 def test_node_sensor_info_defaults() -> None:
