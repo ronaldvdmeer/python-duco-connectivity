@@ -7,8 +7,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 MODULE_PATH = ROOT / "tools" / "api_reference.py"
 SPEC = importlib.util.spec_from_file_location("api_reference", MODULE_PATH)
-assert SPEC is not None
-assert SPEC.loader is not None
+if SPEC is None:
+    raise RuntimeError(f"Unable to load module spec for {MODULE_PATH}")
+if SPEC.loader is None:
+    raise RuntimeError(f"Unable to load module loader for {MODULE_PATH}")
 MODULE = importlib.util.module_from_spec(SPEC)
 sys.modules[SPEC.name] = MODULE
 SPEC.loader.exec_module(MODULE)

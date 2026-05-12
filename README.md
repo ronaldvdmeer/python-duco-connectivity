@@ -48,8 +48,8 @@ async def main() -> None:
         print([node.node_id for node in nodes])
 
 
-    if __name__ == "__main__":
-      asyncio.run(main())
+if __name__ == "__main__":
+    asyncio.run(main())
 ```
 
 ## Documentation map
