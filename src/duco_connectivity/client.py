@@ -3,7 +3,6 @@
 import json
 import logging
 import sys
-from copy import deepcopy
 from types import FrameType
 from typing import Any, Literal
 from urllib.parse import urlsplit
@@ -237,8 +236,8 @@ class DucoClient:
         return raw_value["Val"]
 
     @staticmethod
-    def _copy_raw_payload(payload: dict[str, Any]) -> dict[str, Any]:
-        return deepcopy(payload)
+    def _preserve_raw_payload(payload: dict[str, Any]) -> dict[str, Any]:
+        return payload
 
     @classmethod
     def _parse_config(cls, payload: Any) -> Config:
@@ -250,7 +249,7 @@ class DucoClient:
             sections={
                 key: cls._parse_config_section(value, path=key) for key, value in payload.items()
             },
-            raw_payload=cls._copy_raw_payload(payload),
+            raw_payload=cls._preserve_raw_payload(payload),
         )
 
     @classmethod
@@ -264,7 +263,7 @@ class DucoClient:
                 key: cls._parse_config_item(value, path=f"{path}.{key}")
                 for key, value in payload.items()
             },
-            raw_payload=cls._copy_raw_payload(payload),
+            raw_payload=cls._preserve_raw_payload(payload),
         )
 
     @classmethod
@@ -285,7 +284,7 @@ class DucoClient:
         if isinstance(raw_value, str):
             return ConfigValueString(
                 value=raw_value,
-                raw_payload=cls._copy_raw_payload(payload),
+                raw_payload=cls._preserve_raw_payload(payload),
             )
 
         if type(raw_value) is not int:
@@ -313,7 +312,7 @@ class DucoClient:
             return ConfigValueOptions(
                 value=raw_value,
                 options=tuple(options),
-                raw_payload=cls._copy_raw_payload(payload),
+                raw_payload=cls._preserve_raw_payload(payload),
             )
 
         return ConfigValue(
@@ -321,7 +320,7 @@ class DucoClient:
             minimum=payload.get("Min"),
             increment=payload.get("Inc"),
             maximum=payload.get("Max"),
-            raw_payload=cls._copy_raw_payload(payload),
+            raw_payload=cls._preserve_raw_payload(payload),
         )
 
     @staticmethod
@@ -398,7 +397,7 @@ class DucoClient:
 
         return ConfigValueString(
             value=raw_value,
-            raw_payload=cls._copy_raw_payload(payload),
+            raw_payload=cls._preserve_raw_payload(payload),
         )
 
     @classmethod
@@ -418,7 +417,7 @@ class DucoClient:
 
         return ConfigNodeStruct(
             name=name,
-            raw_payload=cls._copy_raw_payload(payload),
+            raw_payload=cls._preserve_raw_payload(payload),
         )
 
     @classmethod
@@ -460,13 +459,13 @@ class DucoClient:
                 ConfigNode(
                     node_id=node_id,
                     name=node_struct.name,
-                    raw_payload=cls._copy_raw_payload(item),
+                    raw_payload=cls._preserve_raw_payload(item),
                 )
             )
 
         return ConfigNodeOverview(
             nodes=nodes,
-            raw_payload=cls._copy_raw_payload(payload),
+            raw_payload=cls._preserve_raw_payload(payload),
         )
 
     @classmethod
@@ -488,7 +487,7 @@ class DucoClient:
         return ConfigNode(
             node_id=node_id,
             name=node_struct.name,
-            raw_payload=cls._copy_raw_payload(payload),
+            raw_payload=cls._preserve_raw_payload(payload),
         )
 
     @staticmethod
@@ -606,7 +605,7 @@ class DucoClient:
             result=cls._to_action_result_status(result),
             code=code,
             message=message,
-            raw_payload=cls._copy_raw_payload(payload),
+            raw_payload=cls._preserve_raw_payload(payload),
         )
 
     @classmethod
@@ -683,7 +682,7 @@ class DucoClient:
             action=action,
             val_type=cls._to_action_value_type(val_type),
             enum_values=enum_values,
-            raw_payload=cls._copy_raw_payload(payload),
+            raw_payload=cls._preserve_raw_payload(payload),
         )
 
     @classmethod
@@ -715,7 +714,7 @@ class DucoClient:
                 )
                 for index, item in enumerate(nodes)
             ],
-            raw_payload=cls._copy_raw_payload(payload),
+            raw_payload=cls._preserve_raw_payload(payload),
         )
 
     @classmethod
@@ -774,7 +773,7 @@ class DucoClient:
         return NodeActionItemList(
             node_id=node_id,
             actions=actions,
-            raw_payload=cls._copy_raw_payload(payload),
+            raw_payload=cls._preserve_raw_payload(payload),
         )
 
     async def async_get_api_info(self) -> ApiInfo:
@@ -790,7 +789,7 @@ class DucoClient:
                 methods=list(item.get("Methods", [])),
                 query_parameters=list(item.get("QueryParameters", [])),
                 modules=list(item.get("Modules", [])),
-                raw_payload=self._copy_raw_payload(item),
+                raw_payload=self._preserve_raw_payload(item),
             )
             for item in payload.get("ApiInfo", [])
         ]
@@ -798,7 +797,7 @@ class DucoClient:
             public_api_version=public_api_version,
             reported_api_version=reported_api_version,
             endpoints=endpoints,
-            raw_payload=self._copy_raw_payload(payload),
+            raw_payload=self._preserve_raw_payload(payload),
         )
 
     async def async_get_actions(self) -> ActionItemList:
@@ -1065,7 +1064,7 @@ class DucoClient:
             software_version=self._read_wrapped_value(board, "SwVersion")
             if "SwVersion" in board
             else None,
-            raw_payload=self._copy_raw_payload(board),
+            raw_payload=self._preserve_raw_payload(board),
         )
 
     async def async_get_lan_info(self) -> LanInfo:
@@ -1084,7 +1083,7 @@ class DucoClient:
             mac=self._read_wrapped_value(lan, "Mac"),
             host_name=self._read_wrapped_value(lan, "HostName"),
             rssi_wifi=self._read_wrapped_value(lan, "RssiWifi") if "RssiWifi" in lan else None,
-            raw_payload=self._copy_raw_payload(lan),
+            raw_payload=self._preserve_raw_payload(lan),
         )
 
     async def async_get_diagnostics(self) -> list[DiagComponent]:
@@ -1094,7 +1093,7 @@ class DucoClient:
             DiagComponent(
                 component=item["Component"],
                 status=self._to_diag_status(item["Status"]),
-                raw_payload=self._copy_raw_payload(item),
+                raw_payload=self._preserve_raw_payload(item),
             )
             for item in payload["Diag"]["SubSystems"]
         ]
@@ -1213,7 +1212,7 @@ class DucoClient:
             asso=self._read_wrapped_value(general, "Asso"),
             name=self._read_wrapped_value(general, "Name"),
             identify=self._read_wrapped_value(general, "Identify"),
-            raw_payload=self._copy_raw_payload(general),
+            raw_payload=self._preserve_raw_payload(general),
         )
 
         ventilation = None
@@ -1227,7 +1226,7 @@ class DucoClient:
                 flow_lvl_tgt=self._read_wrapped_value(vent, "FlowLvlTgt")
                 if "FlowLvlTgt" in vent
                 else None,
-                raw_payload=self._copy_raw_payload(vent),
+                raw_payload=self._preserve_raw_payload(vent),
             )
 
         sensor = None
@@ -1249,7 +1248,7 @@ class DucoClient:
                 temp=self._read_wrapped_value(sensor_payload, "Temp")
                 if "Temp" in sensor_payload
                 else None,
-                raw_payload=self._copy_raw_payload(sensor_payload),
+                raw_payload=self._preserve_raw_payload(sensor_payload),
             )
 
         motor_state = None
@@ -1268,7 +1267,7 @@ class DucoClient:
                 pos=self._read_wrapped_value(motor_payload, "Pos")
                 if "Pos" in motor_payload
                 else None,
-                raw_payload=self._copy_raw_payload(motor_payload),
+                raw_payload=self._preserve_raw_payload(motor_payload),
             )
 
         return Node(
@@ -1277,7 +1276,7 @@ class DucoClient:
             ventilation=ventilation,
             sensor=sensor,
             motor_state=motor_state,
-            raw_payload=self._copy_raw_payload(payload),
+            raw_payload=self._preserve_raw_payload(payload),
         )
 
     @classmethod
@@ -1309,7 +1308,7 @@ class DucoClient:
             nodes.append(
                 NodeOverview(
                     node_id=node_id,
-                    raw_payload=cls._copy_raw_payload(item),
+                    raw_payload=cls._preserve_raw_payload(item),
                 )
             )
 
