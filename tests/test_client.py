@@ -1947,6 +1947,59 @@ async def test_known_ventilation_state_is_parsed(
     assert nodes[0].ventilation.state is expected_state
 
 
+@pytest.mark.parametrize(
+    ("raw_mode", "expected_mode"),
+    [
+        ("-", VentilationMode.NONE),
+        ("AUTO", VentilationMode.AUTO),
+        ("MANU", VentilationMode.MANU),
+        ("OVRL", VentilationMode.OVRL),
+        ("EXTN", VentilationMode.EXTN),
+        ("COOL", VentilationMode.COOL),
+        ("N/A", VentilationMode.NA),
+        ("DSBL", VentilationMode.DSBL),
+    ],
+)
+async def test_known_ventilation_mode_is_parsed(
+    raw_mode: str,
+    expected_mode: VentilationMode,
+) -> None:
+    """Documented ventilation modes should parse without fallback."""
+    payload: dict[str, object] = {
+        "Nodes": [
+            {
+                "Node": 7,
+                "General": {
+                    "Type": {"Val": "BOX"},
+                    "SubType": {"Val": 1},
+                    "NetworkType": {"Val": "VIRT"},
+                    "Parent": {"Val": 0},
+                    "Asso": {"Val": 0},
+                    "Name": {"Val": "Bedroom"},
+                    "Identify": {"Val": 0},
+                },
+                "Ventilation": {
+                    "State": {"Val": "AUTO"},
+                    "Mode": {"Val": raw_mode},
+                    "TimeStateRemain": {"Val": 0},
+                    "TimeStateEnd": {"Val": 0},
+                },
+            }
+        ]
+    }
+
+    mock_response = _response(json_payload=payload)
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with patch.object(session, "request", _request(mock_response)):
+            nodes = await client.async_get_nodes()
+
+    assert len(nodes) == 1
+    assert nodes[0].ventilation is not None
+    assert nodes[0].ventilation.mode is expected_mode
+
+
 async def test_get_nodes_unknown_ventilation_state_falls_back_to_unknown() -> None:
     """Unknown ventilation states should not break node parsing."""
     payload: dict[str, object] = {

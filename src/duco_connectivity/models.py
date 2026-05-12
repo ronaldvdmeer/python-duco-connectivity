@@ -92,9 +92,14 @@ class NetworkType(StrEnum):
 class VentilationMode(StrEnum):
     """Control modes reported for node ventilation, plus a client-side fallback."""
 
+    NONE = "-"
     AUTO = "AUTO"
     MANU = "MANU"
-    NONE = "-"
+    OVRL = "OVRL"
+    EXTN = "EXTN"
+    COOL = "COOL"
+    NA = "N/A"
+    DSBL = "DSBL"
     UNKNOWN = "UNKNOWN"
 
 
