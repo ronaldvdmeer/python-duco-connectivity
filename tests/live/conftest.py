@@ -67,7 +67,11 @@ def live_port() -> int | None:
 @pytest.fixture
 def live_request_timeout() -> float:
     """Return the request timeout for live tests."""
-    return _read_optional_float_env("DUCO_TEST_TIMEOUT", default=10.0)
+    timeout = _read_optional_float_env("DUCO_TEST_TIMEOUT", default=10.0)
+    if timeout <= 0:
+        pytest.fail("DUCO_TEST_TIMEOUT must be greater than 0")
+
+    return timeout
 
 
 @pytest.fixture
@@ -107,7 +111,11 @@ def live_api_probe_interval() -> float:
 @pytest.fixture
 def live_state_poll_interval() -> float:
     """Return the polling interval for state-changing live tests."""
-    return _read_optional_float_env("DUCO_TEST_STATE_POLL_INTERVAL", default=0.5)
+    interval = _read_optional_float_env("DUCO_TEST_STATE_POLL_INTERVAL", default=0.5)
+    if interval <= 0:
+        pytest.fail("DUCO_TEST_STATE_POLL_INTERVAL must be greater than 0")
+
+    return interval
 
 
 @pytest.fixture

@@ -5,7 +5,7 @@ from collections.abc import Callable
 
 import pytest
 
-from duco_connectivity import DucoClient, VentilationState
+from duco_connectivity import DucoClient
 
 pytestmark = [pytest.mark.live, pytest.mark.writes]
 
@@ -102,7 +102,7 @@ async def test_live_ventilation_state_round_trip(
         for target_state in distinct_targets:
             await live_client.async_set_ventilation_state(
                 live_ventilation_node_id,
-                VentilationState(target_state),
+                target_state,
             )
             confirmed_state = await _wait_for_ventilation_state(
                 live_client,
@@ -116,7 +116,7 @@ async def test_live_ventilation_state_round_trip(
     finally:
         await live_client.async_set_ventilation_state(
             live_ventilation_node_id,
-            VentilationState(original_state),
+            original_state,
         )
         restored_state = await _wait_for_ventilation_state(
             live_client,
