@@ -268,5 +268,3 @@ def _params_from_fixture_name(file_name: str) -> tuple[tuple[str, str], ...]:
         params.append((key, value))
 
     return tuple(sorted(params))
-
-    return tuple(sorted(params))
