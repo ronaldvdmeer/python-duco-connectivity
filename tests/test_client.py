@@ -232,6 +232,10 @@ ZONE_INFO_MALFORMED_PAYLOADS: list[tuple[object, str]] = [
     ({"Zone": "1"}, "Expected integer Zone in /info/zones/1, got str"),
     ({"Zone": 1, "Groups": {}}, "Expected list Groups in /info/zones/1"),
     (
+        {"Zone": 1, "Groups": [False]},
+        "Expected object /info/zones/1.Groups item at index 0, got bool",
+    ),
+    (
         {"Zone": 1, "DeviceGroupConfig": {"General": {"Name": 1}}},
         "Expected string Name in /info/zones/1.DeviceGroupConfig.General, got int",
     ),

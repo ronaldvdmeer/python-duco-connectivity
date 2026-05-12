@@ -562,7 +562,7 @@ class DucoClient:
     @classmethod
     def _parse_info_group(cls, payload: Any, *, path: str) -> InfoGroup:
         if not isinstance(payload, dict):
-            msg = f"Expected object {path} in /info/zones response, got {type(payload).__name__}"
+            msg = f"Expected object {path}, got {type(payload).__name__}"
             raise DucoError(msg)
 
         if "Group" not in payload:

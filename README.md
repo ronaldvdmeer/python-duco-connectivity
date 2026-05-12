@@ -77,6 +77,10 @@ Use `async_get_nodes_overview()` when you only need the lightweight node list
 from `GET /nodes`, and `async_get_nodes()` when you need the richer
 `GET /info/nodes` payload with general, ventilation, and sensor details.
 
+Use `async_get_zones_info()` when you need the typed overview of all zones with
+their names and group membership, and `async_get_zone_info()` when you only
+need one specific zone.
+
 Use `async_get_zone_info()` when you need the typed `GET /info/zones/{zone}`
 response for one zone. The helper forwards the documented optional `group`,
 `module`, `submodule`, and `parameter` filters as query parameters while still
