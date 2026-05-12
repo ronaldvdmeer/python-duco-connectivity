@@ -8,6 +8,8 @@ support for the published zone config overview endpoint.
 `DucoClient.async_get_zone_config()` exposes typed
 `GET /config/zones/{zone}` support for the published single-zone config
 endpoint.
+`DucoClient.async_set_zone_config()` exposes typed
+`PATCH /config/zones/{zone}` support for single-zone config writes.
 `DucoClient.async_get_zones_info()` and `DucoClient.async_get_zone_info()`
 expose typed `GET /info/zones` and `GET /info/zones/{zone}` support for the
 published zone info endpoints.
@@ -35,10 +37,14 @@ zone info endpoint.
 
 - `async_get_zones_config()` returns a `ConfigZonesOverview`.
 - `async_get_zone_config()` returns a single `ConfigZone`.
+- `async_set_zone_config()` returns a single `ConfigZone` after a successful
+  patch.
 - The zone config overview reader forwards the documented optional `zone`,
   `group`, `module`, `submodule`, and `parameter` query arguments unchanged.
 - The single-zone config reader forwards the documented optional `group`,
   `module`, `submodule`, and `parameter` query arguments unchanged.
+- The single-zone config writer forwards the documented optional `module`,
+  `submodule`, and `parameter` query arguments unchanged.
 - Zone config names stay wrapped as `ConfigValueString` because `/config`
   payloads keep the nested `{"Val": ...}` shape.
 - Group entries currently expose only the typed `group_id`, while preserving

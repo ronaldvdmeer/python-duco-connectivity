@@ -2287,6 +2287,233 @@ async def test_get_zone_config_connection_error_raises_duco_connection_error() -
             await client.async_get_zone_config(1)
 
 
+async def test_set_zone_config_returns_typed_payload_and_compact_json_body(
+    zone_config_data: dict[str, object],
+) -> None:
+    """Zone config writes should return a typed payload and compact JSON."""
+    mock_response = _response(json_payload=zone_config_data)
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        request = MagicMock(return_value=_request_context(mock_response))
+        with patch.object(session, "request", request):
+            payload = await client.async_set_zone_config(
+                1,
+                {
+                    "DeviceGroupConfig": {
+                        "General": {"Name": PatchConfigValue(value="Ground floor")}
+                    }
+                },
+            )
+
+    assert payload == ConfigZone(
+        zone_id=1,
+        name=ConfigValueString(value="Ground floor"),
+        groups=[
+            ConfigGroup(group_id=1),
+            ConfigGroup(group_id=2),
+        ],
+    )
+    assert request.call_args.args[:2] == (
+        "PATCH",
+        "http://192.0.2.94/config/zones/1",
+    )
+    _, kwargs = request.call_args
+    assert "params" not in kwargs
+    assert kwargs["data"] == b'{"DeviceGroupConfig":{"General":{"Name":{"Val":"Ground floor"}}}}'
+    assert kwargs["headers"] == {"Content-Type": "application/json"}
+
+
+async def test_set_zone_config_accepts_api_shaped_leaf_payloads(
+    zone_config_data: dict[str, object],
+) -> None:
+    """Zone config writes should also accept raw API-shaped leaf payloads."""
+    mock_response = _response(json_payload=zone_config_data)
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        request = MagicMock(return_value=_request_context(mock_response))
+        with patch.object(session, "request", request):
+            payload = await client.async_set_zone_config(
+                1,
+                {"DeviceGroupConfig": {"General": {"Name": {"Val": "Ground floor"}}}},
+            )
+
+    assert payload == ConfigZone(
+        zone_id=1,
+        name=ConfigValueString(value="Ground floor"),
+        groups=[
+            ConfigGroup(group_id=1),
+            ConfigGroup(group_id=2),
+        ],
+    )
+    _, kwargs = request.call_args
+    assert kwargs["data"] == b'{"DeviceGroupConfig":{"General":{"Name":{"Val":"Ground floor"}}}}'
+
+
+async def test_set_zone_config_forwards_query_params(
+    zone_config_data: dict[str, object],
+) -> None:
+    """Zone config writes should forward documented query parameters."""
+    mock_response = _response(json_payload=zone_config_data)
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        request_mock = _request(mock_response)
+        with patch.object(session, "request", request_mock):
+            await client.async_set_zone_config(
+                1,
+                {"DeviceGroupConfig": {"General": {"Name": {"Val": "Ground floor"}}}},
+                module="DeviceGroupConfig",
+                submodule="General",
+                parameter="Name",
+            )
+
+    assert request_mock.call_args.args[:2] == (
+        "PATCH",
+        "http://192.0.2.94/config/zones/1",
+    )
+    assert request_mock.call_args.kwargs["params"] == {
+        "module": "DeviceGroupConfig",
+        "submodule": "General",
+        "parameter": "Name",
+    }
+
+
+@pytest.mark.parametrize(
+    ("payload", "message"),
+    [
+        (
+            {"DeviceGroupConfig": {"General": {"Name": "Ground floor"}}},
+            (
+                "Unsupported patch config payload type str for "
+                "config.zones.1.DeviceGroupConfig.General.Name"
+            ),
+        ),
+        (
+            {"DeviceGroupConfig": {"General": {"Name": {"Val": False}}}},
+            (
+                "Unsupported patch config value type bool for "
+                "config.zones.1.DeviceGroupConfig.General.Name"
+            ),
+        ),
+        (
+            {1: {"General": {"Name": {"Val": "Ground floor"}}}},
+            "Expected string key for config.zones.1, got int",
+        ),
+        (
+            {"DeviceGroupConfig": {"General": {"Name": {"Val": "Ground floor", "Min": 0}}}},
+            "Patch config leaf config.zones.1.DeviceGroupConfig.General.Name may only contain Val",
+        ),
+    ],
+)
+async def test_set_zone_config_rejects_invalid_patch_payloads(
+    payload: object,
+    message: str,
+) -> None:
+    """Invalid zone config patch payloads should fail before the request is sent."""
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with pytest.raises(ValueError, match=message):
+            await client.async_set_zone_config(1, cast(Any, payload))
+
+
+async def test_set_zone_config_invalid_response_raises_duco_error() -> None:
+    """Malformed zone config PATCH responses should raise DucoError."""
+    mock_response = _response(
+        json_payload={"Zone": 1, "DeviceGroupConfig": {"General": {"Name": {"Val": 1}}}}
+    )
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with (
+            patch.object(session, "request", _request(mock_response)),
+            pytest.raises(
+                DucoError,
+                match=(
+                    "Expected string Val for zone config value "
+                    "/config/zones/1.DeviceGroupConfig.General.Name, got int"
+                ),
+            ),
+        ):
+            await client.async_set_zone_config(
+                1,
+                {
+                    "DeviceGroupConfig": {
+                        "General": {"Name": PatchConfigValue(value="Ground floor")}
+                    }
+                },
+            )
+
+
+async def test_set_zone_config_api_error_raises_duco_error() -> None:
+    """HTTP errors from the zone config PATCH endpoint should surface as DucoError."""
+    mock_response = _response(status=400, text_payload="unsupported patch")
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with (
+            patch.object(session, "request", _request(mock_response)),
+            pytest.raises(
+                DucoError,
+                match="Unexpected response 400 for /config/zones/1: unsupported patch",
+            ),
+        ):
+            await client.async_set_zone_config(
+                1,
+                {
+                    "DeviceGroupConfig": {
+                        "General": {"Name": PatchConfigValue(value="Ground floor")}
+                    }
+                },
+            )
+
+
+async def test_set_zone_config_connection_error_raises_duco_connection_error() -> None:
+    """Transport failures from zone config PATCH should surface as connection errors."""
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with (
+            patch.object(
+                session,
+                "request",
+                MagicMock(side_effect=aiohttp.ClientError("boom")),
+            ),
+            pytest.raises(DucoConnectionError, match="Could not reach Duco device"),
+        ):
+            await client.async_set_zone_config(
+                1,
+                {
+                    "DeviceGroupConfig": {
+                        "General": {"Name": PatchConfigValue(value="Ground floor")}
+                    }
+                },
+            )
+
+
+async def test_set_zone_config_write_limit_raises_duco_write_limit_error() -> None:
+    """HTTP 429 from zone config PATCH should surface as DucoWriteLimitError."""
+    mock_response = _response(status=429)
+    request_context = _request_context(mock_response)
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with (
+            patch.object(session, "request", MagicMock(return_value=request_context)),
+            pytest.raises(DucoWriteLimitError, match="Duco write capacity exhausted"),
+        ):
+            await client.async_set_zone_config(
+                1,
+                {
+                    "DeviceGroupConfig": {
+                        "General": {"Name": PatchConfigValue(value="Ground floor")}
+                    }
+                },
+            )
+
+    request_context.__aexit__.assert_awaited_once()
+
+
 async def test_get_zone_group_info_parses_payload(
     zone_group_info_data: dict[str, object],
 ) -> None:
