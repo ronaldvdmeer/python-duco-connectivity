@@ -107,7 +107,9 @@ described in the public API notes.
 `VentilationState` keeps the documented public-note values, including the
 explicit `"-"` state via `VentilationState.NONE`, while also retaining timed
 manual compatibility values such as `MAN3x2` that have appeared in Duco
-payloads and action discovery responses. More detail is available in
+payloads and action discovery responses. `VentilationMode` also keeps the
+documented mode values, including `VentilationMode.NONE` for `"-"` and
+`VentilationMode.NA` for `"N/A"`. More detail is available in
 `docs/ventilation-states.md`.
 
 More detail for action discovery plus system and node action execution is

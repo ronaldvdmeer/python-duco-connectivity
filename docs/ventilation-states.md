@@ -1,14 +1,32 @@
-# Ventilation states
+# Ventilation states and modes
 
-`python-duco-connectivity` keeps `VentilationState` close to the Duco API
-reference spec used during development while remaining tolerant of values that
-have been observed in real payloads.
+`python-duco-connectivity` keeps `VentilationState` and `VentilationMode`
+close to the Duco API reference documentation used during development while
+remaining tolerant of values that have been observed in real payloads.
+
+## Documented spec-defined modes
+
+The Duco API reference documentation used during development, which is not
+shipped in this repository, defines these ventilation mode values:
+
+- `-`
+- `AUTO`
+- `MANU`
+- `OVRL`
+- `EXTN`
+- `COOL`
+- `N/A`
+- `DSBL`
+
+The library exposes the `-` mode as `VentilationMode.NONE` and the `N/A` mode
+as `VentilationMode.NA` so callers can work with both documented values as
+first-class enum members instead of losing them to the generic
+`VentilationMode.UNKNOWN` fallback.
 
 ## Documented spec-defined states
 
-The Duco API reference spec used during development, referenced here as
-`public_api_v2.5.yaml`, is not shipped in this repository. It defines these
-ventilation state values:
+The Duco API reference documentation used during development, which is not
+shipped in this repository, defines these ventilation state values:
 
 - `AUTO`
 - `AUT1`
@@ -47,3 +65,6 @@ downstream consumers.
 
 If the device reports any future unmapped ventilation state, the client still
 falls back to `VentilationState.UNKNOWN`.
+
+If the device reports any future unmapped ventilation mode, the client still
+falls back to `VentilationMode.UNKNOWN`.

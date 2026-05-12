@@ -86,6 +86,23 @@ def test_action_value_type_values() -> None:
     assert ActionValueType.UNKNOWN.value == "UNKNOWN"
 
 
+def test_ventilation_mode_values() -> None:
+    """VentilationMode should expose the documented public API values explicitly."""
+    assert {mode.value for mode in VentilationMode} == {
+        "-",
+        "AUTO",
+        "MANU",
+        "OVRL",
+        "EXTN",
+        "COOL",
+        "N/A",
+        "DSBL",
+        "UNKNOWN",
+    }
+    assert VentilationMode.NONE.value == "-"
+    assert VentilationMode.NA.value == "N/A"
+
+
 def test_ventilation_state_values() -> None:
     """VentilationState should expose documented and compatibility members explicitly."""
     assert {state.value for state in VentilationState} == {
