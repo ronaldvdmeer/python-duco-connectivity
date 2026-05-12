@@ -40,6 +40,7 @@ def test_api_endpoint_defaults() -> None:
     assert endpoint.methods == []
     assert endpoint.query_parameters == []
     assert endpoint.modules == []
+    assert endpoint.raw_payload == {}
 
 
 def test_action_defaults() -> None:
@@ -62,6 +63,7 @@ def test_action_item_defaults() -> None:
     assert item.action == "SetIdentify"
     assert item.val_type is ActionValueType.NONE
     assert item.enum_values == []
+    assert item.raw_payload == {}
 
 
 def test_node_action_item_list_defaults() -> None:
@@ -69,12 +71,14 @@ def test_node_action_item_list_defaults() -> None:
     item_list = NodeActionItemList(node_id=1)
     assert item_list.node_id == 1
     assert item_list.actions == []
+    assert item_list.raw_payload == {}
 
 
 def test_node_list_action_item_list_defaults() -> None:
     """NodeListActionItemList should default nodes to an empty list."""
     item_list = NodeListActionItemList()
     assert item_list.nodes == []
+    assert item_list.raw_payload == {}
 
 
 def test_action_value_type_values() -> None:
@@ -138,6 +142,7 @@ def test_api_info_defaults() -> None:
     assert info.api_version == "2.5"
     assert info.reported_api_version is None
     assert info.endpoints == []
+    assert info.raw_payload == {}
 
 
 def test_api_info_accepts_legacy_api_version_argument() -> None:
@@ -243,6 +248,7 @@ def test_board_info_optional_software_version() -> None:
         time=1775082497,
     )
     assert board.software_version is None
+    assert board.raw_payload == {}
 
 
 def test_node_sensor_info_defaults() -> None:
@@ -253,6 +259,7 @@ def test_node_sensor_info_defaults() -> None:
     assert sensor.rh is None
     assert sensor.iaq_rh is None
     assert sensor.temp is None
+    assert sensor.raw_payload == {}
 
 
 def test_node_motor_state_info_defaults() -> None:
@@ -262,6 +269,7 @@ def test_node_motor_state_info_defaults() -> None:
     assert motor_state.req is None
     assert motor_state.pos_req is None
     assert motor_state.pos is None
+    assert motor_state.raw_payload == {}
 
 
 def test_node_ventilation_info_flow_target_is_optional() -> None:
@@ -273,6 +281,7 @@ def test_node_ventilation_info_flow_target_is_optional() -> None:
         mode=VentilationMode.NONE,
     )
     assert ventilation.flow_lvl_tgt is None
+    assert ventilation.raw_payload == {}
 
 
 def test_node_is_frozen() -> None:
@@ -289,6 +298,7 @@ def test_node_is_frozen() -> None:
             identify=0,
         ),
     )
+    assert node.raw_payload == {}
     with pytest.raises(AttributeError):
         node.node_id = 2  # type: ignore[misc]
 

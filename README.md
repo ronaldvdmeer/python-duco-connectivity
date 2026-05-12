@@ -26,6 +26,7 @@ pip install python-duco-connectivity
 - HTTP only
 - asynchronous communication via `aiohttp`
 - typed models that stay close to the API response shape
+- preserved `raw_payload` data on typed response models for forward compatibility
 
 ## Public API surface
 
@@ -124,6 +125,8 @@ More detail for action discovery plus system and node action execution is
 available in `docs/actions.md`.
 System and node config writes are documented in `docs/config.md`.
 Node model details are documented in `docs/nodes.md`.
+Forward-compatible raw payload preservation is documented in
+`docs/payload-preservation.md`.
 
 ## Development
 

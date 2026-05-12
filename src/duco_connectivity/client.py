@@ -235,6 +235,10 @@ class DucoClient:
 
         return raw_value["Val"]
 
+    @staticmethod
+    def _preserve_raw_payload(payload: dict[str, Any]) -> dict[str, Any]:
+        return payload
+
     @classmethod
     def _parse_config(cls, payload: Any) -> Config:
         if not isinstance(payload, dict):
@@ -244,7 +248,8 @@ class DucoClient:
         return Config(
             sections={
                 key: cls._parse_config_section(value, path=key) for key, value in payload.items()
-            }
+            },
+            raw_payload=cls._preserve_raw_payload(payload),
         )
 
     @classmethod
@@ -257,7 +262,8 @@ class DucoClient:
             entries={
                 key: cls._parse_config_item(value, path=f"{path}.{key}")
                 for key, value in payload.items()
-            }
+            },
+            raw_payload=cls._preserve_raw_payload(payload),
         )
 
     @classmethod
@@ -276,7 +282,10 @@ class DucoClient:
 
         raw_value = payload["Val"]
         if isinstance(raw_value, str):
-            return ConfigValueString(value=raw_value)
+            return ConfigValueString(
+                value=raw_value,
+                raw_payload=cls._preserve_raw_payload(payload),
+            )
 
         if type(raw_value) is not int:
             msg = f"Unsupported config value type {type(raw_value).__name__} for {path}"
@@ -303,6 +312,7 @@ class DucoClient:
             return ConfigValueOptions(
                 value=raw_value,
                 options=tuple(options),
+                raw_payload=cls._preserve_raw_payload(payload),
             )
 
         return ConfigValue(
@@ -310,6 +320,7 @@ class DucoClient:
             minimum=payload.get("Min"),
             increment=payload.get("Inc"),
             maximum=payload.get("Max"),
+            raw_payload=cls._preserve_raw_payload(payload),
         )
 
     @staticmethod
@@ -384,7 +395,10 @@ class DucoClient:
             )
             raise DucoError(msg)
 
-        return ConfigValueString(value=raw_value)
+        return ConfigValueString(
+            value=raw_value,
+            raw_payload=cls._preserve_raw_payload(payload),
+        )
 
     @classmethod
     def _parse_config_node_struct(
@@ -401,7 +415,10 @@ class DucoClient:
         if "Name" in payload:
             name = cls._parse_config_node_string_value(payload["Name"], path=f"{path}.Name")
 
-        return ConfigNodeStruct(name=name)
+        return ConfigNodeStruct(
+            name=name,
+            raw_payload=cls._preserve_raw_payload(payload),
+        )
 
     @classmethod
     def _parse_config_node_overview(cls, payload: Any) -> ConfigNodeOverview:
@@ -438,9 +455,18 @@ class DucoClient:
                 item,
                 path=f"/config/nodes item at index {index}",
             )
-            nodes.append(ConfigNode(node_id=node_id, name=node_struct.name))
+            nodes.append(
+                ConfigNode(
+                    node_id=node_id,
+                    name=node_struct.name,
+                    raw_payload=cls._preserve_raw_payload(item),
+                )
+            )
 
-        return ConfigNodeOverview(nodes=nodes)
+        return ConfigNodeOverview(
+            nodes=nodes,
+            raw_payload=cls._preserve_raw_payload(payload),
+        )
 
     @classmethod
     def _parse_config_node(cls, payload: Any, *, path: str) -> ConfigNode:
@@ -458,7 +484,11 @@ class DucoClient:
             raise DucoError(msg)
 
         node_struct = cls._parse_config_node_struct(payload, path=path)
-        return ConfigNode(node_id=node_id, name=node_struct.name)
+        return ConfigNode(
+            node_id=node_id,
+            name=node_struct.name,
+            raw_payload=cls._preserve_raw_payload(payload),
+        )
 
     @staticmethod
     def _to_node_type(raw_value: str) -> NodeType:
@@ -575,6 +605,7 @@ class DucoClient:
             result=cls._to_action_result_status(result),
             code=code,
             message=message,
+            raw_payload=cls._preserve_raw_payload(payload),
         )
 
     @classmethod
@@ -651,6 +682,7 @@ class DucoClient:
             action=action,
             val_type=cls._to_action_value_type(val_type),
             enum_values=enum_values,
+            raw_payload=cls._preserve_raw_payload(payload),
         )
 
     @classmethod
@@ -681,7 +713,8 @@ class DucoClient:
                     response_path=response_path,
                 )
                 for index, item in enumerate(nodes)
-            ]
+            ],
+            raw_payload=cls._preserve_raw_payload(payload),
         )
 
     @classmethod
@@ -737,7 +770,11 @@ class DucoClient:
                 item_path_prefix=f"{path}.Actions item",
             )
 
-        return NodeActionItemList(node_id=node_id, actions=actions)
+        return NodeActionItemList(
+            node_id=node_id,
+            actions=actions,
+            raw_payload=cls._preserve_raw_payload(payload),
+        )
 
     async def async_get_api_info(self) -> ApiInfo:
         """Return API metadata advertised by the box."""
@@ -752,6 +789,7 @@ class DucoClient:
                 methods=list(item.get("Methods", [])),
                 query_parameters=list(item.get("QueryParameters", [])),
                 modules=list(item.get("Modules", [])),
+                raw_payload=self._preserve_raw_payload(item),
             )
             for item in payload.get("ApiInfo", [])
         ]
@@ -759,6 +797,7 @@ class DucoClient:
             public_api_version=public_api_version,
             reported_api_version=reported_api_version,
             endpoints=endpoints,
+            raw_payload=self._preserve_raw_payload(payload),
         )
 
     async def async_get_actions(self) -> ActionItemList:
@@ -1025,6 +1064,7 @@ class DucoClient:
             software_version=self._read_wrapped_value(board, "SwVersion")
             if "SwVersion" in board
             else None,
+            raw_payload=self._preserve_raw_payload(board),
         )
 
     async def async_get_lan_info(self) -> LanInfo:
@@ -1043,6 +1083,7 @@ class DucoClient:
             mac=self._read_wrapped_value(lan, "Mac"),
             host_name=self._read_wrapped_value(lan, "HostName"),
             rssi_wifi=self._read_wrapped_value(lan, "RssiWifi") if "RssiWifi" in lan else None,
+            raw_payload=self._preserve_raw_payload(lan),
         )
 
     async def async_get_diagnostics(self) -> list[DiagComponent]:
@@ -1052,6 +1093,7 @@ class DucoClient:
             DiagComponent(
                 component=item["Component"],
                 status=self._to_diag_status(item["Status"]),
+                raw_payload=self._preserve_raw_payload(item),
             )
             for item in payload["Diag"]["SubSystems"]
         ]
@@ -1170,6 +1212,7 @@ class DucoClient:
             asso=self._read_wrapped_value(general, "Asso"),
             name=self._read_wrapped_value(general, "Name"),
             identify=self._read_wrapped_value(general, "Identify"),
+            raw_payload=self._preserve_raw_payload(general),
         )
 
         ventilation = None
@@ -1183,6 +1226,7 @@ class DucoClient:
                 flow_lvl_tgt=self._read_wrapped_value(vent, "FlowLvlTgt")
                 if "FlowLvlTgt" in vent
                 else None,
+                raw_payload=self._preserve_raw_payload(vent),
             )
 
         sensor = None
@@ -1204,6 +1248,7 @@ class DucoClient:
                 temp=self._read_wrapped_value(sensor_payload, "Temp")
                 if "Temp" in sensor_payload
                 else None,
+                raw_payload=self._preserve_raw_payload(sensor_payload),
             )
 
         motor_state = None
@@ -1222,6 +1267,7 @@ class DucoClient:
                 pos=self._read_wrapped_value(motor_payload, "Pos")
                 if "Pos" in motor_payload
                 else None,
+                raw_payload=self._preserve_raw_payload(motor_payload),
             )
 
         return Node(
@@ -1230,6 +1276,7 @@ class DucoClient:
             ventilation=ventilation,
             sensor=sensor,
             motor_state=motor_state,
+            raw_payload=self._preserve_raw_payload(payload),
         )
 
     @classmethod
@@ -1258,6 +1305,11 @@ class DucoClient:
                 )
                 raise DucoError(msg)
 
-            nodes.append(NodeOverview(node_id=node_id))
+            nodes.append(
+                NodeOverview(
+                    node_id=node_id,
+                    raw_payload=cls._preserve_raw_payload(item),
+                )
+            )
 
         return nodes

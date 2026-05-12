@@ -273,6 +273,8 @@ async def test_api_info_is_parsed(api_info_full_data: dict[str, object]) -> None
         "submodule",
         "parameter",
     ]
+    assert api_info.raw_payload is api_info_full_data
+    assert api_info.endpoints[0].raw_payload is api_info_full_data["ApiInfo"][0]
 
 
 async def test_request_logging_includes_method_path_and_status(
@@ -442,6 +444,9 @@ async def test_get_config_without_query_params_returns_typed_payload(
     static_ip = lan_config.entries["StaticIp"]
     assert isinstance(static_ip, ConfigValueString)
     assert static_ip.value == "192.0.2.94"
+    assert payload.raw_payload is config_data
+    assert general.raw_payload is config_data["General"]
+    assert time_zone.raw_payload is config_data["General"]["Time"]["TimeZone"]
 
 
 async def test_get_config_parses_option_lists_as_tuples() -> None:
@@ -469,6 +474,34 @@ async def test_get_config_parses_option_lists_as_tuples() -> None:
     mode_value = mode.entries["Mode"]
     assert isinstance(mode_value, ConfigValueOptions)
     assert mode_value.options == (1, 2, 4)
+    assert mode_value.raw_payload == {"Val": 1, "Options": [1, 2, 4]}
+
+
+async def test_get_config_preserves_unmapped_leaf_metadata() -> None:
+    """Typed config leaves should retain the original API object for forward compatibility."""
+    payload: dict[str, object] = {
+        "General": {
+            "Lan": {
+                "Mode": {
+                    "Val": 1,
+                    "Options": [1, 2, 4],
+                    "Unit": "profile",
+                }
+            }
+        }
+    }
+    mock_response = _response(json_payload=payload)
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with patch.object(session, "request", _request(mock_response)):
+            config = await client.async_get_config()
+
+    mode = config.sections["General"].entries["Lan"]
+    assert isinstance(mode, ConfigSection)
+    mode_value = mode.entries["Mode"]
+    assert isinstance(mode_value, ConfigValueOptions)
+    assert mode_value.raw_payload["Unit"] == "profile"
 
 
 @pytest.mark.parametrize(
@@ -796,6 +829,8 @@ async def test_get_node_configs_returns_typed_payload(
         ConfigNode(node_id=7, name=ConfigValueString(value="Kitchen valve")),
         ConfigNode(node_id=113, name=None),
     ]
+    assert payload.raw_payload is node_configs_data
+    assert payload.nodes[0].raw_payload is node_configs_data["Nodes"][0]
 
 
 async def test_get_node_configs_allows_empty_payload() -> None:
@@ -931,6 +966,9 @@ async def test_get_node_config_returns_typed_payload(
         "http://192.0.2.94/config/nodes/7",
     )
     assert "params" not in request_mock.call_args.kwargs
+    assert payload.raw_payload is node_config_data
+    assert payload.name is not None
+    assert payload.name.raw_payload is node_config_data["Name"]
 
 
 async def test_get_node_config_forwards_parameter_query(
@@ -1305,6 +1343,7 @@ async def test_board_info_is_parsed(board_info_data: dict[str, object]) -> None:
     assert board.time == 1775082497
     assert board.public_api_version == "2.5"
     assert board.software_version is None
+    assert board.raw_payload is board_info_data["General"]["Board"]
 
 
 async def test_board_info_with_optional_versions(
@@ -1334,6 +1373,7 @@ async def test_lan_info_wifi_is_parsed(lan_info_data: dict[str, object]) -> None
     assert lan.mode == "WIFI_CLIENT"
     assert lan.ip == "192.0.2.94"
     assert lan.rssi_wifi == -44
+    assert lan.raw_payload is lan_info_data["General"]["Lan"]
 
 
 async def test_lan_info_ethernet_is_parsed(
@@ -1364,6 +1404,7 @@ async def test_get_diagnostics(diag_data: dict[str, object]) -> None:
     assert len(diags) == 3
     assert diags[0].component == "Ventilation"
     assert diags[0].status == DiagStatus.OK
+    assert diags[0].raw_payload is diag_data["Diag"]["SubSystems"][0]
 
 
 async def test_get_diagnostics_unknown_status_falls_back_to_unknown() -> None:
@@ -1414,6 +1455,11 @@ async def test_get_nodes_parses_full_payload(nodes_data: dict[str, object]) -> N
     assert box.motor_state.req == 1
     assert box.motor_state.pos_req == 150
     assert box.motor_state.pos == 143
+    assert box.raw_payload is nodes_data["Nodes"][0]
+    assert box.general.raw_payload is nodes_data["Nodes"][0]["General"]
+    assert box.ventilation.raw_payload is nodes_data["Nodes"][0]["Ventilation"]
+    assert box.sensor.raw_payload is nodes_data["Nodes"][0]["Sensor"]
+    assert box.motor_state.raw_payload is nodes_data["Nodes"][0]["MotorStateCtrl"]
 
     ucco2 = nodes[1]
     assert ucco2.general.node_type == NodeType.UCCO2
@@ -1422,6 +1468,48 @@ async def test_get_nodes_parses_full_payload(nodes_data: dict[str, object]) -> N
     assert ucco2.sensor.co2 == 536
     assert ucco2.sensor.iaq_co2 == 100
     assert ucco2.motor_state is None
+
+
+async def test_get_nodes_preserves_unknown_sections_in_raw_payload() -> None:
+    """Node models should keep unmapped API sections available via raw_payload."""
+    payload: dict[str, object] = {
+        "Nodes": [
+            {
+                "Node": 1,
+                "General": {
+                    "Type": {"Val": "BOX"},
+                    "SubType": {"Val": 1},
+                    "NetworkType": {"Val": "VIRT"},
+                    "Parent": {"Val": 0},
+                    "Asso": {"Val": 0},
+                    "Name": {"Val": "Kitchen"},
+                    "Identify": {"Val": 0},
+                    "FirmwareFamily": {"Val": "future"},
+                },
+                "Sensor": {
+                    "Temp": {"Val": 20.1},
+                    "Voc": {"Val": 321},
+                },
+                "CustomSection": {
+                    "FutureFlag": {"Val": True},
+                },
+            }
+        ]
+    }
+    mock_response = _response(json_payload=payload)
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with patch.object(session, "request", _request(mock_response)):
+            nodes = await client.async_get_nodes()
+
+    node = nodes[0]
+    assert node.general.name == "Kitchen"
+    assert node.general.raw_payload["FirmwareFamily"] == {"Val": "future"}
+    assert node.sensor is not None
+    assert node.sensor.temp == 20.1
+    assert node.sensor.raw_payload["Voc"] == {"Val": 321}
+    assert node.raw_payload["CustomSection"] == {"FutureFlag": {"Val": True}}
 
 
 async def test_get_nodes_overview_parses_payload(
@@ -1440,6 +1528,7 @@ async def test_get_nodes_overview_parses_payload(
         NodeOverview(node_id=2),
         NodeOverview(node_id=113),
     ]
+    assert nodes[0].raw_payload is nodes_overview_data[0]
 
 
 async def test_get_nodes_overview_handles_empty_payload() -> None:
@@ -1525,6 +1614,7 @@ async def test_get_node_info_parses_payload(node_data: dict[str, object]) -> Non
     assert node.sensor.co2 == 536
     assert node.sensor.iaq_co2 == 100
     assert node.motor_state is None
+    assert node.raw_payload is node_data
 
 
 async def test_get_node_info_uses_node_path(node_data: dict[str, object]) -> None:
@@ -2178,6 +2268,7 @@ async def test_get_actions_returns_typed_items(
         ),
     ]
     assert request.call_args.args[:2] == ("GET", "http://192.0.2.94/action")
+    assert result[0].raw_payload is action_items_data[0]
 
 
 async def test_get_actions_unknown_val_type_falls_back_to_unknown() -> None:
@@ -2282,6 +2373,8 @@ async def test_get_node_actions_returns_typed_items(
         ]
     )
     assert request.call_args.args[:2] == ("GET", "http://192.0.2.94/action/nodes")
+    assert result.raw_payload is node_action_items_data
+    assert result.nodes[0].raw_payload is node_action_items_data["Nodes"][0]
 
 
 @pytest.mark.parametrize(
@@ -2358,6 +2451,7 @@ async def test_get_node_actions_for_node_returns_typed_items(
         ],
     )
     assert request.call_args.args[:2] == ("GET", "http://192.0.2.94/action/nodes/7")
+    assert result.raw_payload is node_action_item_data
 
 
 @pytest.mark.parametrize(
@@ -2426,6 +2520,7 @@ async def test_set_action_returns_typed_result(
     assert result.result is ActionResultStatus.SUCCESS
     assert result.code is None
     assert result.message is None
+    assert result.raw_payload is action_result_success_data
     assert request.call_args.args[:2] == ("POST", "http://192.0.2.94/action")
     _, kwargs = request.call_args
     assert kwargs["data"] == b'{"Action":"SetWifiApMode","Val":"On"}'
