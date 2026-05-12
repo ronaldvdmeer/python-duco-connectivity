@@ -33,6 +33,7 @@ pip install python-duco-connectivity
 The current client exposes:
 
 - `async_get_api_info()` for `GET /api`
+- `async_get_raw()` for raw `GET` access to unmapped API-relative endpoints, with optional query params passed separately
 - `async_get_info()` for generic `GET /info` access with optional `module`, `submodule`, and `parameter` query arguments
 - `async_get_config()` for generic `GET /config` access with optional `module`, `submodule`, and `parameter` query arguments
 - `async_set_config()` for generic `PATCH /config` access with optional `module`, `submodule`, and `parameter` query arguments plus sparse config payloads built from `PatchConfigValue` leaves or raw API-shaped `{"Val": ...}` objects
@@ -58,6 +59,12 @@ The current client exposes:
 
 The focused convenience readers remain available for the payloads that the
 library already models explicitly.
+
+Use `async_get_raw()` when you need to inspect a Duco `GET` endpoint that the
+library does not model yet. Keep the path API-relative, like `/nodes` or
+`/info/nodes/7`, and pass query arguments through `params` instead of embedding
+them in the path. Prefer typed readers and existing endpoint-specific raw
+helpers when they already cover the endpoint you need.
 
 Node config access is split between broader raw API access and the existing
 typed `Name` helpers. Use the `*_raw()` methods when you need non-`Name`
@@ -125,8 +132,8 @@ More detail for action discovery plus system and node action execution is
 available in `docs/actions.md`.
 System and node config writes are documented in `docs/config.md`.
 Node model details are documented in `docs/nodes.md`.
-Forward-compatible raw payload preservation is documented in
-`docs/payload-preservation.md`.
+Forward-compatible raw payload preservation, including generic raw reads, is
+documented in `docs/payload-preservation.md`.
 
 ## Development
 
