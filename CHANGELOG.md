@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Add generic `async_get_info()` support for `GET /info` with `module`,
   `submodule`, and `parameter` queries.
+- Expose the public `MotorStateCtrl` node payload through optional
+  `Node.motor_state` and `NodeMotorStateInfo` fields.
 - Reuse the new generic `async_get_info()` entry point in the focused
   `GET /info` convenience readers.
 - Expand `NetworkType` to cover the full documented public API transport value
