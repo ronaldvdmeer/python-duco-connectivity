@@ -76,6 +76,22 @@ def test_replay_helpers_reject_relative_profile_names(profile: str) -> None:
         load_sanitized_replay_fixture_set(profile)
 
 
+@pytest.mark.parametrize(
+    ("path", "message"),
+    [
+        ("//info", "must not start with //"),
+        ("/info\\nodes", "must use / separators only"),
+    ],
+)
+def test_replay_helpers_reject_ambiguous_path_separators(
+    path: str,
+    message: str,
+) -> None:
+    """Replay helper paths should reject ambiguous separators."""
+    with pytest.raises(ValueError, match=message):
+        build_sanitized_replay_fixture_path("silent-connect-v25", "GET", path)
+
+
 def test_load_sanitized_replay_fixture_returns_single_fixture() -> None:
     """Single fixture loads should preserve the normalized request key."""
     fixture = load_sanitized_replay_fixture(

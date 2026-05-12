@@ -167,6 +167,10 @@ def _normalize_method(method: str) -> str:
 def _normalize_path(path: str) -> tuple[str, tuple[str, ...]]:
     if not path.startswith("/"):
         raise ValueError("path must start with /")
+    if path.startswith("//"):
+        raise ValueError("path must not start with //")
+    if "\\" in path:
+        raise ValueError("path must use / separators only")
     if "://" in path:
         raise ValueError("path must be API-relative, not a full URL")
     if "?" in path or "#" in path:

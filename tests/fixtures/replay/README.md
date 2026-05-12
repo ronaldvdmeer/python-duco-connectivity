@@ -46,7 +46,6 @@ If you want to run the replay-related tests locally, first activate the
 repository virtual environment.
 
 ```bash
-cd /Users/ronald/SynologyDrive/Projecten/HomeAssistant/python-duco-connectivity
 source .venv/bin/activate
 ```
 
