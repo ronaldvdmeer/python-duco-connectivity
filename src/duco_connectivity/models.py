@@ -5,6 +5,7 @@ import sys
 from dataclasses import dataclass, field
 from enum import StrEnum
 from types import FrameType
+from typing import Any
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -170,6 +171,7 @@ class ApiEndpoint:
     methods: list[str] = field(default_factory=list)
     query_parameters: list[str] = field(default_factory=list)
     modules: list[str] = field(default_factory=list)
+    raw_payload: dict[str, Any] = field(default_factory=dict, repr=False, compare=False)
 
 
 @dataclass(frozen=True, slots=True, init=False)
@@ -179,6 +181,7 @@ class ApiInfo:
     public_api_version: str
     reported_api_version: str | None = None
     endpoints: list[ApiEndpoint] = field(default_factory=list)
+    raw_payload: dict[str, Any] = field(default_factory=dict, repr=False, compare=False)
 
     def __init__(
         self,
@@ -187,6 +190,7 @@ class ApiInfo:
         endpoints: list[ApiEndpoint] | None = None,
         *,
         api_version: str | None = None,
+        raw_payload: dict[str, Any] | None = None,
     ) -> None:
         """Initialize API info with backward-compatible api_version support."""
         if api_version is not None:
@@ -217,6 +221,7 @@ class ApiInfo:
         object.__setattr__(self, "public_api_version", resolved_public_api_version)
         object.__setattr__(self, "reported_api_version", reported_api_version)
         object.__setattr__(self, "endpoints", [] if endpoints is None else endpoints)
+        object.__setattr__(self, "raw_payload", {} if raw_payload is None else raw_payload)
 
     @property
     def api_version(self) -> str:
@@ -251,6 +256,7 @@ class BoardInfo:
     time: int
     public_api_version: str | None = None
     software_version: str | None = None
+    raw_payload: dict[str, Any] = field(default_factory=dict, repr=False, compare=False)
 
 
 @dataclass(frozen=True, slots=True)
@@ -265,6 +271,7 @@ class LanInfo:
     mac: str
     host_name: str
     rssi_wifi: int | None
+    raw_payload: dict[str, Any] = field(default_factory=dict, repr=False, compare=False)
 
 
 @dataclass(frozen=True, slots=True)
@@ -276,6 +283,7 @@ class ConfigValue:
     increment: int | None = None
     maximum: int | None = None
     options: tuple[int, ...] | None = None
+    raw_payload: dict[str, Any] = field(default_factory=dict, repr=False, compare=False)
 
 
 @dataclass(frozen=True, slots=True)
@@ -290,6 +298,7 @@ class ConfigValueString:
     """String config value reported by the local Duco API."""
 
     value: str
+    raw_payload: dict[str, Any] = field(default_factory=dict, repr=False, compare=False)
 
 
 @dataclass(frozen=True, slots=True)
@@ -297,6 +306,7 @@ class ConfigSection:
     """Nested config section returned by the local Duco API."""
 
     entries: dict[str, "ConfigItem"] = field(default_factory=dict)
+    raw_payload: dict[str, Any] = field(default_factory=dict, repr=False, compare=False)
 
 
 type ConfigItem = ConfigSection | ConfigValue | ConfigValueOptions | ConfigValueString
@@ -307,6 +317,7 @@ class Config:
     """Top-level config payload returned by the local Duco API."""
 
     sections: dict[str, ConfigSection] = field(default_factory=dict)
+    raw_payload: dict[str, Any] = field(default_factory=dict, repr=False, compare=False)
 
 
 @dataclass(frozen=True, slots=True)
@@ -314,6 +325,7 @@ class ConfigNodeStruct:
     """Writable or readable node config fields."""
 
     name: ConfigValueString | None = None
+    raw_payload: dict[str, Any] = field(default_factory=dict, repr=False, compare=False)
 
 
 @dataclass(frozen=True, slots=True)
@@ -322,6 +334,7 @@ class ConfigNode:
 
     node_id: int
     name: ConfigValueString | None = None
+    raw_payload: dict[str, Any] = field(default_factory=dict, repr=False, compare=False)
 
 
 @dataclass(frozen=True, slots=True)
@@ -329,6 +342,7 @@ class ConfigNodeOverview:
     """Collection of node-scoped config payloads."""
 
     nodes: list[ConfigNode] = field(default_factory=list)
+    raw_payload: dict[str, Any] = field(default_factory=dict, repr=False, compare=False)
 
 
 @dataclass(frozen=True, slots=True)
@@ -354,6 +368,7 @@ class NodeSensorInfo:
     rh: float | None = None
     iaq_rh: int | None = None
     temp: float | None = None
+    raw_payload: dict[str, Any] = field(default_factory=dict, repr=False, compare=False)
 
 
 @dataclass(frozen=True, slots=True)
@@ -364,6 +379,7 @@ class NodeMotorStateInfo:
     req: int | None = None
     pos_req: int | None = None
     pos: int | None = None
+    raw_payload: dict[str, Any] = field(default_factory=dict, repr=False, compare=False)
 
 
 @dataclass(frozen=True, slots=True)
@@ -375,6 +391,7 @@ class NodeVentilationInfo:
     time_state_remain: int
     time_state_end: int
     flow_lvl_tgt: int | None = None
+    raw_payload: dict[str, Any] = field(default_factory=dict, repr=False, compare=False)
 
 
 @dataclass(frozen=True, slots=True)
@@ -388,6 +405,7 @@ class NodeGeneralInfo:
     asso: int
     name: str
     identify: int
+    raw_payload: dict[str, Any] = field(default_factory=dict, repr=False, compare=False)
 
 
 @dataclass(frozen=True, slots=True)
@@ -399,6 +417,7 @@ class Node:
     ventilation: NodeVentilationInfo | None = None
     sensor: NodeSensorInfo | None = None
     motor_state: NodeMotorStateInfo | None = None
+    raw_payload: dict[str, Any] = field(default_factory=dict, repr=False, compare=False)
 
 
 @dataclass(frozen=True, slots=True)
@@ -406,6 +425,7 @@ class NodeOverview:
     """Lightweight node identifier returned by the local Duco API."""
 
     node_id: int
+    raw_payload: dict[str, Any] = field(default_factory=dict, repr=False, compare=False)
 
 
 @dataclass(frozen=True, slots=True)
@@ -414,6 +434,7 @@ class DiagComponent:
 
     component: str
     status: DiagStatus
+    raw_payload: dict[str, Any] = field(default_factory=dict, repr=False, compare=False)
 
 
 @dataclass(frozen=True, slots=True)
@@ -439,6 +460,7 @@ class ActionItem:
     action: str
     val_type: ActionValueType
     enum_values: list[str] = field(default_factory=list)
+    raw_payload: dict[str, Any] = field(default_factory=dict, repr=False, compare=False)
 
 
 type ActionItemList = list[ActionItem]
@@ -450,6 +472,7 @@ class NodeActionItemList:
 
     node_id: int
     actions: list[ActionItem] = field(default_factory=list)
+    raw_payload: dict[str, Any] = field(default_factory=dict, repr=False, compare=False)
 
 
 @dataclass(frozen=True, slots=True)
@@ -457,6 +480,7 @@ class NodeListActionItemList:
     """Collection of node-scoped action discovery entries."""
 
     nodes: list[NodeActionItemList] = field(default_factory=list)
+    raw_payload: dict[str, Any] = field(default_factory=dict, repr=False, compare=False)
 
 
 @dataclass(frozen=True, slots=True)
@@ -466,3 +490,4 @@ class ActionResult:
     result: ActionResultStatus
     code: int | None = None
     message: str | None = None
+    raw_payload: dict[str, Any] = field(default_factory=dict, repr=False, compare=False)

@@ -13,6 +13,9 @@ API notes.
 - `Node.sensor` is populated when the payload includes the `Sensor` section.
 - `Node.motor_state` is populated when the payload includes the
   `MotorStateCtrl` section.
+- `Node` and the typed node submodels keep the original API objects in
+  `raw_payload` so newly observed fields remain inspectable before the typed
+  model layer is expanded.
 
 ## Motor state
 
