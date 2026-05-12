@@ -43,6 +43,7 @@ The current client exposes:
 - `async_get_node_configs()` for `GET /config/nodes`; when `parameter` is provided, the typed reader currently supports only `Name`
 - `async_get_node_config()` for `GET /config/nodes/{node}`; when `parameter` is provided, the typed reader currently supports only `Name`
 - `async_get_zones_config()` for `GET /config/zones` with optional `zone`, `group`, `module`, `submodule`, and `parameter` query arguments
+- `async_get_zone_config()` for `GET /config/zones/{zone}` with optional `group`, `module`, `submodule`, and `parameter` query arguments
 - `async_set_node_config()` for `PATCH /config/nodes/{node}`; the typed writer always requests `parameter=Name` so it can return a `ConfigNode`, and accepts sparse payloads built from `PatchConfigNodeValue` leaves or raw API-shaped `{"Val": ...}` objects
 - `async_get_board_info()` for `GET /info?module=General&submodule=Board`
 - `async_get_lan_info()` for `GET /info?module=General&submodule=Lan`
@@ -78,6 +79,11 @@ parameters like `FlowLvlTgt`, and use the typed helpers when you want a stable
 Use `async_get_zones_config()` when you need the typed `GET /config/zones`
 overview for zone names and group identifiers while keeping the published query
 filters available.
+
+Use `async_get_zone_config()` when you need the typed
+`GET /config/zones/{zone}` response for one specific zone. The helper forwards
+the documented optional `group`, `module`, `submodule`, and `parameter`
+filters as query parameters while returning the typed `ConfigZone` model.
 
 Use `async_get_nodes_overview()` when you only need the lightweight node list
 from `GET /nodes`, and `async_get_nodes()` when you need the richer

@@ -5,6 +5,9 @@ published Duco `/info/zones` and `/config/zones` schema families.
 
 `DucoClient.async_get_zones_config()` exposes typed `GET /config/zones`
 support for the published zone config overview endpoint.
+`DucoClient.async_get_zone_config()` exposes typed
+`GET /config/zones/{zone}` support for the published single-zone config
+endpoint.
 `DucoClient.async_get_zones_info()` and `DucoClient.async_get_zone_info()`
 expose typed `GET /info/zones` and `GET /info/zones/{zone}` support for the
 published zone info endpoints.
@@ -31,15 +34,16 @@ zone info endpoint.
 ## Zone config readers
 
 - `async_get_zones_config()` returns a `ConfigZonesOverview`.
+- `async_get_zone_config()` returns a single `ConfigZone`.
 - The zone config overview reader forwards the documented optional `zone`,
   `group`, `module`, `submodule`, and `parameter` query arguments unchanged.
+- The single-zone config reader forwards the documented optional `group`,
+  `module`, `submodule`, and `parameter` query arguments unchanged.
 - Zone config names stay wrapped as `ConfigValueString` because `/config`
   payloads keep the nested `{"Val": ...}` shape.
 - Group entries currently expose only the typed `group_id`, while preserving
   the full raw group object for forward compatibility because the current
   public API note still defines an empty `ConfigGroupStruct`.
-
-Single-zone config readers and zone config writers are still not exposed yet.
 
 ## Info models
 
@@ -59,7 +63,7 @@ Single-zone config readers and zone config writers are still not exposed yet.
 - `ConfigZone` keeps the typed `zone_id`, an optional `ConfigValueString`
   `name`, and a list of `ConfigGroup` entries.
 - `ConfigZoneStruct` mirrors the zone-body fields without the outer `Zone`
-  identifier and is suitable for future typed single-zone config helpers.
+  identifier and is reused by the typed single-zone config helper.
 - `ConfigGroupStruct` intentionally has no typed fields yet because the current
   public API note defines the struct as an empty object. The model still keeps
   `raw_payload` so newly observed fields remain inspectable without breaking the
