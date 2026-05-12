@@ -307,6 +307,11 @@ def test_config_group_struct_defaults() -> None:
     assert group.raw_payload == {}
 
 
+def test_config_group_struct_uses_identity_equality() -> None:
+    """ConfigGroupStruct should not compare equal solely because it has no comparable fields."""
+    assert ConfigGroupStruct() != ConfigGroupStruct()
+
+
 def test_config_group_defaults() -> None:
     """ConfigGroup should keep the group identifier and default raw payload."""
     group = ConfigGroup(group_id=7)

@@ -345,7 +345,7 @@ class ConfigNodeOverview:
     raw_payload: dict[str, Any] = field(default_factory=dict, repr=False, compare=False)
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True, slots=True, eq=False)
 class ConfigGroupStruct:
     """Group-level zone config fields returned by the local Duco API."""
 
