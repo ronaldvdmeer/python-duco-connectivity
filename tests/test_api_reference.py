@@ -33,6 +33,19 @@ def test_method_metadata_covers_public_client_methods() -> None:
     assert discovered_methods == set(METHOD_METADATA)
 
 
+def test_collect_method_references_follow_metadata_order() -> None:
+    """Rendered method order should be driven by the metadata inventory."""
+    references = collect_method_references()
+
+    discovered_methods = [
+        reference.name
+        for category_references in references.values()
+        for reference in category_references
+    ]
+
+    assert discovered_methods == list(METHOD_METADATA)
+
+
 def test_collect_public_symbols_groups_known_exports() -> None:
     """Known public exports should land in the expected sections."""
     symbols = collect_public_symbols()

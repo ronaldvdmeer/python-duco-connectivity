@@ -365,13 +365,13 @@ def _format_signature(method: object, name: str) -> str:
 
 def collect_method_references() -> dict[str, list[MethodReference]]:
     """Collect public client methods grouped by documentation category."""
-    public_methods = [
-        (name, member)
+    public_methods = {
+        name: member
         for name, member in DucoClient.__dict__.items()
         if name.startswith(("async_get_", "async_set_")) and inspect.iscoroutinefunction(member)
-    ]
+    }
 
-    public_names = {name for name, _member in public_methods}
+    public_names = set(public_methods)
     metadata_names = set(METHOD_METADATA)
     if public_names != metadata_names:
         missing = sorted(public_names - metadata_names)
@@ -384,17 +384,18 @@ def collect_method_references() -> dict[str, list[MethodReference]]:
         raise ValueError("Method metadata mismatch: " + "; ".join(details))
 
     references = {category: [] for category in CATEGORY_ORDER}
-    for name, member in public_methods:
+    for name, metadata in METHOD_METADATA.items():
+        member = public_methods[name]
         summary = inspect.getdoc(member)
         if summary is None:
             raise ValueError(f"Missing docstring for public method {name}")
 
-        references[METHOD_METADATA[name].category].append(
+        references[metadata.category].append(
             MethodReference(
                 name=name,
                 signature=_format_signature(member, name),
                 summary=summary.splitlines()[0],
-                metadata=METHOD_METADATA[name],
+                metadata=metadata,
             )
         )
 
