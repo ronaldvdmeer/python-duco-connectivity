@@ -54,6 +54,7 @@ def test_collect_public_symbols_groups_known_exports() -> None:
     assert "VentilationState" in symbols["Enums"]
     assert "ConfigZone" in symbols["Models"]
     assert "DucoWriteLimitError" in symbols["Exceptions"]
+    assert symbols["Compatibility exports"] == ["ApiEndpointInfo", "DucoRateLimitError"]
     assert symbols["Other"] == ["__version__"]
 
 
@@ -74,6 +75,8 @@ def test_api_reference_contains_expected_sections() -> None:
     assert "## Public exports" in content
     assert "## Compatibility details" in content
     assert "## See also" in content
+    assert "### Compatibility exports" in content
+    assert "`ApiEndpointInfo`" in content
     assert "`async_get_zone_config(" in content
     assert "-> ConfigZone`" in content
 

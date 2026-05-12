@@ -409,11 +409,13 @@ def collect_public_symbols() -> dict[str, list[str]]:
         "Models": [],
         "Enums": [],
         "Exceptions": [],
+        "Compatibility exports": [],
         "Other": [],
     }
 
     for name in duco_connectivity.__all__:
         if name in COMPATIBILITY_EXPORTS:
+            groups["Compatibility exports"].append(name)
             continue
         if name == "DucoClient":
             groups["Client"].append(name)
@@ -437,7 +439,7 @@ def collect_public_symbols() -> dict[str, list[str]]:
     for group in groups.values():
         group.sort()
 
-    covered = set().union(*groups.values(), COMPATIBILITY_EXPORTS)
+    covered = set().union(*groups.values())
     if covered != set(duco_connectivity.__all__):
         missing = sorted(set(duco_connectivity.__all__) - covered)
         raise ValueError(f"Uncovered public exports: {', '.join(missing)}")
@@ -516,7 +518,14 @@ def render_api_reference() -> str:
         ]
     )
 
-    for label in ("Client", "Models", "Enums", "Exceptions", "Other"):
+    for label in (
+        "Client",
+        "Models",
+        "Enums",
+        "Exceptions",
+        "Compatibility exports",
+        "Other",
+    ):
         names = symbols[label]
         if not names:
             continue

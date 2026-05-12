@@ -272,6 +272,11 @@ The package exports the following public symbols through `duco_connectivity.__al
 - `DucoError`
 - `DucoWriteLimitError`
 
+### Compatibility exports
+
+- `ApiEndpointInfo`
+- `DucoRateLimitError`
+
 ### Other
 
 - `__version__`
