@@ -1662,8 +1662,21 @@ async def test_get_nodes_unknown_network_type_logs_fallback(
     assert "Unknown network type 'FUTURE_TYPE' received from Duco API" in caplog.text
 
 
-async def test_get_nodes_mb_network_type_is_parsed() -> None:
-    """Known MB network types should be parsed explicitly."""
+@pytest.mark.parametrize(
+    ("raw_network_type", "expected_network_type"),
+    [
+        ("-", NetworkType.NONE),
+        ("WI", NetworkType.WI),
+        ("RF", NetworkType.RF),
+        ("VIRT", NetworkType.VIRT),
+        ("MB", NetworkType.MB),
+    ],
+)
+async def test_get_nodes_known_network_type_is_parsed(
+    raw_network_type: str,
+    expected_network_type: NetworkType,
+) -> None:
+    """Documented network types should parse without fallback."""
     payload: dict[str, object] = {
         "Nodes": [
             {
@@ -1671,7 +1684,7 @@ async def test_get_nodes_mb_network_type_is_parsed() -> None:
                 "General": {
                     "Type": {"Val": "UCCO2"},
                     "SubType": {"Val": 0},
-                    "NetworkType": {"Val": "MB"},
+                    "NetworkType": {"Val": raw_network_type},
                     "Parent": {"Val": 1},
                     "Asso": {"Val": 1},
                     "Name": {"Val": ""},
@@ -1694,7 +1707,7 @@ async def test_get_nodes_mb_network_type_is_parsed() -> None:
             nodes = await client.async_get_nodes()
 
     assert len(nodes) == 1
-    assert nodes[0].general.network_type == NetworkType.MB
+    assert nodes[0].general.network_type is expected_network_type
 
 
 async def test_get_nodes_unknown_node_type_falls_back_to_unknown() -> None:

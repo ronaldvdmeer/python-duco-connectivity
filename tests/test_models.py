@@ -283,6 +283,14 @@ def test_node_is_frozen() -> None:
         node.node_id = 2  # type: ignore[misc]
 
 
-def test_network_type_includes_mb() -> None:
-    """NetworkType should expose MB as an explicit known value."""
-    assert NetworkType.MB.value == "MB"
+def test_network_type_values() -> None:
+    """NetworkType should expose the documented public API values explicitly."""
+    assert {network_type.value for network_type in NetworkType} == {
+        "-",
+        "WI",
+        "RF",
+        "VIRT",
+        "MB",
+        "UNKNOWN",
+    }
+    assert NetworkType.NONE.value == "-"

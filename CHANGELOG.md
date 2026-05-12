@@ -13,6 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `submodule`, and `parameter` queries.
 - Reuse the new generic `async_get_info()` entry point in the focused
   `GET /info` convenience readers.
+- Expand `NetworkType` to cover the full documented public API transport value
+  set, including `-`, while preserving `UNKNOWN` fallback behavior for truly
+  unmapped future values.
 - Expand `NodeType` to cover the broader Duco public API v2.5 node type set,
   while preserving `UNKNOWN` fallback behavior for truly unmapped future
   values.

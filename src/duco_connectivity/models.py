@@ -82,6 +82,7 @@ class NodeType(StrEnum):
 class NetworkType(StrEnum):
     """Transport types reported for node connectivity."""
 
+    NONE = "-"
     VIRT = "VIRT"
     RF = "RF"
     WI = "WI"
