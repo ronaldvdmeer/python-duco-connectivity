@@ -1,0 +1,15 @@
+{
+  "General": {
+    "Board": {
+      "PublicApiVersion": {
+        "Val": "2.5"
+      },
+      "BoxName": {
+        "Val": "SILENT_CONNECT"
+      },
+      "BoxSubTypeName": {
+        "Val": "Eu"
+      }
+    }
+  }
+}
