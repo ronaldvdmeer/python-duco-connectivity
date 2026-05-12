@@ -31,6 +31,8 @@ pip install python-duco-connectivity
 ## Getting started
 
 ```python
+import asyncio
+
 import aiohttp
 
 from duco_connectivity import DucoClient
@@ -44,6 +46,10 @@ async def main() -> None:
 
         print(api_info.public_api_version)
         print([node.node_id for node in nodes])
+
+
+    if __name__ == "__main__":
+      asyncio.run(main())
 ```
 
 ## Documentation map
