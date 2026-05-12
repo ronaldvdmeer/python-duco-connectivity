@@ -137,3 +137,54 @@ await client.async_set_node_config(
     {"Name": {"Val": "Kitchen valve"}},
 )
 ```
+
+## Zone config writes
+
+The Duco public API also exposes `PATCH /config/zones/{zone}` for single-zone
+configuration changes.
+
+`python-duco-connectivity` exposes this through
+`DucoClient.async_set_zone_config(zone_id, payload, module=None, submodule=None, parameter=None)`.
+
+Behavior:
+
+- Sends `PATCH /config/zones/{zone}`
+- Forwards the zone path parameter directly
+- Forwards optional `module`, `submodule`, and `parameter` query values
+- Accepts sparse payloads built from `PatchConfigValue(...)` leaves or raw
+  API-shaped `{"Val": ...}` leaf objects
+- Returns a typed `ConfigZone` response
+
+Example:
+
+```python
+from duco_connectivity import DucoClient, PatchConfigValue
+
+result = await client.async_set_zone_config(
+    1,
+    {
+        "DeviceGroupConfig": {
+            "General": {
+                "Name": PatchConfigValue(value="Ground floor"),
+            }
+        }
+    },
+    module="DeviceGroupConfig",
+    submodule="General",
+    parameter="Name",
+)
+
+assert result.zone_id == 1
+assert result.name is not None
+assert result.name.value == "Ground floor"
+```
+
+When you already have an API-shaped payload, you can also pass wrapped leaves
+directly:
+
+```python
+await client.async_set_zone_config(
+    1,
+    {"DeviceGroupConfig": {"General": {"Name": {"Val": "Ground floor"}}}},
+)
+```

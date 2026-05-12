@@ -1473,6 +1473,45 @@ class DucoClient:
 
         return self._parse_config_zone(payload, path=path)
 
+    async def async_set_zone_config(
+        self,
+        zone_id: int,
+        payload: dict[str, Any],
+        module: str | None = None,
+        submodule: str | None = None,
+        parameter: str | None = None,
+    ) -> ConfigZone:
+        """Patch zone-level configuration values through `/config/zones/{zone}`."""
+        params: dict[str, str] = {}
+        if module is not None:
+            params["module"] = module
+        if submodule is not None:
+            params["submodule"] = submodule
+        if parameter is not None:
+            params["parameter"] = parameter
+
+        normalized_payload = self._normalize_patch_config_payload(
+            payload,
+            path=f"config.zones.{zone_id}",
+        )
+
+        path = f"/config/zones/{zone_id}"
+        if params:
+            response = await self._request_json(
+                "PATCH",
+                path,
+                params=params,
+                json=normalized_payload,
+            )
+        else:
+            response = await self._request_json(
+                "PATCH",
+                path,
+                json=normalized_payload,
+            )
+
+        return self._parse_config_zone(response, path=path)
+
     async def async_set_node_config(
         self,
         node_id: int,
