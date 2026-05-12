@@ -403,6 +403,39 @@ def zones_info_data() -> dict[str, object]:
 
 
 @pytest.fixture
+def zone_info_data() -> dict[str, object]:
+    """Mock response for GET /info/zones/{zone}."""
+    return {
+        "Zone": 1,
+        "DeviceGroupConfig": {
+            "General": {
+                "Name": {"Val": "Ground floor"},
+            }
+        },
+        "Groups": [
+            {
+                "Group": 1,
+                "DeviceGroupConfig": {
+                    "General": {
+                        "Nodes": [7, 8],
+                    }
+                },
+                "FutureGroupField": {"Val": True},
+            },
+            {
+                "Group": 2,
+                "DeviceGroupConfig": {
+                    "General": {
+                        "Nodes": [],
+                    }
+                },
+            },
+        ],
+        "FutureZoneField": {"Val": "kept"},
+    }
+
+
+@pytest.fixture
 def nodes_overview_data() -> list[dict[str, int]]:
     """Mock response for GET /nodes."""
     return [

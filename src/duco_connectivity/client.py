@@ -562,7 +562,7 @@ class DucoClient:
     @classmethod
     def _parse_info_group(cls, payload: Any, *, path: str) -> InfoGroup:
         if not isinstance(payload, dict):
-            msg = f"Expected object {path} in /info/zones response, got {type(payload).__name__}"
+            msg = f"Expected object {path}, got {type(payload).__name__}"
             raise DucoError(msg)
 
         if "Group" not in payload:
@@ -637,6 +637,35 @@ class DucoClient:
         )
 
     @classmethod
+    def _parse_info_zone(
+        cls,
+        payload: Any,
+        *,
+        object_context: str,
+        path: str,
+    ) -> InfoZone:
+        if not isinstance(payload, dict):
+            msg = f"Expected object {object_context}, got {type(payload).__name__}"
+            raise DucoError(msg)
+
+        if "Zone" not in payload:
+            msg = f"Expected integer Zone in {path}"
+            raise DucoError(msg)
+
+        zone_id = cls._read_scalar_value(payload, "Zone")
+        if type(zone_id) is not int:
+            msg = f"Expected integer Zone in {path}, got {type(zone_id).__name__}"
+            raise DucoError(msg)
+
+        zone_struct = cls._parse_info_zone_struct(payload, path=path)
+        return InfoZone(
+            zone_id=zone_id,
+            name=zone_struct.name,
+            groups=zone_struct.groups,
+            raw_payload=cls._preserve_raw_payload(payload),
+        )
+
+    @classmethod
     def _parse_info_zones_overview(cls, payload: Any) -> InfoZonesOverview:
         if not isinstance(payload, dict):
             msg = f"Expected object payload from /info/zones, got {type(payload).__name__}"
@@ -648,35 +677,11 @@ class DucoClient:
 
         zones: list[InfoZone] = []
         for index, item in enumerate(payload["Zones"]):
-            if not isinstance(item, dict):
-                msg = (
-                    f"Expected object /info/zones item at index {index} in /info/zones "
-                    f"response, got {type(item).__name__}"
-                )
-                raise DucoError(msg)
-
-            if "Zone" not in item:
-                msg = f"Expected integer Zone in /info/zones item at index {index}"
-                raise DucoError(msg)
-
-            zone_id = cls._read_scalar_value(item, "Zone")
-            if type(zone_id) is not int:
-                msg = (
-                    f"Expected integer Zone in /info/zones item at index {index}, "
-                    f"got {type(zone_id).__name__}"
-                )
-                raise DucoError(msg)
-
-            zone_struct = cls._parse_info_zone_struct(
-                item,
-                path=f"/info/zones item at index {index}",
-            )
             zones.append(
-                InfoZone(
-                    zone_id=zone_id,
-                    name=zone_struct.name,
-                    groups=zone_struct.groups,
-                    raw_payload=cls._preserve_raw_payload(item),
+                cls._parse_info_zone(
+                    item,
+                    object_context=(f"/info/zones item at index {index} in /info/zones response"),
+                    path=f"/info/zones item at index {index}",
                 )
             )
 
@@ -1307,6 +1312,40 @@ class DucoClient:
         """Return zone information reported by the local API."""
         payload = await self._request_json("GET", "/info/zones")
         return self._parse_info_zones_overview(payload)
+
+    async def async_get_zone_info(
+        self,
+        zone_id: int,
+        group: int | None = None,
+        module: str | None = None,
+        submodule: str | None = None,
+        parameter: str | None = None,
+    ) -> InfoZone:
+        """Return detailed information for a specific zone."""
+        params: dict[str, str] = {}
+        if group is not None:
+            params["group"] = str(group)
+        if module is not None:
+            params["module"] = module
+        if submodule is not None:
+            params["submodule"] = submodule
+        if parameter is not None:
+            params["parameter"] = parameter
+
+        if params:
+            payload = await self._request_json(
+                "GET",
+                f"/info/zones/{zone_id}",
+                params=params,
+            )
+        else:
+            payload = await self._request_json("GET", f"/info/zones/{zone_id}")
+
+        return self._parse_info_zone(
+            payload,
+            object_context=f"payload from /info/zones/{zone_id}",
+            path=f"/info/zones/{zone_id}",
+        )
 
     async def async_get_nodes_overview(self) -> list[NodeOverview]:
         """Return lightweight node identifiers reported by the local API."""

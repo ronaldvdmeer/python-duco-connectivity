@@ -47,8 +47,9 @@ The current client exposes:
 - `async_get_lan_info()` for `GET /info?module=General&submodule=Lan`
 - `async_get_nodes_overview()` for `GET /nodes` when you only need lightweight node IDs
 - `async_get_nodes()` for `GET /info/nodes`
-- `async_get_zones_info()` for `GET /info/zones`
 - `async_get_node_info()` for `GET /info/nodes/{node}` with optional `module` and `parameter` query arguments
+- `async_get_zones_info()` for `GET /info/zones`
+- `async_get_zone_info()` for `GET /info/zones/{zone}` with optional `group`, `module`, `submodule`, and `parameter` query arguments
 - `async_get_diagnostics()` for `GET /info?module=Diag`
 - `async_get_write_requests_remaining()` for `GET /info?module=General&submodule=PublicApi`
 - `async_get_actions()` for typed `GET /action` system action discovery
@@ -76,8 +77,14 @@ Use `async_get_nodes_overview()` when you only need the lightweight node list
 from `GET /nodes`, and `async_get_nodes()` when you need the richer
 `GET /info/nodes` payload with general, ventilation, and sensor details.
 
-Use `async_get_zones_info()` when you need the typed `GET /info/zones`
-overview with zone names and group node membership.
+Use `async_get_zones_info()` when you need the typed overview of all zones with
+their names and group membership, and `async_get_zone_info()` when you only
+need one specific zone.
+
+Use `async_get_zone_info()` when you need the typed `GET /info/zones/{zone}`
+response for one zone. The helper forwards the documented optional `group`,
+`module`, `submodule`, and `parameter` filters as query parameters while still
+returning the typed `InfoZone` model.
 
 `async_set_ventilation_state()` remains available as a thin convenience wrapper
 over `async_set_node_action()` for callers that only need the existing
@@ -134,9 +141,9 @@ When a node payload includes the public `MotorStateCtrl` section,
 field optional so payloads that omit the section, or individual motor values,
 continue to parse without compatibility shims.
 
-The public model layer also includes zone and group models for the published
-`/info/zones` and `/config/zones` schema families. Info-side zone names are
-exposed as plain strings, config-side zone names remain wrapped in
+The public model layer also includes zone and group foundations for the
+published `/info/zones` and `/config/zones` schema families. Info-side zone
+names are exposed as plain strings, config-side zone names remain wrapped in
 `ConfigValueString`, and `ConfigGroupStruct` intentionally remains an empty
 placeholder because the current public API note does not define typed group
 config fields yet.
