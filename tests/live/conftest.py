@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import math
 import os
 from collections.abc import AsyncIterator, Callable
 from typing import cast
@@ -32,9 +33,14 @@ def _read_optional_float_env(name: str, *, default: float) -> float:
         return default
 
     try:
-        return float(raw_value)
+        value = float(raw_value)
     except ValueError:
         pytest.fail(f"{name} must be a float, got {raw_value!r}")
+
+    if not math.isfinite(value):
+        pytest.fail(f"{name} must be a finite float, got {raw_value!r}")
+
+    return value
 
 
 def _read_required_int_env(name: str) -> int:

@@ -46,6 +46,7 @@ def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item
     for item in items:
         if "live" in item.keywords and not run_live:
             item.add_marker(skip_live)
+            continue
         if "writes" in item.keywords and not run_live_writes:
             item.add_marker(skip_live_writes)
         if "performance" in item.keywords and not run_live_performance:

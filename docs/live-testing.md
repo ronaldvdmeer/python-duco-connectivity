@@ -20,7 +20,7 @@ commands below use a local `.venv` so they stay copy-pasteable from a clean
 checkout. Create it first if needed, then install the development dependencies:
 
 ```bash
-.venv/bin/python -m venv .venv
+python -m venv .venv
 .venv/bin/python -m pip install -e ".[dev]"
 ```
 

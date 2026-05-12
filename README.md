@@ -90,7 +90,7 @@ checkout. Create it first if needed, then install the development dependencies
 and run the same checks as CI:
 
 ```bash
-.venv/bin/python -m venv .venv
+python -m venv .venv
 .venv/bin/python -m pip install -e ".[dev]"
 .venv/bin/pytest
 .venv/bin/ruff check src tests
