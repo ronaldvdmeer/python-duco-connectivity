@@ -102,12 +102,14 @@ one consistent per-node model regardless of which discovery endpoint they use.
 
 The model layer includes `Action`, `ActionNode`, `ActionItem`,
 `ActionItemList`, `ActionResult`, `ApiInfo`, `BoardInfo`, `Config`,
-`ConfigNode`, `ConfigNodeOverview`, `ConfigNodeStruct`, `ConfigSection`,
-`ConfigValue`, `ConfigValueOptions`, `ConfigValueString`,
-`NodeActionItemList`, `NodeListActionItemList`, `PatchConfigValue`,
-`PatchConfigNodeValue`, `LanInfo`, `Node`, `NodeOverview`,
-`NodeGeneralInfo`, `NodeVentilationInfo`, `NodeSensorInfo`, and
-`NodeMotorStateInfo`.
+`ConfigGroup`, `ConfigGroupStruct`, `ConfigNode`, `ConfigNodeOverview`,
+`ConfigNodeStruct`, `ConfigSection`, `ConfigZone`, `ConfigZonesOverview`,
+`ConfigZoneStruct`, `ConfigValue`, `ConfigValueOptions`,
+`ConfigValueString`, `InfoGroup`, `InfoGroupStruct`, `InfoZone`,
+`InfoZonesOverview`, `InfoZoneStruct`, `NodeActionItemList`,
+`NodeListActionItemList`, `PatchConfigValue`, `PatchConfigNodeValue`,
+`LanInfo`, `Node`, `NodeOverview`, `NodeGeneralInfo`,
+`NodeVentilationInfo`, `NodeSensorInfo`, and `NodeMotorStateInfo`.
 The typed enum layer keeps `NodeType` closely aligned with the Duco public API
 notes while preserving `UNKNOWN` as a fallback for future unmapped values.
 `NetworkType` also keeps the documented transport values, including
@@ -128,10 +130,18 @@ When a node payload includes the public `MotorStateCtrl` section,
 field optional so payloads that omit the section, or individual motor values,
 continue to parse without compatibility shims.
 
+The public model layer also includes zone and group foundations for the
+published `/info/zones` and `/config/zones` schema families. Info-side zone
+names are exposed as plain strings, config-side zone names remain wrapped in
+`ConfigValueString`, and `ConfigGroupStruct` intentionally remains an empty
+placeholder because the current public API note does not define typed group
+config fields yet.
+
 More detail for action discovery plus system and node action execution is
 available in `docs/actions.md`.
 System and node config writes are documented in `docs/config.md`.
 Node model details are documented in `docs/nodes.md`.
+Zone and group model details are documented in `docs/zones.md`.
 Forward-compatible raw payload preservation, including generic raw reads, is
 documented in `docs/payload-preservation.md`.
 

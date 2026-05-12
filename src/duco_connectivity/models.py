@@ -346,10 +346,95 @@ class ConfigNodeOverview:
 
 
 @dataclass(frozen=True, slots=True)
+class ConfigGroupStruct:
+    """Group-level zone config fields returned by the local Duco API."""
+
+    raw_payload: dict[str, Any] = field(default_factory=dict, repr=False, compare=False)
+
+
+@dataclass(frozen=True, slots=True)
+class ConfigGroup:
+    """Zone config group entry returned by the local Duco API."""
+
+    group_id: int
+    raw_payload: dict[str, Any] = field(default_factory=dict, repr=False, compare=False)
+
+
+@dataclass(frozen=True, slots=True)
+class ConfigZoneStruct:
+    """Writable or readable zone config fields."""
+
+    name: ConfigValueString | None = None
+    raw_payload: dict[str, Any] = field(default_factory=dict, repr=False, compare=False)
+
+
+@dataclass(frozen=True, slots=True)
+class ConfigZone:
+    """Zone-scoped config payload returned by the local Duco API."""
+
+    zone_id: int
+    name: ConfigValueString | None = None
+    groups: list[ConfigGroup] = field(default_factory=list)
+    raw_payload: dict[str, Any] = field(default_factory=dict, repr=False, compare=False)
+
+
+@dataclass(frozen=True, slots=True)
+class ConfigZonesOverview:
+    """Collection of zone-scoped config payloads."""
+
+    zones: list[ConfigZone] = field(default_factory=list)
+    raw_payload: dict[str, Any] = field(default_factory=dict, repr=False, compare=False)
+
+
+@dataclass(frozen=True, slots=True)
 class PatchConfigValue:
     """Leaf config payload used by generic config write methods."""
 
     value: int | str
+
+
+@dataclass(frozen=True, slots=True)
+class InfoGroupStruct:
+    """Group membership fields returned by the local Duco API."""
+
+    nodes: list[int] = field(default_factory=list)
+    raw_payload: dict[str, Any] = field(default_factory=dict, repr=False, compare=False)
+
+
+@dataclass(frozen=True, slots=True)
+class InfoGroup:
+    """Zone group entry returned by the local Duco API."""
+
+    group_id: int
+    nodes: list[int] = field(default_factory=list)
+    raw_payload: dict[str, Any] = field(default_factory=dict, repr=False, compare=False)
+
+
+@dataclass(frozen=True, slots=True)
+class InfoZoneStruct:
+    """Zone info fields returned by the local Duco API."""
+
+    name: str | None = None
+    groups: list[InfoGroup] = field(default_factory=list)
+    raw_payload: dict[str, Any] = field(default_factory=dict, repr=False, compare=False)
+
+
+@dataclass(frozen=True, slots=True)
+class InfoZone:
+    """Zone entry returned by the local Duco API."""
+
+    zone_id: int
+    name: str | None = None
+    groups: list[InfoGroup] = field(default_factory=list)
+    raw_payload: dict[str, Any] = field(default_factory=dict, repr=False, compare=False)
+
+
+@dataclass(frozen=True, slots=True)
+class InfoZonesOverview:
+    """Collection of zone info payloads."""
+
+    zones: list[InfoZone] = field(default_factory=list)
+    raw_payload: dict[str, Any] = field(default_factory=dict, repr=False, compare=False)
 
 
 @dataclass(frozen=True, slots=True)
