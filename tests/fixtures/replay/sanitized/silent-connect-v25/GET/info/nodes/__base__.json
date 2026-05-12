@@ -1,0 +1,12 @@
+{
+  "Nodes": [
+    {
+      "Node": 1,
+      "General": {
+        "Type": {
+          "Val": "BOX"
+        }
+      }
+    }
+  ]
+}

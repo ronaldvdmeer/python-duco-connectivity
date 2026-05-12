@@ -51,6 +51,7 @@ duco_connectivity = ["py.typed"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["."]
 asyncio_mode = "auto"
 markers = [
     "live: requires --live and a configured local Duco device",
