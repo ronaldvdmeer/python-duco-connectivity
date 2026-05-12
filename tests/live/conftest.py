@@ -1,5 +1,7 @@
 """Fixtures for opt-in live tests against a local Duco device."""
 
+from __future__ import annotations
+
 import asyncio
 import os
 from collections.abc import AsyncIterator, Callable
