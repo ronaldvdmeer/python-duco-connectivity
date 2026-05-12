@@ -20,6 +20,8 @@ from .models import (
     ApiInfo,
     BoardInfo,
     Config,
+    ConfigGroup,
+    ConfigGroupStruct,
     ConfigItem,
     ConfigNode,
     ConfigNodeOverview,
@@ -28,6 +30,9 @@ from .models import (
     ConfigValue,
     ConfigValueOptions,
     ConfigValueString,
+    ConfigZone,
+    ConfigZonesOverview,
+    ConfigZoneStruct,
     DiagComponent,
     DiagStatus,
     InfoGroup,
@@ -513,6 +518,168 @@ class DucoClient:
         return ConfigNode(
             node_id=node_id,
             name=node_struct.name,
+            raw_payload=cls._preserve_raw_payload(payload),
+        )
+
+    @classmethod
+    def _parse_config_zone_string_value(
+        cls,
+        payload: Any,
+        *,
+        path: str,
+    ) -> ConfigValueString:
+        if not isinstance(payload, dict):
+            msg = f"Expected object for zone config value {path}, got {type(payload).__name__}"
+            raise DucoError(msg)
+
+        if "Val" not in payload:
+            msg = f"Expected Val in zone config value {path}"
+            raise DucoError(msg)
+
+        raw_value = payload["Val"]
+        if not isinstance(raw_value, str):
+            msg = (
+                f"Expected string Val for zone config value {path}, got {type(raw_value).__name__}"
+            )
+            raise DucoError(msg)
+
+        return ConfigValueString(
+            value=raw_value,
+            raw_payload=cls._preserve_raw_payload(payload),
+        )
+
+    @classmethod
+    def _parse_config_group_struct(
+        cls,
+        payload: Any,
+        *,
+        path: str,
+    ) -> ConfigGroupStruct:
+        if not isinstance(payload, dict):
+            msg = (
+                f"Expected object for zone config group struct {path}, got {type(payload).__name__}"
+            )
+            raise DucoError(msg)
+
+        return ConfigGroupStruct(
+            raw_payload=cls._preserve_raw_payload(payload),
+        )
+
+    @classmethod
+    def _parse_config_group(cls, payload: Any, *, path: str) -> ConfigGroup:
+        if not isinstance(payload, dict):
+            msg = f"Expected object {path}, got {type(payload).__name__}"
+            raise DucoError(msg)
+
+        if "Group" not in payload:
+            msg = f"Expected integer Group in {path}"
+            raise DucoError(msg)
+
+        group_id = cls._read_scalar_value(payload, "Group")
+        if type(group_id) is not int:
+            msg = f"Expected integer Group in {path}, got {type(group_id).__name__}"
+            raise DucoError(msg)
+
+        cls._parse_config_group_struct(payload, path=path)
+        return ConfigGroup(
+            group_id=group_id,
+            raw_payload=cls._preserve_raw_payload(payload),
+        )
+
+    @classmethod
+    def _parse_config_zone_struct(
+        cls,
+        payload: Any,
+        *,
+        path: str,
+    ) -> ConfigZoneStruct:
+        if not isinstance(payload, dict):
+            msg = f"Expected object for zone config struct {path}, got {type(payload).__name__}"
+            raise DucoError(msg)
+
+        name = None
+        if "DeviceGroupConfig" in payload:
+            device_group_config = payload["DeviceGroupConfig"]
+            if not isinstance(device_group_config, dict):
+                msg = f"Expected object DeviceGroupConfig in {path}"
+                raise DucoError(msg)
+
+            if "General" in device_group_config:
+                general = device_group_config["General"]
+                if not isinstance(general, dict):
+                    msg = f"Expected object General in {path}.DeviceGroupConfig"
+                    raise DucoError(msg)
+
+                if "Name" in general:
+                    name = cls._parse_config_zone_string_value(
+                        general["Name"],
+                        path=f"{path}.DeviceGroupConfig.General.Name",
+                    )
+
+        return ConfigZoneStruct(
+            name=name,
+            raw_payload=cls._preserve_raw_payload(payload),
+        )
+
+    @classmethod
+    def _parse_config_zone(cls, payload: Any, *, path: str) -> ConfigZone:
+        if not isinstance(payload, dict):
+            msg = f"Expected object payload from {path}, got {type(payload).__name__}"
+            raise DucoError(msg)
+
+        if "Zone" not in payload:
+            msg = f"Expected integer Zone in {path}"
+            raise DucoError(msg)
+
+        zone_id = cls._read_scalar_value(payload, "Zone")
+        if type(zone_id) is not int:
+            msg = f"Expected integer Zone in {path}, got {type(zone_id).__name__}"
+            raise DucoError(msg)
+
+        zone_struct = cls._parse_config_zone_struct(payload, path=path)
+        groups: list[ConfigGroup] = []
+        if "Groups" in payload:
+            raw_groups = payload["Groups"]
+            if not isinstance(raw_groups, list):
+                msg = f"Expected list Groups in {path}"
+                raise DucoError(msg)
+
+            groups = [
+                cls._parse_config_group(
+                    item,
+                    path=f"{path}.Groups item at index {index}",
+                )
+                for index, item in enumerate(raw_groups)
+            ]
+
+        return ConfigZone(
+            zone_id=zone_id,
+            name=zone_struct.name,
+            groups=groups,
+            raw_payload=cls._preserve_raw_payload(payload),
+        )
+
+    @classmethod
+    def _parse_config_zones_overview(cls, payload: Any) -> ConfigZonesOverview:
+        if not isinstance(payload, dict):
+            msg = f"Expected object payload from /config/zones, got {type(payload).__name__}"
+            raise DucoError(msg)
+
+        if "Zones" not in payload or not isinstance(payload["Zones"], list):
+            msg = "Expected list Zones in /config/zones response"
+            raise DucoError(msg)
+
+        zones: list[ConfigZone] = []
+        for index, item in enumerate(payload["Zones"]):
+            zones.append(
+                cls._parse_config_zone(
+                    item,
+                    path=f"/config/zones item at index {index}",
+                )
+            )
+
+        return ConfigZonesOverview(
+            zones=zones,
             raw_payload=cls._preserve_raw_payload(payload),
         )
 
@@ -1250,6 +1417,34 @@ class DucoClient:
             payload = await self._request_json("GET", path)
 
         return self._parse_config_node(payload, path=path)
+
+    async def async_get_zones_config(
+        self,
+        zone: int | None = None,
+        group: int | None = None,
+        module: str | None = None,
+        submodule: str | None = None,
+        parameter: str | None = None,
+    ) -> ConfigZonesOverview:
+        """Return zone-level configuration values from `/config/zones`."""
+        params: dict[str, str] = {}
+        if zone is not None:
+            params["zone"] = str(zone)
+        if group is not None:
+            params["group"] = str(group)
+        if module is not None:
+            params["module"] = module
+        if submodule is not None:
+            params["submodule"] = submodule
+        if parameter is not None:
+            params["parameter"] = parameter
+
+        if params:
+            payload = await self._request_json("GET", "/config/zones", params=params)
+        else:
+            payload = await self._request_json("GET", "/config/zones")
+
+        return self._parse_config_zones_overview(payload)
 
     async def async_set_node_config(
         self,
