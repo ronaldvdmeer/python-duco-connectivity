@@ -1,14 +1,23 @@
 """Tests for the generated API reference inventory."""
 
+import importlib.util
+import sys
 from pathlib import Path
 
-from tools.api_reference import (
-    DOC_PATH,
-    METHOD_METADATA,
-    collect_method_references,
-    collect_public_symbols,
-    render_api_reference,
-)
+ROOT = Path(__file__).resolve().parents[1]
+MODULE_PATH = ROOT / "tools" / "api_reference.py"
+SPEC = importlib.util.spec_from_file_location("api_reference", MODULE_PATH)
+assert SPEC is not None
+assert SPEC.loader is not None
+MODULE = importlib.util.module_from_spec(SPEC)
+sys.modules[SPEC.name] = MODULE
+SPEC.loader.exec_module(MODULE)
+
+DOC_PATH = MODULE.DOC_PATH
+METHOD_METADATA = MODULE.METHOD_METADATA
+collect_method_references = MODULE.collect_method_references
+collect_public_symbols = MODULE.collect_public_symbols
+render_api_reference = MODULE.render_api_reference
 
 
 def test_method_metadata_covers_public_client_methods() -> None:
@@ -58,7 +67,4 @@ def test_api_reference_contains_expected_sections() -> None:
 
 def test_doc_path_points_to_generated_file() -> None:
     """The helper should target the checked-in docs page."""
-    assert DOC_PATH == Path(
-        "/Users/ronald/SynologyDrive/Projecten/HomeAssistant/"
-        "python-duco-connectivity/docs/api-reference.md"
-    )
+    assert DOC_PATH == ROOT / "docs" / "api-reference.md"
