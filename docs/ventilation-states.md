@@ -1,13 +1,13 @@
 # Ventilation states and modes
 
 `python-duco-connectivity` keeps `VentilationState` and `VentilationMode`
-close to the Duco API reference spec used during development while remaining
-tolerant of values that have been observed in real payloads.
+close to Duco API reference documentation used during development while
+remaining tolerant of values that have been observed in real payloads.
 
 ## Documented spec-defined modes
 
-The Duco API reference spec used during development, referenced here as
-`public_api_v2.5.yaml`, defines these ventilation mode values:
+Duco API reference documentation used during development, which is not shipped
+in this repository, defines these ventilation mode values:
 
 - `-`
 - `AUTO`
@@ -25,9 +25,8 @@ first-class enum members instead of losing them to the generic
 
 ## Documented spec-defined states
 
-The Duco API reference spec used during development, referenced here as
-`public_api_v2.5.yaml`, is not shipped in this repository. It defines these
-ventilation state values:
+Duco API reference documentation used during development, which is not shipped
+in this repository, defines these ventilation state values:
 
 - `AUTO`
 - `AUT1`
