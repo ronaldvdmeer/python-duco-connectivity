@@ -66,6 +66,16 @@ def test_available_sanitized_replay_profiles_lists_sample_profile() -> None:
     assert available_sanitized_replay_profiles() == ("silent-connect-v25",)
 
 
+def test_available_sanitized_replay_profiles_ignores_non_directory_root(
+    tmp_path: Path,
+) -> None:
+    """Profile discovery should tolerate a misconfigured non-directory root."""
+    root_file = tmp_path / "profiles.json"
+    root_file.write_text("{}", encoding="utf-8")
+
+    assert available_sanitized_replay_profiles(root=root_file) == ()
+
+
 @pytest.mark.parametrize("profile", [".", ".."])
 def test_replay_helpers_reject_relative_profile_names(profile: str) -> None:
     """Relative profile names should not be allowed to escape the fixture root."""
@@ -198,3 +208,24 @@ def test_load_sanitized_replay_fixture_set_reports_conflicting_files(
     assert "GET /info" in message
     assert str(first_fixture) in message
     assert str(second_fixture) in message
+
+
+@pytest.mark.parametrize(
+    ("file_name", "message"),
+    [
+        ("=value.json", "must not be empty"),
+        ("a=1;a=2.json", "must be unique: a"),
+    ],
+)
+def test_load_sanitized_replay_fixture_set_rejects_invalid_fixture_query_keys(
+    tmp_path: Path,
+    file_name: str,
+    message: str,
+) -> None:
+    """On-disk fixture params should match the same key invariants as request params."""
+    profile_root = tmp_path / "silent-connect-v25" / "GET" / "info"
+    profile_root.mkdir(parents=True)
+    (profile_root / file_name).write_text("{}", encoding="utf-8")
+
+    with pytest.raises(ValueError, match=message):
+        load_sanitized_replay_fixture_set("silent-connect-v25", root=tmp_path)

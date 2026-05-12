@@ -38,7 +38,7 @@ def available_sanitized_replay_profiles(
     *, root: Path = SANITIZED_REPLAY_FIXTURE_ROOT
 ) -> tuple[str, ...]:
     """Return the available sanitized replay fixture profiles."""
-    if not root.exists():
+    if not root.is_dir():
         return ()
 
     return tuple(sorted(entry.name for entry in root.iterdir() if entry.is_dir()))
@@ -252,10 +252,21 @@ def _params_from_fixture_name(file_name: str) -> tuple[tuple[str, str], ...]:
         return ()
 
     params: list[tuple[str, str]] = []
+    seen_keys: set[str] = set()
     for encoded_pair in stem.split(QUERY_PAIR_DELIMITER):
         if "=" not in encoded_pair:
             raise ValueError(f"invalid replay fixture query segment: {encoded_pair}")
         encoded_key, encoded_value = encoded_pair.split("=", 1)
-        params.append((unquote(encoded_key), unquote(encoded_value)))
+        key = unquote(encoded_key)
+        value = unquote(encoded_value)
+        if not key:
+            raise ValueError("fixture query parameter keys must not be empty")
+        if key in seen_keys:
+            raise ValueError(f"fixture query parameter keys must be unique: {key}")
+
+        seen_keys.add(key)
+        params.append((key, value))
+
+    return tuple(sorted(params))
 
     return tuple(sorted(params))
