@@ -104,6 +104,12 @@ notes while preserving `UNKNOWN` as a fallback for future unmapped values.
 Action discovery also exposes `ActionValueType` for the `ValType` values
 described in the public API notes.
 
+`VentilationState` keeps the documented public-note values, including the
+explicit `"-"` state via `VentilationState.NONE`, while also retaining timed
+manual compatibility values such as `MAN3x2` that have appeared in Duco
+payloads and action discovery responses. More detail is available in
+`docs/ventilation-states.md`.
+
 More detail for action discovery plus system and node action execution is
 available in `docs/actions.md`.
 System and node config writes are documented in `docs/config.md`.
@@ -136,4 +142,3 @@ development pass, covering:
 - `GET /info/nodes`
 - `GET /info?module=General&submodule=PublicApi`
 - `POST /action/nodes/{node}` with a no-op `SetVentilationState`
-
