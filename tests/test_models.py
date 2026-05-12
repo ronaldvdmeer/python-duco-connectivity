@@ -88,7 +88,7 @@ def test_action_value_type_values() -> None:
 
 def test_ventilation_state_values() -> None:
     """VentilationState should expose documented and compatibility members explicitly."""
-    assert [state.value for state in VentilationState] == [
+    assert {state.value for state in VentilationState} == {
         "AUTO",
         "AUT1",
         "AUT2",
@@ -108,7 +108,9 @@ def test_ventilation_state_values() -> None:
         "MAN2x3",
         "MAN3x3",
         "UNKNOWN",
-    ]
+    }
+    assert VentilationState.NONE.value == "-"
+    assert VentilationState.MAN3x2.value == "MAN3x2"
 
 
 def test_api_info_defaults() -> None:

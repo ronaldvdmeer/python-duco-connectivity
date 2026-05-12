@@ -1,13 +1,14 @@
 # Ventilation states
 
-`python-duco-connectivity` keeps `VentilationState` close to the Duco public
-API notes while remaining tolerant of values that have been observed in real
-payloads.
+`python-duco-connectivity` keeps `VentilationState` close to the Duco API
+reference spec used during development while remaining tolerant of values that
+have been observed in real payloads.
 
-## Documented note-defined states
+## Documented spec-defined states
 
-The public API notes in `notes/public_api_v2.5.yaml` define these ventilation
-state values:
+The Duco API reference spec used during development, referenced here as
+`public_api_v2.5.yaml`, is not shipped in this repository. It defines these
+ventilation state values:
 
 - `AUTO`
 - `AUT1`
@@ -37,9 +38,10 @@ The library also retains these timed manual variants as explicit enum members:
 - `MAN2x3`
 - `MAN3x3`
 
-These values are not listed in the public API notes, but they have appeared in
-Duco payloads and action discovery responses. Keeping them as explicit members
-avoids turning known device behavior into `UNKNOWN` for downstream consumers.
+These values are not listed in the documented reference spec, but they have
+appeared in Duco payloads and action discovery responses. Keeping them as
+explicit members avoids turning known device behavior into `UNKNOWN` for
+downstream consumers.
 
 ## Fallback behavior
 
