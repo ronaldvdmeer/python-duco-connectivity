@@ -1446,6 +1446,33 @@ class DucoClient:
 
         return self._parse_config_zones_overview(payload)
 
+    async def async_get_zone_config(
+        self,
+        zone_id: int,
+        group: int | None = None,
+        module: str | None = None,
+        submodule: str | None = None,
+        parameter: str | None = None,
+    ) -> ConfigZone:
+        """Return detailed configuration values for a specific zone."""
+        params: dict[str, str] = {}
+        if group is not None:
+            params["group"] = str(group)
+        if module is not None:
+            params["module"] = module
+        if submodule is not None:
+            params["submodule"] = submodule
+        if parameter is not None:
+            params["parameter"] = parameter
+
+        path = f"/config/zones/{zone_id}"
+        if params:
+            payload = await self._request_json("GET", path, params=params)
+        else:
+            payload = await self._request_json("GET", path)
+
+        return self._parse_config_zone(payload, path=path)
+
     async def async_set_node_config(
         self,
         node_id: int,
