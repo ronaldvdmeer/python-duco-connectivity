@@ -76,6 +76,15 @@ def test_replay_helpers_reject_relative_profile_names(profile: str) -> None:
         load_sanitized_replay_fixture_set(profile)
 
 
+def test_replay_helpers_reject_portability_breaking_profile_names() -> None:
+    """Profile names should remain portable across operating systems."""
+    with pytest.raises(ValueError, match="simple directory name"):
+        build_sanitized_replay_fixture_path("silent\\connect-v25", "GET", "/api")
+
+    with pytest.raises(ValueError, match="simple directory name"):
+        load_sanitized_replay_fixture_set("silent\\connect-v25")
+
+
 @pytest.mark.parametrize(
     ("path", "message"),
     [
@@ -140,3 +149,52 @@ def test_load_sanitized_replay_fixture_set_rejects_missing_profile() -> None:
     """Missing replay profiles should fail explicitly."""
     with pytest.raises(FileNotFoundError, match="missing-profile"):
         load_sanitized_replay_fixture_set("missing-profile")
+
+
+def test_load_sanitized_replay_fixture_reports_params_and_path_on_missing_fixture(
+    tmp_path: Path,
+) -> None:
+    """Missing fixtures should report both the normalized request and target file."""
+    with pytest.raises(FileNotFoundError) as err:
+        load_sanitized_replay_fixture(
+            "silent-connect-v25",
+            "GET",
+            "/info",
+            params={"submodule": "Board", "module": "General"},
+            root=tmp_path,
+        )
+
+    message = str(err.value)
+    assert "GET /info" in message
+    assert "params={'module': 'General', 'submodule': 'Board'}" in message
+    assert "module=General;submodule=Board.json" in message
+
+
+def test_load_sanitized_replay_fixture_set_reports_profile_root_on_missing_profile(
+    tmp_path: Path,
+) -> None:
+    """Missing profiles should report the resolved profile path."""
+    with pytest.raises(FileNotFoundError) as err:
+        load_sanitized_replay_fixture_set("missing-profile", root=tmp_path)
+
+    assert str(tmp_path / "missing-profile") in str(err.value)
+
+
+def test_load_sanitized_replay_fixture_set_reports_conflicting_files(
+    tmp_path: Path,
+) -> None:
+    """Duplicate normalized fixtures should point to both conflicting files."""
+    profile_root = tmp_path / "silent-connect-v25" / "GET" / "info"
+    profile_root.mkdir(parents=True)
+    first_fixture = profile_root / "module=General;submodule=Board.json"
+    second_fixture = profile_root / "submodule=Board;module=General.json"
+    first_fixture.write_text("{}", encoding="utf-8")
+    second_fixture.write_text("{}", encoding="utf-8")
+
+    with pytest.raises(ValueError) as err:
+        load_sanitized_replay_fixture_set("silent-connect-v25", root=tmp_path)
+
+    message = str(err.value)
+    assert "GET /info" in message
+    assert str(first_fixture) in message
+    assert str(second_fixture) in message

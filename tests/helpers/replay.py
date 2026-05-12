@@ -104,7 +104,7 @@ def load_sanitized_replay_fixture(
 
     if not fixture_path.is_file():
         raise FileNotFoundError(
-            f"No sanitized replay fixture found for {request.method} {request.path}"
+            f"No sanitized replay fixture found for {_format_request(request)} at {fixture_path}"
         )
 
     return ReplayFixture(
@@ -125,7 +125,7 @@ def load_sanitized_replay_fixture_set(
 
     if not profile_root.is_dir():
         raise FileNotFoundError(
-            f"No sanitized replay fixture profile found for {normalized_profile}"
+            f"No sanitized replay fixture profile found for {normalized_profile} at {profile_root}"
         )
 
     fixtures: dict[ReplayRequest, ReplayFixture] = {}
@@ -133,8 +133,10 @@ def load_sanitized_replay_fixture_set(
     for file_path in sorted(profile_root.rglob("*.json")):
         request = _request_from_fixture_path(file_path.relative_to(profile_root))
         if request in fixtures:
+            existing_file_path = fixtures[request].file_path
             raise ValueError(
-                f"Duplicate sanitized replay fixture for {request.method} {request.path}"
+                "Duplicate sanitized replay fixture for "
+                f"{_format_request(request)}: {existing_file_path} conflicts with {file_path}"
             )
 
         fixtures[request] = ReplayFixture(
@@ -152,6 +154,8 @@ def _normalize_profile(profile: str) -> str:
         raise ValueError("profile must not be empty")
     if profile in {".", ".."}:
         raise ValueError("profile must not be . or ..")
+    if "/" in profile or "\\" in profile:
+        raise ValueError("profile must be a simple directory name")
     if Path(profile).name != profile:
         raise ValueError("profile must be a simple directory name")
     return profile
@@ -213,6 +217,14 @@ def _fixture_file_name(params: tuple[tuple[str, str], ...]) -> str:
         f"{quote(key, safe='')}={quote(value, safe='')}" for key, value in params
     )
     return f"{encoded_params}.json"
+
+
+def _format_request(request: ReplayRequest) -> str:
+    details = f"{request.method} {request.path}"
+    if not request.params:
+        return details
+
+    return f"{details} params={dict(request.params)!r}"
 
 
 def _request_from_fixture_path(relative_path: Path) -> ReplayRequest:
