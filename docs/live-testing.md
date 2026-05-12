@@ -15,10 +15,12 @@ These tests are intentionally local-only:
 - A local development environment with the project dev dependencies installed
 - Sufficient Duco write budget before running the safe-write test
 
-From the repository root, install the development dependencies into the local
-virtual environment if needed:
+From the repository root, use any activated virtual environment you prefer. The
+commands below use a local `.venv` so they stay copy-pasteable from a clean
+checkout. Create it first if needed, then install the development dependencies:
 
 ```bash
+.venv/bin/python -m venv .venv
 .venv/bin/python -m pip install -e ".[dev]"
 ```
 

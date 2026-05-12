@@ -84,10 +84,13 @@ async client methods. Regenerate it after public surface changes with:
 
 ## Development
 
-From the repository root, install the development dependencies into the local
-virtual environment and run the same checks as CI:
+From the repository root, use any activated virtual environment you prefer. The
+commands below use a local `.venv` so they stay copy-pasteable from a clean
+checkout. Create it first if needed, then install the development dependencies
+and run the same checks as CI:
 
 ```bash
+.venv/bin/python -m venv .venv
 .venv/bin/python -m pip install -e ".[dev]"
 .venv/bin/pytest
 .venv/bin/ruff check src tests

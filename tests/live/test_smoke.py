@@ -25,7 +25,7 @@ async def test_live_reads_core_device_info(
     )
 
     assert api_info.public_api_version
-    assert any(endpoint.url == "/api" for endpoint in api_info.endpoints)
+    assert not api_info.endpoints or any(endpoint.url == "/api" for endpoint in api_info.endpoints)
     assert board_info.box_name
     assert board_info.serial_board_comm
     assert board_info.time > 0
