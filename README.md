@@ -101,6 +101,8 @@ The model layer includes `Action`, `ActionNode`, `ActionItem`,
 `NodeGeneralInfo`, `NodeVentilationInfo`, and `NodeSensorInfo`.
 The typed enum layer keeps `NodeType` closely aligned with the Duco public API
 notes while preserving `UNKNOWN` as a fallback for future unmapped values.
+`NetworkType` also keeps the documented transport values, including
+`NetworkType.NONE` for `"-"`, while preserving the same `UNKNOWN` fallback.
 Action discovery also exposes `ActionValueType` for the `ValType` values
 described in the public API notes.
 
