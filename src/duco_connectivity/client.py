@@ -30,6 +30,11 @@ from .models import (
     ConfigValueString,
     DiagComponent,
     DiagStatus,
+    InfoGroup,
+    InfoGroupStruct,
+    InfoZone,
+    InfoZonesOverview,
+    InfoZoneStruct,
     LanInfo,
     NetworkType,
     Node,
@@ -507,6 +512,176 @@ class DucoClient:
         return ConfigNode(
             node_id=node_id,
             name=node_struct.name,
+            raw_payload=cls._preserve_raw_payload(payload),
+        )
+
+    @classmethod
+    def _parse_info_group_struct(
+        cls,
+        payload: Any,
+        *,
+        path: str,
+    ) -> InfoGroupStruct:
+        if not isinstance(payload, dict):
+            msg = f"Expected object for zone group struct {path}, got {type(payload).__name__}"
+            raise DucoError(msg)
+
+        nodes: list[int] = []
+        if "DeviceGroupConfig" in payload:
+            device_group_config = payload["DeviceGroupConfig"]
+            if not isinstance(device_group_config, dict):
+                msg = f"Expected object DeviceGroupConfig in {path}"
+                raise DucoError(msg)
+
+            if "General" in device_group_config:
+                general = device_group_config["General"]
+                if not isinstance(general, dict):
+                    msg = f"Expected object General in {path}.DeviceGroupConfig"
+                    raise DucoError(msg)
+
+                if "Nodes" in general:
+                    raw_nodes = cls._read_scalar_value(general, "Nodes")
+                    if not isinstance(raw_nodes, list):
+                        msg = f"Expected list Nodes in {path}.DeviceGroupConfig.General"
+                        raise DucoError(msg)
+
+                    for index, node_id in enumerate(raw_nodes):
+                        if type(node_id) is not int:
+                            msg = (
+                                f"Expected integer node ID at {path}.DeviceGroupConfig."
+                                f"General.Nodes[{index}], got {type(node_id).__name__}"
+                            )
+                            raise DucoError(msg)
+                        nodes.append(node_id)
+
+        return InfoGroupStruct(
+            nodes=nodes,
+            raw_payload=cls._preserve_raw_payload(payload),
+        )
+
+    @classmethod
+    def _parse_info_group(cls, payload: Any, *, path: str) -> InfoGroup:
+        if not isinstance(payload, dict):
+            msg = f"Expected object {path} in /info/zones response, got {type(payload).__name__}"
+            raise DucoError(msg)
+
+        if "Group" not in payload:
+            msg = f"Expected integer Group in {path}"
+            raise DucoError(msg)
+
+        group_id = cls._read_scalar_value(payload, "Group")
+        if type(group_id) is not int:
+            msg = f"Expected integer Group in {path}, got {type(group_id).__name__}"
+            raise DucoError(msg)
+
+        group_struct = cls._parse_info_group_struct(payload, path=path)
+        return InfoGroup(
+            group_id=group_id,
+            nodes=group_struct.nodes,
+            raw_payload=cls._preserve_raw_payload(payload),
+        )
+
+    @classmethod
+    def _parse_info_zone_struct(
+        cls,
+        payload: Any,
+        *,
+        path: str,
+    ) -> InfoZoneStruct:
+        if not isinstance(payload, dict):
+            msg = f"Expected object for zone info struct {path}, got {type(payload).__name__}"
+            raise DucoError(msg)
+
+        name = None
+        if "DeviceGroupConfig" in payload:
+            device_group_config = payload["DeviceGroupConfig"]
+            if not isinstance(device_group_config, dict):
+                msg = f"Expected object DeviceGroupConfig in {path}"
+                raise DucoError(msg)
+
+            if "General" in device_group_config:
+                general = device_group_config["General"]
+                if not isinstance(general, dict):
+                    msg = f"Expected object General in {path}.DeviceGroupConfig"
+                    raise DucoError(msg)
+
+                if "Name" in general:
+                    raw_name = cls._read_scalar_value(general, "Name")
+                    if not isinstance(raw_name, str):
+                        msg = (
+                            f"Expected string Name in {path}.DeviceGroupConfig.General, "
+                            f"got {type(raw_name).__name__}"
+                        )
+                        raise DucoError(msg)
+                    name = raw_name
+
+        groups: list[InfoGroup] = []
+        if "Groups" in payload:
+            raw_groups = payload["Groups"]
+            if not isinstance(raw_groups, list):
+                msg = f"Expected list Groups in {path}"
+                raise DucoError(msg)
+
+            groups = [
+                cls._parse_info_group(
+                    item,
+                    path=f"{path}.Groups item at index {index}",
+                )
+                for index, item in enumerate(raw_groups)
+            ]
+
+        return InfoZoneStruct(
+            name=name,
+            groups=groups,
+            raw_payload=cls._preserve_raw_payload(payload),
+        )
+
+    @classmethod
+    def _parse_info_zones_overview(cls, payload: Any) -> InfoZonesOverview:
+        if not isinstance(payload, dict):
+            msg = f"Expected object payload from /info/zones, got {type(payload).__name__}"
+            raise DucoError(msg)
+
+        if "Zones" not in payload or not isinstance(payload["Zones"], list):
+            msg = "Expected list Zones in /info/zones response"
+            raise DucoError(msg)
+
+        zones: list[InfoZone] = []
+        for index, item in enumerate(payload["Zones"]):
+            if not isinstance(item, dict):
+                msg = (
+                    f"Expected object /info/zones item at index {index} in /info/zones "
+                    f"response, got {type(item).__name__}"
+                )
+                raise DucoError(msg)
+
+            if "Zone" not in item:
+                msg = f"Expected integer Zone in /info/zones item at index {index}"
+                raise DucoError(msg)
+
+            zone_id = cls._read_scalar_value(item, "Zone")
+            if type(zone_id) is not int:
+                msg = (
+                    f"Expected integer Zone in /info/zones item at index {index}, "
+                    f"got {type(zone_id).__name__}"
+                )
+                raise DucoError(msg)
+
+            zone_struct = cls._parse_info_zone_struct(
+                item,
+                path=f"/info/zones item at index {index}",
+            )
+            zones.append(
+                InfoZone(
+                    zone_id=zone_id,
+                    name=zone_struct.name,
+                    groups=zone_struct.groups,
+                    raw_payload=cls._preserve_raw_payload(item),
+                )
+            )
+
+        return InfoZonesOverview(
+            zones=zones,
             raw_payload=cls._preserve_raw_payload(payload),
         )
 
@@ -1127,6 +1302,11 @@ class DucoClient:
         """Return nodes reported by the local API."""
         payload = await self._request_json("GET", "/info/nodes")
         return [self._parse_node(item) for item in payload["Nodes"]]
+
+    async def async_get_zones_info(self) -> InfoZonesOverview:
+        """Return zone information reported by the local API."""
+        payload = await self._request_json("GET", "/info/zones")
+        return self._parse_info_zones_overview(payload)
 
     async def async_get_nodes_overview(self) -> list[NodeOverview]:
         """Return lightweight node identifiers reported by the local API."""

@@ -25,6 +25,9 @@ from duco_connectivity import (
     DucoConnectionError,
     DucoError,
     DucoWriteLimitError,
+    InfoGroup,
+    InfoZone,
+    InfoZonesOverview,
     NetworkType,
     NodeActionItemList,
     NodeListActionItemList,
@@ -173,6 +176,52 @@ NODE_ACTION_DISCOVERY_FOR_NODE_MALFORMED_PAYLOADS: list[tuple[object, str]] = [
         (
             "Expected object /action/nodes/7 payload.Actions item at index 0 "
             "in /action/nodes/7 response, got bool"
+        ),
+    ),
+]
+
+ZONES_INFO_MALFORMED_PAYLOADS: list[tuple[object, str]] = [
+    ([], "Expected object payload from /info/zones, got list"),
+    ({}, "Expected list Zones in /info/zones response"),
+    ({"Zones": {}}, "Expected list Zones in /info/zones response"),
+    (
+        {"Zones": [False]},
+        "Expected object /info/zones item at index 0 in /info/zones response, got bool",
+    ),
+    ({"Zones": [{}]}, "Expected integer Zone in /info/zones item at index 0"),
+    (
+        {"Zones": [{"Zone": "1"}]},
+        "Expected integer Zone in /info/zones item at index 0, got str",
+    ),
+    (
+        {"Zones": [{"Zone": 1, "Groups": {}}]},
+        "Expected list Groups in /info/zones item at index 0",
+    ),
+    (
+        {"Zones": [{"Zone": 1, "Groups": [{}]}]},
+        "Expected integer Group in /info/zones item at index 0.Groups item at index 0",
+    ),
+    (
+        {"Zones": [{"Zone": 1, "DeviceGroupConfig": {"General": {"Name": 1}}}]},
+        "Expected string Name in /info/zones item at index 0.DeviceGroupConfig.General, got int",
+    ),
+    (
+        {
+            "Zones": [
+                {
+                    "Zone": 1,
+                    "Groups": [
+                        {
+                            "Group": 1,
+                            "DeviceGroupConfig": {"General": {"Nodes": [7, "8"]}},
+                        }
+                    ],
+                }
+            ]
+        },
+        (
+            "Expected integer node ID at /info/zones item at index 0.Groups item at "
+            "index 0.DeviceGroupConfig.General.Nodes\\[1\\], got str"
         ),
     ),
 ]
@@ -1601,6 +1650,100 @@ async def test_get_nodes_preserves_unknown_sections_in_raw_payload() -> None:
     assert node.sensor.temp == 20.1
     assert node.sensor.raw_payload["Voc"] == {"Val": 321}
     assert node.raw_payload["CustomSection"] == {"FutureFlag": {"Val": True}}
+
+
+async def test_get_zones_info_parses_payload(zones_info_data: dict[str, object]) -> None:
+    """Zone overview parsing should stay close to the published API shape."""
+    mock_response = _response(json_payload=zones_info_data)
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with patch.object(session, "request", _request(mock_response)):
+            zones = await client.async_get_zones_info()
+
+    assert zones == InfoZonesOverview(
+        zones=[
+            InfoZone(
+                zone_id=1,
+                name="Ground floor",
+                groups=[
+                    InfoGroup(group_id=1, nodes=[7, 8]),
+                    InfoGroup(group_id=2, nodes=[]),
+                ],
+            ),
+            InfoZone(zone_id=2),
+        ]
+    )
+    assert zones.raw_payload is zones_info_data
+    assert zones.zones[0].raw_payload is zones_info_data["Zones"][0]
+    assert zones.zones[0].groups[0].raw_payload is zones_info_data["Zones"][0]["Groups"][0]
+    assert zones.zones[0].raw_payload["FutureZoneField"] == {"Val": "kept"}
+    assert zones.zones[0].groups[0].raw_payload["FutureGroupField"] == {"Val": True}
+
+
+async def test_get_zones_info_uses_zone_path(zones_info_data: dict[str, object]) -> None:
+    """The zone overview reader should request the published zone info endpoint."""
+    mock_response = _response(json_payload=zones_info_data)
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        request_mock = _request(mock_response)
+        with patch.object(session, "request", request_mock):
+            await client.async_get_zones_info()
+
+    assert request_mock.call_args.args[:2] == (
+        "GET",
+        "http://192.0.2.94/info/zones",
+    )
+    assert "params" not in request_mock.call_args.kwargs
+
+
+@pytest.mark.parametrize(("payload", "message"), ZONES_INFO_MALFORMED_PAYLOADS)
+async def test_get_zones_info_malformed_payload_raises_duco_error(
+    payload: object,
+    message: str,
+) -> None:
+    """Malformed zone overview payloads should raise DucoError."""
+    mock_response = _response(json_payload=payload)
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with (
+            patch.object(session, "request", _request(mock_response)),
+            pytest.raises(DucoError, match=message),
+        ):
+            await client.async_get_zones_info()
+
+
+async def test_get_zones_info_api_error_raises_duco_error() -> None:
+    """HTTP errors from the zone overview should surface as DucoError."""
+    mock_response = _response(status=503, text_payload="service unavailable")
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with (
+            patch.object(session, "request", _request(mock_response)),
+            pytest.raises(
+                DucoError,
+                match="Unexpected response 503 for /info/zones: service unavailable",
+            ),
+        ):
+            await client.async_get_zones_info()
+
+
+async def test_get_zones_info_connection_error_raises_duco_connection_error() -> None:
+    """Transport failures from the zone overview should surface as connection errors."""
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with (
+            patch.object(
+                session,
+                "request",
+                MagicMock(side_effect=aiohttp.ClientError("boom")),
+            ),
+            pytest.raises(DucoConnectionError, match="Could not reach Duco device"),
+        ):
+            await client.async_get_zones_info()
 
 
 async def test_get_nodes_overview_parses_payload(
