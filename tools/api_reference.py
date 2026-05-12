@@ -8,6 +8,8 @@ import sys
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
+from types import NoneType, UnionType
+from typing import Any, Literal, Union, get_args, get_origin
 
 ROOT = Path(__file__).resolve().parents[1]
 SRC = ROOT / "src"
@@ -284,6 +286,35 @@ class MethodReference:
 
 def _format_annotation(annotation: object) -> str:
     """Format a signature annotation for Markdown output."""
+    if annotation is inspect.Signature.empty:
+        return ""
+
+    if annotation is None or annotation is NoneType:
+        return "None"
+
+    if annotation is Any:
+        return "Any"
+
+    if isinstance(annotation, str):
+        return annotation
+
+    origin = get_origin(annotation)
+    if origin in (Union, UnionType):
+        args = [_format_annotation(arg) for arg in get_args(annotation)]
+        return " | ".join(args)
+
+    if origin is Literal:
+        values = ", ".join(repr(arg) for arg in get_args(annotation))
+        return f"Literal[{values}]"
+
+    if origin is not None:
+        origin_name = _format_annotation(origin)
+        args = ", ".join(_format_annotation(arg) for arg in get_args(annotation))
+        return f"{origin_name}[{args}]"
+
+    if hasattr(annotation, "__name__"):
+        return annotation.__name__
+
     return (
         inspect.formatannotation(annotation)
         .replace("typing.", "")
@@ -292,15 +323,44 @@ def _format_annotation(annotation: object) -> str:
     )
 
 
+def _format_parameter(parameter: inspect.Parameter) -> str:
+    """Return a stable parameter representation across Python versions."""
+    prefix = ""
+    if parameter.kind is inspect.Parameter.VAR_POSITIONAL:
+        prefix = "*"
+    elif parameter.kind is inspect.Parameter.VAR_KEYWORD:
+        prefix = "**"
+
+    rendered = f"{prefix}{parameter.name}"
+    if parameter.annotation is not inspect.Parameter.empty:
+        rendered = f"{rendered}: {_format_annotation(parameter.annotation)}"
+    if parameter.default is not inspect.Parameter.empty:
+        rendered = f"{rendered} = {parameter.default!r}"
+    return rendered
+
+
 def _format_signature(method: object, name: str) -> str:
     """Return a readable public method signature without the `self` parameter."""
-    signature = str(inspect.signature(method))
-    signature = signature.replace("(self, ", "(")
-    signature = signature.replace("(self)", "()")
-    signature = signature.replace("typing.", "")
-    signature = signature.replace("duco_connectivity.models.", "")
-    signature = signature.replace("aiohttp.client.", "")
-    return f"{name}{signature}"
+    signature = inspect.signature(method)
+    parameters: list[str] = []
+    needs_keyword_separator = True
+
+    for parameter in signature.parameters.values():
+        if parameter.name == "self":
+            continue
+
+        if parameter.kind is inspect.Parameter.KEYWORD_ONLY and needs_keyword_separator:
+            parameters.append("*")
+            needs_keyword_separator = False
+        elif parameter.kind is inspect.Parameter.VAR_POSITIONAL:
+            needs_keyword_separator = False
+
+        parameters.append(_format_parameter(parameter))
+
+    rendered = f"{name}({', '.join(parameters)})"
+    if signature.return_annotation is not inspect.Signature.empty:
+        rendered = f"{rendered} -> {_format_annotation(signature.return_annotation)}"
+    return rendered
 
 
 def collect_method_references() -> dict[str, list[MethodReference]]:
