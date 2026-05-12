@@ -40,8 +40,8 @@ result = await client.async_set_config(
 mode = result.sections["General"].entries["Lan"].entries["Mode"]
 ```
 
-When you already have an API-shaped payload, you can also pass wrapped leaves
-directly:
+When you already have an API-shaped payload, you can also pass the API-shaped
+leaf objects directly:
 
 ```python
 await client.async_set_config(
@@ -128,8 +128,8 @@ assert result.name is not None
 assert result.name.value == "Kitchen valve"
 ```
 
-When you already have an API-shaped payload, you can also pass wrapped leaves
-directly:
+When you already have an API-shaped payload, you can also pass the API-shaped
+leaf objects directly:
 
 ```python
 await client.async_set_node_config(
@@ -179,8 +179,8 @@ assert result.name is not None
 assert result.name.value == "Ground floor"
 ```
 
-When you already have an API-shaped payload, you can also pass wrapped leaves
-directly:
+When you already have an API-shaped payload, you can also pass the API-shaped
+leaf objects directly:
 
 ```python
 await client.async_set_zone_config(
