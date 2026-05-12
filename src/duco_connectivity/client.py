@@ -143,6 +143,26 @@ class DucoClient:
         """Normalized base URL used for requests."""
         return self._base_url
 
+    @staticmethod
+    def _normalize_raw_get_path(path: str) -> str:
+        """Validate and normalize a public raw-read path."""
+        parsed_path = urlsplit(path)
+        if parsed_path.scheme or parsed_path.netloc:
+            msg = "async_get_raw path must be API-relative, not a full URL"
+            raise ValueError(msg)
+
+        if not path.startswith("/"):
+            msg = "async_get_raw path must start with /"
+            raise ValueError(msg)
+
+        if parsed_path.query or parsed_path.fragment:
+            msg = (
+                "async_get_raw path must not include a query string or fragment; use params instead"
+            )
+            raise ValueError(msg)
+
+        return parsed_path.path
+
     async def _request_json(self, method: str, path: str, **kwargs: Any) -> Any:
         allow_empty_response = kwargs.pop("allow_empty_response", False)
         json_payload = None
@@ -816,6 +836,20 @@ class DucoClient:
         payload = await self._request_json("GET", response_path)
         return self._parse_single_node_action_item(payload, response_path=response_path)
 
+    async def async_get_raw(
+        self,
+        path: str,
+        *,
+        params: dict[str, str] | None = None,
+    ) -> Any:
+        """Return the raw payload from an unmapped GET endpoint."""
+        normalized_path = self._normalize_raw_get_path(path)
+
+        if params:
+            return await self._request_json("GET", normalized_path, params=params)
+
+        return await self._request_json("GET", normalized_path)
+
     async def async_get_info(
         self,
         module: str | None = None,
@@ -831,10 +865,7 @@ class DucoClient:
         if parameter is not None:
             params["parameter"] = parameter
 
-        if params:
-            return await self._request_json("GET", "/info", params=params)
-
-        return await self._request_json("GET", "/info")
+        return await self.async_get_raw("/info", params=params or None)
 
     async def async_get_config(
         self,
@@ -901,10 +932,7 @@ class DucoClient:
         if parameter is not None:
             params["parameter"] = parameter
 
-        if params:
-            return await self._request_json("GET", "/config/nodes", params=params)
-
-        return await self._request_json("GET", "/config/nodes")
+        return await self.async_get_raw("/config/nodes", params=params or None)
 
     async def async_get_node_config_raw(
         self,
@@ -917,10 +945,7 @@ class DucoClient:
             params["parameter"] = parameter
 
         path = f"/config/nodes/{node_id}"
-        if params:
-            return await self._request_json("GET", path, params=params)
-
-        return await self._request_json("GET", path)
+        return await self.async_get_raw(path, params=params or None)
 
     async def async_set_node_config_raw(
         self,

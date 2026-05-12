@@ -296,6 +296,97 @@ async def test_request_logging_includes_method_path_and_status(
     assert "Received response 200 for GET http://192.0.2.94/api" in caplog.text
 
 
+async def test_get_raw_without_query_params_returns_raw_payload() -> None:
+    """The generic raw reader should expose unmapped GET payloads unchanged."""
+    mock_response = _response(json_payload={"Nodes": [{"Node": {"Val": 7}}]})
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        request_mock = _request(mock_response)
+        with patch.object(session, "request", request_mock):
+            payload = await client.async_get_raw("/nodes")
+
+    assert payload == {"Nodes": [{"Node": {"Val": 7}}]}
+    assert request_mock.call_args.args == ("GET", "http://192.0.2.94/nodes")
+    assert "params" not in request_mock.call_args.kwargs
+
+
+async def test_get_raw_with_query_params_forwards_query_params() -> None:
+    """The generic raw reader should forward caller-supplied query params unchanged."""
+    mock_response = _response(json_payload={"Temperature": {"Val": 21}})
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        request_mock = _request(mock_response)
+        with patch.object(session, "request", request_mock):
+            payload = await client.async_get_raw(
+                "/info/nodes/7",
+                params={"module": "Sensor", "parameter": "Temperature"},
+            )
+
+    assert payload == {"Temperature": {"Val": 21}}
+    assert request_mock.call_args.args == ("GET", "http://192.0.2.94/info/nodes/7")
+    assert request_mock.call_args.kwargs["params"] == {
+        "module": "Sensor",
+        "parameter": "Temperature",
+    }
+
+
+@pytest.mark.parametrize(
+    ("path", "message"),
+    [
+        ("nodes", "async_get_raw path must start with /"),
+        ("http://192.0.2.94/nodes", "async_get_raw path must be API-relative, not a full URL"),
+        (
+            "/nodes?module=General",
+            "async_get_raw path must not include a query string or fragment; use params instead",
+        ),
+        (
+            "/nodes#fragment",
+            "async_get_raw path must not include a query string or fragment; use params instead",
+        ),
+    ],
+)
+async def test_get_raw_rejects_invalid_public_paths(path: str, message: str) -> None:
+    """The generic raw reader should reject non-relative or ambiguous paths."""
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+
+        with pytest.raises(ValueError, match=re.escape(message)):
+            await client.async_get_raw(path)
+
+
+async def test_get_raw_api_error_raises_duco_error() -> None:
+    """HTTP errors from the generic raw reader should surface as DucoError."""
+    mock_response = _response(status=404, text_payload="missing endpoint")
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with (
+            patch.object(session, "request", _request(mock_response)),
+            pytest.raises(
+                DucoError,
+                match="Unexpected response 404 for /unmapped: missing endpoint",
+            ),
+        ):
+            await client.async_get_raw("/unmapped")
+
+
+async def test_get_raw_connection_error_raises_duco_connection_error() -> None:
+    """Transport failures from the generic raw reader should surface as connection errors."""
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with (
+            patch.object(
+                session,
+                "request",
+                MagicMock(side_effect=aiohttp.ClientError("boom")),
+            ),
+            pytest.raises(DucoConnectionError, match="Could not reach Duco device"),
+        ):
+            await client.async_get_raw("/nodes")
+
+
 async def test_get_info_without_query_params_returns_raw_payload(
     generic_info_all_data: dict[str, object],
 ) -> None:
