@@ -3,18 +3,22 @@
 `python-duco-connectivity` exposes typed zone and group models that mirror the
 published Duco `/info/zones` and `/config/zones` schema families.
 
-`DucoClient.async_get_zones_info()` exposes typed `GET /info/zones` support for
-the published zone overview endpoint.
+`DucoClient.async_get_zones_info()` and `DucoClient.async_get_zone_info()`
+expose typed `GET /info/zones` and `GET /info/zones/{zone}` support for the
+published zone info endpoints.
 
-## Zone info reader
+## Zone info readers
 
 - `async_get_zones_info()` returns an `InfoZonesOverview`.
+- `async_get_zone_info()` returns a single `InfoZone`.
 - Zone names are read from `DeviceGroupConfig.General.Name` and exposed as a
   plain string on `InfoZone.name`.
 - Group node membership is read from `DeviceGroupConfig.General.Nodes` and
   exposed as a list of integers on `InfoGroup.nodes`.
 - Unknown zone or group fields remain available through `raw_payload` for
   forward compatibility.
+- The single-zone reader forwards the documented optional `group`, `module`,
+  `submodule`, and `parameter` query arguments unchanged.
 
 Typed zone config readers and writers are still not exposed yet.
 
