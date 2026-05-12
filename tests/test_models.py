@@ -22,6 +22,7 @@ from duco_connectivity import (
     InfoGroup,
     InfoGroupStruct,
     InfoZone,
+    InfoZoneGroup,
     InfoZonesOverview,
     InfoZoneStruct,
     NetworkType,
@@ -272,6 +273,15 @@ def test_info_group_struct_defaults() -> None:
 def test_info_group_defaults() -> None:
     """InfoGroup should keep the group identifier and default fields."""
     group = InfoGroup(group_id=4)
+    assert group.group_id == 4
+    assert group.nodes == []
+    assert group.raw_payload == {}
+
+
+def test_info_zone_group_defaults() -> None:
+    """InfoZoneGroup should keep the typed zone and group identifiers."""
+    group = InfoZoneGroup(zone_id=2, group_id=4)
+    assert group.zone_id == 2
     assert group.group_id == 4
     assert group.nodes == []
     assert group.raw_payload == {}

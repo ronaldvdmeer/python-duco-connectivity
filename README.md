@@ -50,6 +50,7 @@ The current client exposes:
 - `async_get_node_info()` for `GET /info/nodes/{node}` with optional `module` and `parameter` query arguments
 - `async_get_zones_info()` for `GET /info/zones`
 - `async_get_zone_info()` for `GET /info/zones/{zone}` with optional `group`, `module`, `submodule`, and `parameter` query arguments
+- `async_get_zone_group_info()` for `GET /info/zones/{zone}/groups/{group}` with optional `module`, `submodule`, and `parameter` query arguments
 - `async_get_diagnostics()` for `GET /info?module=Diag`
 - `async_get_write_requests_remaining()` for `GET /info?module=General&submodule=PublicApi`
 - `async_get_actions()` for typed `GET /action` system action discovery
@@ -86,6 +87,12 @@ response for one zone. The helper forwards the documented optional `group`,
 `module`, `submodule`, and `parameter` filters as query parameters while still
 returning the typed `InfoZone` model.
 
+Use `async_get_zone_group_info()` when you need the typed
+`GET /info/zones/{zone}/groups/{group}` response for one specific group. The
+helper forwards the documented optional `module`, `submodule`, and
+`parameter` filters as query parameters while returning the typed
+`InfoZoneGroup` model.
+
 `async_set_ventilation_state()` remains available as a thin convenience wrapper
 over `async_set_node_action()` for callers that only need the existing
 ventilation state write.
@@ -117,7 +124,7 @@ The model layer includes `Action`, `ActionNode`, `ActionItem`,
 `ConfigNodeStruct`, `ConfigSection`, `ConfigZone`, `ConfigZonesOverview`,
 `ConfigZoneStruct`, `ConfigValue`, `ConfigValueOptions`,
 `ConfigValueString`, `InfoGroup`, `InfoGroupStruct`, `InfoZone`,
-`InfoZonesOverview`, `InfoZoneStruct`, `NodeActionItemList`,
+`InfoZoneGroup`, `InfoZonesOverview`, `InfoZoneStruct`, `NodeActionItemList`,
 `NodeListActionItemList`, `PatchConfigValue`, `PatchConfigNodeValue`,
 `LanInfo`, `Node`, `NodeOverview`, `NodeGeneralInfo`,
 `NodeVentilationInfo`, `NodeSensorInfo`, and `NodeMotorStateInfo`.

@@ -33,6 +33,7 @@ from .models import (
     InfoGroup,
     InfoGroupStruct,
     InfoZone,
+    InfoZoneGroup,
     InfoZonesOverview,
     InfoZoneStruct,
     LanInfo,
@@ -576,6 +577,43 @@ class DucoClient:
 
         group_struct = cls._parse_info_group_struct(payload, path=path)
         return InfoGroup(
+            group_id=group_id,
+            nodes=group_struct.nodes,
+            raw_payload=cls._preserve_raw_payload(payload),
+        )
+
+    @classmethod
+    def _parse_info_zone_group(
+        cls,
+        payload: Any,
+        *,
+        path: str,
+    ) -> InfoZoneGroup:
+        if not isinstance(payload, dict):
+            msg = f"Expected object payload from {path}, got {type(payload).__name__}"
+            raise DucoError(msg)
+
+        if "Zone" not in payload:
+            msg = f"Expected integer Zone in {path}"
+            raise DucoError(msg)
+
+        zone_id = cls._read_scalar_value(payload, "Zone")
+        if type(zone_id) is not int:
+            msg = f"Expected integer Zone in {path}, got {type(zone_id).__name__}"
+            raise DucoError(msg)
+
+        if "Group" not in payload:
+            msg = f"Expected integer Group in {path}"
+            raise DucoError(msg)
+
+        group_id = cls._read_scalar_value(payload, "Group")
+        if type(group_id) is not int:
+            msg = f"Expected integer Group in {path}, got {type(group_id).__name__}"
+            raise DucoError(msg)
+
+        group_struct = cls._parse_info_group_struct(payload, path=path)
+        return InfoZoneGroup(
+            zone_id=zone_id,
             group_id=group_id,
             nodes=group_struct.nodes,
             raw_payload=cls._preserve_raw_payload(payload),
@@ -1346,6 +1384,31 @@ class DucoClient:
             object_context=f"payload from /info/zones/{zone_id}",
             path=f"/info/zones/{zone_id}",
         )
+
+    async def async_get_zone_group_info(
+        self,
+        zone_id: int,
+        group_id: int,
+        module: str | None = None,
+        submodule: str | None = None,
+        parameter: str | None = None,
+    ) -> InfoZoneGroup:
+        """Return detailed information for a specific zone group."""
+        params: dict[str, str] = {}
+        if module is not None:
+            params["module"] = module
+        if submodule is not None:
+            params["submodule"] = submodule
+        if parameter is not None:
+            params["parameter"] = parameter
+
+        path = f"/info/zones/{zone_id}/groups/{group_id}"
+        if params:
+            payload = await self._request_json("GET", path, params=params)
+        else:
+            payload = await self._request_json("GET", path)
+
+        return self._parse_info_zone_group(payload, path=path)
 
     async def async_get_nodes_overview(self) -> list[NodeOverview]:
         """Return lightweight node identifiers reported by the local API."""

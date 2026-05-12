@@ -6,15 +6,21 @@ published Duco `/info/zones` and `/config/zones` schema families.
 `DucoClient.async_get_zones_info()` and `DucoClient.async_get_zone_info()`
 expose typed `GET /info/zones` and `GET /info/zones/{zone}` support for the
 published zone info endpoints.
+`DucoClient.async_get_zone_group_info()` exposes typed
+`GET /info/zones/{zone}/groups/{group}` support for the published group-level
+zone info endpoint.
 
 ## Zone info readers
 
 - `async_get_zones_info()` returns an `InfoZonesOverview`.
 - `async_get_zone_info()` returns a single `InfoZone`.
+- `async_get_zone_group_info()` returns a single `InfoZoneGroup`.
 - Zone names are read from `DeviceGroupConfig.General.Name` and exposed as a
   plain string on `InfoZone.name`.
 - Group node membership is read from `DeviceGroupConfig.General.Nodes` and
   exposed as a list of integers on `InfoGroup.nodes`.
+- The zone-group reader forwards the documented optional `module`,
+  `submodule`, and `parameter` query arguments unchanged.
 - Unknown zone or group fields remain available through `raw_payload` for
   forward compatibility.
 - The single-zone reader forwards the documented optional `group`, `module`,
@@ -28,6 +34,8 @@ Typed zone config readers and writers are still not exposed yet.
 - `InfoZone` keeps the typed `zone_id`, an optional plain-string `name`, and a
   list of `InfoGroup` entries.
 - `InfoGroup` keeps the typed `group_id` and the documented `nodes` list.
+- `InfoZoneGroup` keeps the typed `zone_id`, `group_id`, and documented
+  `nodes` list for the dedicated group endpoint.
 - `InfoZoneStruct` and `InfoGroupStruct` mirror the structural parts of the
   published schemas when you need the zone or group body without the outer
   identifier field.
