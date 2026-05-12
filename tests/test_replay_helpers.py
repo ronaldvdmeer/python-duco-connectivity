@@ -66,6 +66,16 @@ def test_available_sanitized_replay_profiles_lists_sample_profile() -> None:
     assert available_sanitized_replay_profiles() == ("silent-connect-v25",)
 
 
+@pytest.mark.parametrize("profile", [".", ".."])
+def test_replay_helpers_reject_relative_profile_names(profile: str) -> None:
+    """Relative profile names should not be allowed to escape the fixture root."""
+    with pytest.raises(ValueError, match=r"must not be \. or \.\."):
+        build_sanitized_replay_fixture_path(profile, "GET", "/api")
+
+    with pytest.raises(ValueError, match=r"must not be \. or \.\."):
+        load_sanitized_replay_fixture_set(profile)
+
+
 def test_load_sanitized_replay_fixture_returns_single_fixture() -> None:
     """Single fixture loads should preserve the normalized request key."""
     fixture = load_sanitized_replay_fixture(

@@ -150,6 +150,8 @@ def _normalize_profile(profile: str) -> str:
     profile = profile.strip()
     if not profile:
         raise ValueError("profile must not be empty")
+    if profile in {".", ".."}:
+        raise ValueError("profile must not be . or ..")
     if Path(profile).name != profile:
         raise ValueError("profile must be a simple directory name")
     return profile
