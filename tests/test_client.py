@@ -1409,6 +1409,11 @@ async def test_get_nodes_parses_full_payload(nodes_data: dict[str, object]) -> N
     assert box.sensor.iaq_rh == 83
     assert box.sensor.co2 is None
     assert box.sensor.temp == 27.9
+    assert box.motor_state is not None
+    assert box.motor_state.device_type == 2
+    assert box.motor_state.req == 1
+    assert box.motor_state.pos_req == 150
+    assert box.motor_state.pos == 143
 
     ucco2 = nodes[1]
     assert ucco2.general.node_type == NodeType.UCCO2
@@ -1416,6 +1421,7 @@ async def test_get_nodes_parses_full_payload(nodes_data: dict[str, object]) -> N
     assert ucco2.sensor is not None
     assert ucco2.sensor.co2 == 536
     assert ucco2.sensor.iaq_co2 == 100
+    assert ucco2.motor_state is None
 
 
 async def test_get_nodes_overview_parses_payload(
@@ -1518,6 +1524,7 @@ async def test_get_node_info_parses_payload(node_data: dict[str, object]) -> Non
     assert node.sensor is not None
     assert node.sensor.co2 == 536
     assert node.sensor.iaq_co2 == 100
+    assert node.motor_state is None
 
 
 async def test_get_node_info_uses_node_path(node_data: dict[str, object]) -> None:

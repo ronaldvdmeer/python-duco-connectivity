@@ -305,6 +305,12 @@ def nodes_data() -> dict[str, object]:
                     "Rh": {"Val": 35.5},
                     "IaqRh": {"Val": 83},
                 },
+                "MotorStateCtrl": {
+                    "DeviceType": {"Val": 2},
+                    "Req": {"Val": 1},
+                    "PosReq": {"Val": 150},
+                    "Pos": {"Val": 143},
+                },
             },
             {
                 "Node": 2,

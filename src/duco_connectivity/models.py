@@ -357,6 +357,16 @@ class NodeSensorInfo:
 
 
 @dataclass(frozen=True, slots=True)
+class NodeMotorStateInfo:
+    """Motor controller state reported for a node."""
+
+    device_type: int | None = None
+    req: int | None = None
+    pos_req: int | None = None
+    pos: int | None = None
+
+
+@dataclass(frozen=True, slots=True)
 class NodeVentilationInfo:
     """Ventilation state and timers reported for a node."""
 
@@ -388,6 +398,7 @@ class Node:
     general: NodeGeneralInfo
     ventilation: NodeVentilationInfo | None = None
     sensor: NodeSensorInfo | None = None
+    motor_state: NodeMotorStateInfo | None = None
 
 
 @dataclass(frozen=True, slots=True)

@@ -98,7 +98,8 @@ The model layer includes `Action`, `ActionNode`, `ActionItem`,
 `ConfigValue`, `ConfigValueOptions`, `ConfigValueString`,
 `NodeActionItemList`, `NodeListActionItemList`, `PatchConfigValue`,
 `PatchConfigNodeValue`, `LanInfo`, `Node`, `NodeOverview`,
-`NodeGeneralInfo`, `NodeVentilationInfo`, and `NodeSensorInfo`.
+`NodeGeneralInfo`, `NodeVentilationInfo`, `NodeSensorInfo`, and
+`NodeMotorStateInfo`.
 The typed enum layer keeps `NodeType` closely aligned with the Duco public API
 notes while preserving `UNKNOWN` as a fallback for future unmapped values.
 `NetworkType` also keeps the documented transport values, including
@@ -114,9 +115,15 @@ documented mode values, including `VentilationMode.NONE` for `"-"` and
 `VentilationMode.NA` for `"N/A"`. More detail is available in
 `docs/ventilation-states.md`.
 
+When a node payload includes the public `MotorStateCtrl` section,
+`Node.motor_state` exposes it through `NodeMotorStateInfo` while keeping each
+field optional so payloads that omit the section, or individual motor values,
+continue to parse without compatibility shims.
+
 More detail for action discovery plus system and node action execution is
 available in `docs/actions.md`.
 System and node config writes are documented in `docs/config.md`.
+Node model details are documented in `docs/nodes.md`.
 
 ## Development
 

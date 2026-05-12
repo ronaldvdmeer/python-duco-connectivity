@@ -18,6 +18,7 @@ from duco_connectivity import (
     NodeActionItemList,
     NodeGeneralInfo,
     NodeListActionItemList,
+    NodeMotorStateInfo,
     NodeSensorInfo,
     NodeType,
     NodeVentilationInfo,
@@ -252,6 +253,15 @@ def test_node_sensor_info_defaults() -> None:
     assert sensor.rh is None
     assert sensor.iaq_rh is None
     assert sensor.temp is None
+
+
+def test_node_motor_state_info_defaults() -> None:
+    """NodeMotorStateInfo should default all optional fields to None."""
+    motor_state = NodeMotorStateInfo()
+    assert motor_state.device_type is None
+    assert motor_state.req is None
+    assert motor_state.pos_req is None
+    assert motor_state.pos is None
 
 
 def test_node_ventilation_info_flow_target_is_optional() -> None:

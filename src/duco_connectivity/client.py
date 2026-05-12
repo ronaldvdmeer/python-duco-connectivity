@@ -36,6 +36,7 @@ from .models import (
     NodeActionItemList,
     NodeGeneralInfo,
     NodeListActionItemList,
+    NodeMotorStateInfo,
     NodeOverview,
     NodeSensorInfo,
     NodeType,
@@ -1205,11 +1206,30 @@ class DucoClient:
                 else None,
             )
 
+        motor_state = None
+        if "MotorStateCtrl" in payload:
+            motor_payload = payload["MotorStateCtrl"]
+            motor_state = NodeMotorStateInfo(
+                device_type=self._read_wrapped_value(motor_payload, "DeviceType")
+                if "DeviceType" in motor_payload
+                else None,
+                req=self._read_wrapped_value(motor_payload, "Req")
+                if "Req" in motor_payload
+                else None,
+                pos_req=self._read_wrapped_value(motor_payload, "PosReq")
+                if "PosReq" in motor_payload
+                else None,
+                pos=self._read_wrapped_value(motor_payload, "Pos")
+                if "Pos" in motor_payload
+                else None,
+            )
+
         return Node(
             node_id=payload["Node"],
             general=node_general,
             ventilation=ventilation,
             sensor=sensor,
+            motor_state=motor_state,
         )
 
     @classmethod
