@@ -26,6 +26,50 @@ everything inside `raw/` except its `.gitignore` placeholder.
 - `sanitized/silent-connect-v25/GET/info/module=General;submodule=Board.json`
 - `sanitized/silent-connect-v25/GET/info/nodes/__base__.json`
 
-The shared helpers in `tests/helpers/replay.py` use this layout to discover
-profiles, resolve deterministic file paths, and load full sanitized fixture
-sets for follow-up replay coverage.
+## Replay helpers
+
+The shared helpers live in `tests/helpers/replay.py`.
+
+These helpers are meant to be imported by tests. You do not need to run
+`tests/helpers/replay.py` directly.
+
+They are used to:
+
+- discover available sanitized replay profiles
+- resolve deterministic fixture paths
+- load one sanitized fixture
+- load a full sanitized fixture set for a profile
+
+## Run the replay helper tests
+
+If you want to run the replay-related tests locally, first activate the
+repository virtual environment.
+
+```bash
+cd /Users/ronald/SynologyDrive/Projecten/HomeAssistant/python-duco-connectivity
+source .venv/bin/activate
+```
+
+Then run the focused replay helper tests:
+
+```bash
+pytest tests/test_replay_helpers.py
+```
+
+If you want to run the full test suite instead:
+
+```bash
+pytest
+```
+
+## Working with new fixture samples
+
+1. Collect raw payloads locally in `tests/fixtures/replay/raw/`.
+2. Sanitize all installation-specific or sensitive values before committing
+  anything.
+3. Move the publishable sanitized payloads into
+  `tests/fixtures/replay/sanitized/<profile>/`.
+4. Keep the path and filename layout deterministic so the replay helpers can
+  find the fixtures reliably.
+
+Only sanitized fixtures may be committed to the repository.
