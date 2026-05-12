@@ -188,7 +188,7 @@ Suggested local checklist:
 2. Run the API latency probe when you want a local response-time baseline.
 3. Run the safe write test separately and confirm it leaves the observed value unchanged.
 4. Run the ventilation state round-trip test only for a node that advertises `SetVentilationState`.
-5. Inspect `async_get_node_actions()` for the target node before trying any additional manual node action.
+5. Inspect `async_get_node_actions_for_node(node_id)` for the target node before trying any additional manual node action.
 6. Capture the current state before any manual ventilation or node write.
 7. Apply a temporary change only when you know how to restore the exact prior value.
 8. Restore the original value immediately and confirm the device reports it back.

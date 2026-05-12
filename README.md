@@ -79,7 +79,7 @@ The compact API reference is generated from the published exports and public
 async client methods. Regenerate it after public surface changes with:
 
 ```bash
-.venv/bin/python tools/api_reference.py write
+python tools/api_reference.py write
 ```
 
 ## Development
