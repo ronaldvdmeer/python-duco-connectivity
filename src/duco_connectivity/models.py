@@ -411,6 +411,16 @@ class InfoGroup:
 
 
 @dataclass(frozen=True, slots=True)
+class InfoZoneGroup:
+    """Group-scoped zone info payload returned by the local Duco API."""
+
+    zone_id: int
+    group_id: int
+    nodes: list[int] = field(default_factory=list)
+    raw_payload: dict[str, Any] = field(default_factory=dict, repr=False, compare=False)
+
+
+@dataclass(frozen=True, slots=True)
 class InfoZoneStruct:
     """Zone info fields returned by the local Duco API."""
 

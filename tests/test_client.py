@@ -27,6 +27,7 @@ from duco_connectivity import (
     DucoWriteLimitError,
     InfoGroup,
     InfoZone,
+    InfoZoneGroup,
     InfoZonesOverview,
     NetworkType,
     NodeActionItemList,
@@ -252,6 +253,28 @@ ZONE_INFO_MALFORMED_PAYLOADS: list[tuple[object, str]] = [
         (
             "Expected integer node ID at /info/zones/1.Groups item at index 0"
             ".DeviceGroupConfig.General.Nodes\\[1\\], got str"
+        ),
+    ),
+]
+
+ZONE_GROUP_INFO_MALFORMED_PAYLOADS: list[tuple[object, str]] = [
+    ([], "Expected object payload from /info/zones/1/groups/2, got list"),
+    ({}, "Expected integer Zone in /info/zones/1/groups/2"),
+    ({"Zone": "1"}, "Expected integer Zone in /info/zones/1/groups/2, got str"),
+    ({"Zone": 1}, "Expected integer Group in /info/zones/1/groups/2"),
+    (
+        {"Zone": 1, "Group": "2"},
+        "Expected integer Group in /info/zones/1/groups/2, got str",
+    ),
+    (
+        {
+            "Zone": 1,
+            "Group": 2,
+            "DeviceGroupConfig": {"General": {"Nodes": [11, "12"]}},
+        },
+        (
+            "Expected integer node ID at /info/zones/1/groups/2.DeviceGroupConfig"
+            ".General.Nodes\\[1\\], got str"
         ),
     ),
 ]
@@ -1892,6 +1915,118 @@ async def test_get_zone_info_connection_error_raises_duco_connection_error() -> 
             pytest.raises(DucoConnectionError, match="Could not reach Duco device"),
         ):
             await client.async_get_zone_info(1)
+
+
+async def test_get_zone_group_info_parses_payload(
+    zone_group_info_data: dict[str, object],
+) -> None:
+    """Zone-group parsing should keep both identifiers and typed nodes."""
+    mock_response = _response(json_payload=zone_group_info_data)
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with patch.object(session, "request", _request(mock_response)):
+            zone_group = await client.async_get_zone_group_info(1, 2)
+
+    assert zone_group == InfoZoneGroup(zone_id=1, group_id=2, nodes=[11, 12])
+    assert zone_group.raw_payload is zone_group_info_data
+    assert zone_group.raw_payload["FutureGroupField"] == {"Val": True}
+
+
+async def test_get_zone_group_info_uses_zone_group_path(
+    zone_group_info_data: dict[str, object],
+) -> None:
+    """The zone-group reader should request the published group endpoint."""
+    mock_response = _response(json_payload=zone_group_info_data)
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        request_mock = _request(mock_response)
+        with patch.object(session, "request", request_mock):
+            await client.async_get_zone_group_info(1, 2)
+
+    assert request_mock.call_args.args[:2] == (
+        "GET",
+        "http://192.0.2.94/info/zones/1/groups/2",
+    )
+    assert "params" not in request_mock.call_args.kwargs
+
+
+async def test_get_zone_group_info_forwards_query_params(
+    zone_group_info_data: dict[str, object],
+) -> None:
+    """The zone-group reader should forward optional query parameters."""
+    mock_response = _response(json_payload=zone_group_info_data)
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        request_mock = _request(mock_response)
+        with patch.object(session, "request", request_mock):
+            await client.async_get_zone_group_info(
+                1,
+                2,
+                module="Groups",
+                submodule="General",
+                parameter="Nodes",
+            )
+
+    assert request_mock.call_args.args[:2] == (
+        "GET",
+        "http://192.0.2.94/info/zones/1/groups/2",
+    )
+    assert request_mock.call_args.kwargs["params"] == {
+        "module": "Groups",
+        "submodule": "General",
+        "parameter": "Nodes",
+    }
+
+
+@pytest.mark.parametrize(("payload", "message"), ZONE_GROUP_INFO_MALFORMED_PAYLOADS)
+async def test_get_zone_group_info_malformed_payload_raises_duco_error(
+    payload: object,
+    message: str,
+) -> None:
+    """Malformed zone-group payloads should raise DucoError."""
+    mock_response = _response(json_payload=payload)
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with (
+            patch.object(session, "request", _request(mock_response)),
+            pytest.raises(DucoError, match=message),
+        ):
+            await client.async_get_zone_group_info(1, 2)
+
+
+async def test_get_zone_group_info_api_error_raises_duco_error() -> None:
+    """HTTP errors from the zone-group endpoint should surface as DucoError."""
+    mock_response = _response(status=404, text_payload="group not found")
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with (
+            patch.object(session, "request", _request(mock_response)),
+            pytest.raises(
+                DucoError,
+                match=("Unexpected response 404 for /info/zones/1/groups/2: group not found"),
+            ),
+        ):
+            await client.async_get_zone_group_info(1, 2)
+
+
+async def test_get_zone_group_info_connection_error_raises_duco_connection_error() -> None:
+    """Transport failures from the zone-group endpoint should surface as connection errors."""
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with (
+            patch.object(
+                session,
+                "request",
+                MagicMock(side_effect=aiohttp.ClientError("boom")),
+            ),
+            pytest.raises(DucoConnectionError, match="Could not reach Duco device"),
+        ):
+            await client.async_get_zone_group_info(1, 2)
 
 
 async def test_get_nodes_overview_parses_payload(
