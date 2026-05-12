@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
@@ -14,6 +15,7 @@ SANITIZED_REPLAY_FIXTURE_ROOT = REPLAY_FIXTURE_ROOT / "sanitized"
 RAW_REPLAY_FIXTURE_ROOT = REPLAY_FIXTURE_ROOT / "raw"
 BASE_FIXTURE_NAME = "__base__.json"
 QUERY_PAIR_DELIMITER = ";"
+PROFILE_SLUG_RE = re.compile(r"^[a-z0-9][a-z0-9-]*$")
 
 
 @dataclass(frozen=True, slots=True, order=True)
@@ -158,6 +160,10 @@ def _normalize_profile(profile: str) -> str:
         raise ValueError("profile must be a simple directory name")
     if Path(profile).name != profile:
         raise ValueError("profile must be a simple directory name")
+    if not PROFILE_SLUG_RE.fullmatch(profile):
+        raise ValueError(
+            "profile must use a portable slug with lowercase letters, numbers, and hyphens"
+        )
     return profile
 
 
@@ -234,10 +240,14 @@ def _request_from_fixture_path(relative_path: Path) -> ReplayRequest:
         )
 
     method = relative_path.parts[0]
+    normalized_method = _normalize_method(method)
+    if method != normalized_method:
+        raise ValueError("fixture method directories must use canonical uppercase names")
+
     endpoint_parts = relative_path.parts[1:-1]
     params = _params_from_fixture_name(relative_path.name)
     return ReplayRequest(
-        method=_normalize_method(method),
+        method=normalized_method,
         path="/" + "/".join(endpoint_parts),
         params=params,
     )

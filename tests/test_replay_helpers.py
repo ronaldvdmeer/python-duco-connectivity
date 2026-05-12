@@ -95,6 +95,16 @@ def test_replay_helpers_reject_portability_breaking_profile_names() -> None:
         load_sanitized_replay_fixture_set("silent\\connect-v25")
 
 
+@pytest.mark.parametrize("profile", ["silent:connect-v25", "silent*connect-v25", "SilentConnect"])
+def test_replay_helpers_reject_non_portable_profile_slugs(profile: str) -> None:
+    """Profile names should use the documented portable slug format."""
+    with pytest.raises(ValueError, match="portable slug"):
+        build_sanitized_replay_fixture_path(profile, "GET", "/api")
+
+    with pytest.raises(ValueError, match="portable slug"):
+        load_sanitized_replay_fixture_set(profile)
+
+
 @pytest.mark.parametrize(
     ("path", "message"),
     [
@@ -228,4 +238,16 @@ def test_load_sanitized_replay_fixture_set_rejects_invalid_fixture_query_keys(
     (profile_root / file_name).write_text("{}", encoding="utf-8")
 
     with pytest.raises(ValueError, match=message):
+        load_sanitized_replay_fixture_set("silent-connect-v25", root=tmp_path)
+
+
+def test_load_sanitized_replay_fixture_set_rejects_noncanonical_method_directory(
+    tmp_path: Path,
+) -> None:
+    """On-disk fixtures should use canonical uppercase method directories."""
+    profile_root = tmp_path / "silent-connect-v25" / "get" / "info"
+    profile_root.mkdir(parents=True)
+    (profile_root / BASE_FIXTURE_NAME).write_text("{}", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="canonical uppercase"):
         load_sanitized_replay_fixture_set("silent-connect-v25", root=tmp_path)
