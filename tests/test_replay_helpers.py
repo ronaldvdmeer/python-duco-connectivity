@@ -174,10 +174,10 @@ def test_load_local_sample_fixture_set_loads_profile_index(tmp_path: Path) -> No
     }
 
 
-def test_load_local_sample_fixture_set_rejects_missing_profile() -> None:
+def test_load_local_sample_fixture_set_rejects_missing_profile(tmp_path: Path) -> None:
     """Missing replay profiles should fail explicitly."""
     with pytest.raises(FileNotFoundError, match="missing-profile"):
-        load_local_sample_fixture_set("missing-profile")
+        load_local_sample_fixture_set("missing-profile", root=tmp_path)
 
 
 def test_load_local_sample_fixture_reports_params_and_path_on_missing_fixture(

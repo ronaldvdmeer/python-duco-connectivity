@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import os
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
@@ -18,6 +19,7 @@ from duco_connectivity import (
     InfoZonesOverview,
 )
 from tests.helpers.replay import (
+    ReplayFixture,
     ReplayRequest,
     build_replay_request,
     load_local_sample_fixture_set,
@@ -31,11 +33,6 @@ if not LOCAL_SAMPLE_PROFILE:
         allow_module_level=True,
     )
 
-try:
-    LOCAL_SAMPLE_FIXTURES = load_local_sample_fixture_set(LOCAL_SAMPLE_PROFILE)
-except FileNotFoundError as err:
-    pytest.skip(str(err), allow_module_level=True)
-
 
 @dataclass(frozen=True, slots=True)
 class SampleReadCase:
@@ -46,15 +43,10 @@ class SampleReadCase:
     assert_parsed: Callable[[object, object], None]
 
 
-MINIMAL_LOCAL_SAMPLE_REQUESTS = {
-    build_replay_request("GET", "/api"),
-    build_replay_request("GET", "/config"),
-    build_replay_request("GET", "/config/nodes"),
-    build_replay_request("GET", "/config/zones"),
-    build_replay_request("GET", "/info", params={"module": "General", "submodule": "Board"}),
-    build_replay_request("GET", "/info/nodes"),
-    build_replay_request("GET", "/info/zones"),
-}
+def _assert_same_object(actual: object, expected: object, *, label: str) -> None:
+    """Fail without rendering raw local sample payload contents."""
+    if actual is not expected:
+        pytest.fail(f"{label} should preserve the original raw payload object", pytrace=False)
 
 
 def _assert_api_info(parsed: object, payload: object) -> None:
@@ -62,7 +54,7 @@ def _assert_api_info(parsed: object, payload: object) -> None:
     api_payload = cast(dict[str, Any], payload)
 
     assert api_info.public_api_version == api_payload["PublicApiVersion"]["Val"]
-    assert api_info.raw_payload is api_payload
+    _assert_same_object(api_info.raw_payload, api_payload, label="ApiInfo.raw_payload")
 
 
 def _assert_board_info(parsed: object, payload: object) -> None:
@@ -71,14 +63,14 @@ def _assert_board_info(parsed: object, payload: object) -> None:
 
     assert board.public_api_version == board_payload["PublicApiVersion"]["Val"]
     assert board.box_name == board_payload["BoxName"]["Val"]
-    assert board.raw_payload is board_payload
+    _assert_same_object(board.raw_payload, board_payload, label="BoardInfo.raw_payload")
 
 
 def _assert_config(parsed: object, payload: object) -> None:
     config = cast(Config, parsed)
     config_payload = cast(dict[str, Any], payload)
 
-    assert config.raw_payload is config_payload
+    _assert_same_object(config.raw_payload, config_payload, label="Config.raw_payload")
     assert set(config.sections) == set(config_payload)
 
 
@@ -86,7 +78,7 @@ def _assert_node_configs(parsed: object, payload: object) -> None:
     overview = cast(ConfigNodeOverview, parsed)
     nodes_payload = cast(dict[str, Any], payload)["Nodes"]
 
-    assert overview.raw_payload is payload
+    _assert_same_object(overview.raw_payload, payload, label="ConfigNodeOverview.raw_payload")
     assert len(overview.nodes) == len(nodes_payload)
 
 
@@ -98,14 +90,18 @@ def _assert_nodes(parsed: object, payload: object) -> None:
 
     for node, node_payload in zip(nodes, nodes_payload, strict=True):
         assert node.node_id == node_payload["Node"]
-        assert node.raw_payload is node_payload
+        _assert_same_object(
+            node.raw_payload,
+            node_payload,
+            label=f"Node[{node.node_id}].raw_payload",
+        )
 
 
 def _assert_zones_config(parsed: object, payload: object) -> None:
     zones = cast(ConfigZonesOverview, parsed)
     zones_payload = cast(dict[str, Any], payload)["Zones"]
 
-    assert zones.raw_payload is payload
+    _assert_same_object(zones.raw_payload, payload, label="ConfigZonesOverview.raw_payload")
     assert len(zones.zones) == len(zones_payload)
 
 
@@ -113,7 +109,7 @@ def _assert_zones_info(parsed: object, payload: object) -> None:
     zones = cast(InfoZonesOverview, parsed)
     zones_payload = cast(dict[str, Any], payload)["Zones"]
 
-    assert zones.raw_payload is payload
+    _assert_same_object(zones.raw_payload, payload, label="InfoZonesOverview.raw_payload")
     assert len(zones.zones) == len(zones_payload)
 
 
@@ -159,10 +155,33 @@ SAMPLE_READ_CASES = (
     ),
 )
 
+MINIMAL_LOCAL_SAMPLE_REQUESTS = {case.request for case in SAMPLE_READ_CASES}
 
-def test_local_sample_profile_covers_minimal_requests() -> None:
+
+@pytest.fixture(scope="module")
+def local_sample_fixtures() -> dict[ReplayRequest, ReplayFixture]:
+    """Load the configured local sample profile only when this module runs."""
+    try:
+        return load_local_sample_fixture_set(LOCAL_SAMPLE_PROFILE)
+    except FileNotFoundError as err:
+        pytest.fail(str(err), pytrace=False)
+    except ValueError as err:
+        pytest.fail(
+            f"Invalid local sample profile {LOCAL_SAMPLE_PROFILE!r}: {err}",
+            pytrace=False,
+        )
+    except json.JSONDecodeError as err:
+        pytest.fail(
+            f"Invalid JSON in local sample profile {LOCAL_SAMPLE_PROFILE!r}: {err}",
+            pytrace=False,
+        )
+
+
+def test_local_sample_profile_covers_minimal_requests(
+    local_sample_fixtures: dict[ReplayRequest, ReplayFixture],
+) -> None:
     """The configured local sample profile should expose the minimal baseline."""
-    assert MINIMAL_LOCAL_SAMPLE_REQUESTS <= set(LOCAL_SAMPLE_FIXTURES)
+    assert MINIMAL_LOCAL_SAMPLE_REQUESTS <= set(local_sample_fixtures)
 
 
 @pytest.mark.parametrize(
@@ -173,6 +192,7 @@ def test_local_sample_profile_covers_minimal_requests() -> None:
 async def test_local_sample_fixture_parses_through_typed_client(case: SampleReadCase) -> None:
     """Configured local sample fixtures should parse through the selected readers."""
     requested: list[ReplayRequest] = []
+    fixtures = local_sample_fixtures
 
     async with aiohttp.ClientSession() as session:
         client = DucoClient(session=session, host="192.0.2.94")
@@ -188,10 +208,10 @@ async def test_local_sample_fixture_parses_through_typed_client(case: SampleRead
 
             request = build_replay_request(method, path, params=params)
             requested.append(request)
-            return LOCAL_SAMPLE_FIXTURES[request].payload
+            return fixtures[request].payload
 
         client._request_json = _request_json
         parsed = await case.invoke(client)
 
     assert requested == [case.request]
-    case.assert_parsed(parsed, LOCAL_SAMPLE_FIXTURES[case.request].payload)
+    case.assert_parsed(parsed, fixtures[case.request].payload)
