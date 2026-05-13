@@ -1,28 +1,19 @@
-# Sanitized replay fixtures
+# Replay sample fixtures
 
-This directory stores sanitized real-world Duco payloads for replay-based
-compatibility tests.
+This directory stores local raw Duco payloads for replay-based sample
+validation.
 
-For the full testing rationale and raw-to-sanitized workflow, start with
+For the full testing rationale and local sample workflow, start with
 `docs/replay-testing.md`.
 
-Only sanitized fixtures belong in version control. Use `raw/` as a local staging
-area when you need to prepare new samples before sanitizing them. Git ignores
-everything inside `raw/` except its `.gitignore` placeholder.
-
-The raw staging area can use either:
-
-- the same nested method/path/file layout as the sanitized tree
-- flat export files such as `ENERGY_info.json` and `FOCUS_config_zones.json`
-  when they are grouped in a source folder per box family
+The `raw/` directory is intentionally ignored by git. Keep local sample files
+there when you want to validate raw captures on your own machine.
 
 ## Layout
 
-- Store publishable fixtures under `sanitized/<profile>/`.
 - Use a stable profile slug, such as `silent-connect-v25`, for each device or
-  firmware family you want to replay.
-- Mirror the same method/path/file layout under `raw/<profile>/` so the
-  sanitizer can convert a whole profile in one pass.
+  firmware family you want to replay locally.
+- Store local samples under `raw/<profile>/`.
 - Group fixtures by HTTP method first, then by API-relative path segments.
 - Use `__base__.json` for requests without query parameters.
 - Use a filename such as `module=General;submodule=Board.json` when query
@@ -33,9 +24,9 @@ The raw staging area can use either:
 
 ## Examples
 
-- `sanitized/silent-connect-v25/GET/api/__base__.json`
-- `sanitized/silent-connect-v25/GET/info/module=General;submodule=Board.json`
-- `sanitized/silent-connect-v25/GET/info/nodes/__base__.json`
+- `raw/silent-connect-v25/GET/api/__base__.json`
+- `raw/silent-connect-v25/GET/info/module=General;submodule=Board.json`
+- `raw/silent-connect-v25/GET/info/nodes/__base__.json`
 
 ## Replay helpers
 
@@ -46,10 +37,14 @@ These helpers are meant to be imported by tests. You do not need to run
 
 They are used to:
 
-- discover available sanitized replay profiles
+- discover available local replay profiles
 - resolve deterministic fixture paths
-- load one sanitized fixture
-- load a full sanitized fixture set for a profile
+- load one local sample fixture
+- load a full local sample fixture set for a profile
+
+They do not try to turn every stored fixture into a publishable compatibility
+contract. In this repository, replay stays intentionally narrow and focuses on
+local validation of your own raw captures.
 
 ## Run the replay helper tests
 
@@ -63,24 +58,20 @@ source .venv/bin/activate
 Then run the focused replay helper tests:
 
 ```bash
-pytest tests/test_replay_helpers.py tests/test_replay_sanitizer.py
+pytest tests/test_replay_helpers.py
 ```
 
-If you want to run the full test suite instead:
+If you want to validate a local sample profile, run:
 
 ```bash
-pytest
+export DUCO_SAMPLE_PROFILE=silent-connect-v25
+pytest tests/test_local_sample_validation.py
 ```
 
-## Working with new fixture samples
+## Working With Local Sample Captures
 
 1. Collect raw payloads locally in `tests/fixtures/replay/raw/<profile>/` using
-   the same layout as the sanitized tree.
-2. If your raw files already use the nested replay layout, run
-   `.venv/bin/python tools/replay_sanitizer.py <profile>`.
-3. If your raw files are flat exports like `ENERGY_info.json`, run
-   `.venv/bin/python tools/replay_sanitizer.py <publishable-profile> --raw-profile <raw-folder>`.
-4. Review the generated files in `tests/fixtures/replay/sanitized/<profile>/`.
-5. Commit only the sanitized output.
-
-Only sanitized fixtures may be committed to the repository.
+   the same deterministic request layout described above.
+2. Keep the files local; do not commit them.
+3. Set `DUCO_SAMPLE_PROFILE=<profile>`.
+4. Run `pytest tests/test_local_sample_validation.py`.

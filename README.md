@@ -60,8 +60,8 @@ public client methods, exports, compatibility aliases, and construction rules.
 - `docs/api-reference.md` for the central public API inventory
 - `docs/config.md` for system, node, and zone config reads and writes
 - `docs/live-testing.md` for local opt-in tests against a real Duco device
-- `docs/replay-testing.md` for replay profiles, raw-to-sanitized workflow, and
-  compatibility testing across Duco families
+- `docs/replay-testing.md` for local sample validation against ignored raw API
+  captures
 - `docs/actions.md` for action discovery and execution
 - `docs/nodes.md` for node models and node information readers
 - `docs/zones.md` for zone and group info and config readers
@@ -81,15 +81,15 @@ The repository uses three automated test layers:
 
 - Synthetic unit tests cover focused parser and client behavior with mocked HTTP
   responses.
-- Replay compatibility tests run the normal typed client methods against
-  sanitized real-world payloads from multiple Duco profiles.
+- Local sample-validation tests can replay a small set of typed client methods
+  against your own ignored raw API captures.
 - Live tests validate read paths, safe writes, and latency probes against your
   own Duco device.
 
 That split matters for Duco support. Synthetic tests keep day-to-day iteration
-fast. Replay tests capture real payload differences across box families like
-Silent, Energy, and Focus. Live tests confirm that the client still behaves
-correctly against actual hardware.
+fast. Local sample validation lets you check real captures without committing
+them or maintaining a sanitization workflow. Live tests confirm that the client
+still behaves correctly against actual hardware.
 
 ## Public API maintenance
 
@@ -121,12 +121,12 @@ python -m venv .venv
 For local real-device validation against your own Duco box, use the opt-in
 workflow documented in `docs/live-testing.md`.
 
-For replay-based compatibility coverage and raw-to-sanitized fixture workflow,
+For local sample validation against ignored raw captures,
 use `docs/replay-testing.md`.
 
-If you want to contribute sanitized replay fixtures for compatibility tests,
-follow the layout and tooling guidance in `docs/replay-testing.md` and the
-fixture-specific notes in `tests/fixtures/replay/README.md`.
+If you want to validate raw API captures locally, follow the layout guidance in
+`docs/replay-testing.md` and the fixture-specific notes in
+`tests/fixtures/replay/README.md`.
 
 ## Validation
 
