@@ -30,8 +30,7 @@ def test_build_local_sample_fixture_path_uses_stable_layout() -> None:
             "get",
             "/api",
         )
-        == (REPLAY_FIXTURE_ROOT / "raw" / "silent-connect-v25" / "GET" / "api")
-        / BASE_FIXTURE_NAME
+        == (REPLAY_FIXTURE_ROOT / "raw" / "silent-connect-v25" / "GET" / "api") / BASE_FIXTURE_NAME
     )
 
     assert build_local_sample_fixture_path(

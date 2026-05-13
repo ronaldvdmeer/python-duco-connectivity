@@ -35,9 +35,7 @@ class ReplayFixture:
     payload: object
 
 
-def available_local_sample_profiles(
-    *, root: Path = LOCAL_SAMPLE_FIXTURE_ROOT
-) -> tuple[str, ...]:
+def available_local_sample_profiles(*, root: Path = LOCAL_SAMPLE_FIXTURE_ROOT) -> tuple[str, ...]:
     """Return the available local replay sample profiles."""
     if not root.is_dir():
         return ()
@@ -234,9 +232,7 @@ def _format_request(request: ReplayRequest) -> str:
 
 def _request_from_fixture_path(relative_path: Path) -> ReplayRequest:
     if len(relative_path.parts) < 3:
-        raise ValueError(
-            "local sample fixtures must include method, endpoint path, and file name"
-        )
+        raise ValueError("local sample fixtures must include method, endpoint path, and file name")
 
     method = relative_path.parts[0]
     normalized_method = _normalize_method(method)
