@@ -141,6 +141,11 @@ def test_load_sanitized_replay_fixture_returns_single_fixture() -> None:
                 "PublicApiVersion": {"Val": "2.5"},
                 "BoxName": {"Val": "SILENT_CONNECT"},
                 "BoxSubTypeName": {"Val": "Eu"},
+                "SerialBoardBox": {"Val": "RS0000000001"},
+                "SerialBoardComm": {"Val": "PS0000000001"},
+                "SerialDucoBox": {"Val": "n/a"},
+                "SerialDucoComm": {"Val": "P000000-000000-001"},
+                "Time": {"Val": 1775082497},
             }
         }
     }
@@ -152,12 +157,14 @@ def test_load_sanitized_replay_fixture_set_loads_profile_index() -> None:
 
     assert set(fixture_set) == {
         build_replay_request("GET", "/api"),
+        build_replay_request("GET", "/config"),
         build_replay_request(
             "GET",
             "/info",
             params={"module": "General", "submodule": "Board"},
         ),
         build_replay_request("GET", "/info/nodes"),
+        build_replay_request("GET", "/info/zones"),
     }
     assert fixture_set[build_replay_request("GET", "/api")].payload == {
         "PublicApiVersion": {"Val": "2.5"},
