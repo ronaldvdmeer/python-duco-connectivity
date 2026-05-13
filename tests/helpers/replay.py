@@ -1,4 +1,4 @@
-"""Helpers for loading sanitized replay fixtures in tests."""
+"""Helpers for loading local replay sample fixtures in tests."""
 
 from __future__ import annotations
 
@@ -11,8 +11,7 @@ from urllib.parse import quote, unquote
 
 ROOT = Path(__file__).resolve().parents[2]
 REPLAY_FIXTURE_ROOT = ROOT / "tests" / "fixtures" / "replay"
-SANITIZED_REPLAY_FIXTURE_ROOT = REPLAY_FIXTURE_ROOT / "sanitized"
-RAW_REPLAY_FIXTURE_ROOT = REPLAY_FIXTURE_ROOT / "raw"
+LOCAL_SAMPLE_FIXTURE_ROOT = REPLAY_FIXTURE_ROOT / "raw"
 BASE_FIXTURE_NAME = "__base__.json"
 QUERY_PAIR_DELIMITER = ";"
 PROFILE_SLUG_RE = re.compile(r"^[a-z0-9][a-z0-9-]*$")
@@ -29,17 +28,17 @@ class ReplayRequest:
 
 @dataclass(frozen=True, slots=True)
 class ReplayFixture:
-    """Stored sanitized replay fixture payload."""
+    """Stored local replay sample payload."""
 
     request: ReplayRequest
     file_path: Path
     payload: object
 
 
-def available_sanitized_replay_profiles(
-    *, root: Path = SANITIZED_REPLAY_FIXTURE_ROOT
+def available_local_sample_profiles(
+    *, root: Path = LOCAL_SAMPLE_FIXTURE_ROOT
 ) -> tuple[str, ...]:
-    """Return the available sanitized replay fixture profiles."""
+    """Return the available local replay sample profiles."""
     if not root.is_dir():
         return ()
 
@@ -61,15 +60,15 @@ def build_replay_request(
     )
 
 
-def build_sanitized_replay_fixture_path(
+def build_local_sample_fixture_path(
     profile: str,
     method: str,
     path: str,
     *,
     params: Mapping[str, object] | None = None,
-    root: Path = SANITIZED_REPLAY_FIXTURE_ROOT,
+    root: Path = LOCAL_SAMPLE_FIXTURE_ROOT,
 ) -> Path:
-    """Return the deterministic path for a sanitized replay fixture."""
+    """Return the deterministic path for a local replay sample fixture."""
     normalized_profile = _normalize_profile(profile)
     normalized_path, endpoint_parts = _normalize_path(path)
     request = ReplayRequest(
@@ -86,17 +85,17 @@ def build_sanitized_replay_fixture_path(
     )
 
 
-def load_sanitized_replay_fixture(
+def load_local_sample_fixture(
     profile: str,
     method: str,
     path: str,
     *,
     params: Mapping[str, object] | None = None,
-    root: Path = SANITIZED_REPLAY_FIXTURE_ROOT,
+    root: Path = LOCAL_SAMPLE_FIXTURE_ROOT,
 ) -> ReplayFixture:
-    """Load a single sanitized replay fixture from disk."""
+    """Load a single local replay sample fixture from disk."""
     request = build_replay_request(method, path, params=params)
-    fixture_path = build_sanitized_replay_fixture_path(
+    fixture_path = build_local_sample_fixture_path(
         profile,
         method,
         path,
@@ -106,7 +105,7 @@ def load_sanitized_replay_fixture(
 
     if not fixture_path.is_file():
         raise FileNotFoundError(
-            f"No sanitized replay fixture found for {_format_request(request)} at {fixture_path}"
+            f"No local sample fixture found for {_format_request(request)} at {fixture_path}"
         )
 
     return ReplayFixture(
@@ -116,18 +115,18 @@ def load_sanitized_replay_fixture(
     )
 
 
-def load_sanitized_replay_fixture_set(
+def load_local_sample_fixture_set(
     profile: str,
     *,
-    root: Path = SANITIZED_REPLAY_FIXTURE_ROOT,
+    root: Path = LOCAL_SAMPLE_FIXTURE_ROOT,
 ) -> dict[ReplayRequest, ReplayFixture]:
-    """Load all sanitized replay fixtures for a profile."""
+    """Load all local replay sample fixtures for a profile."""
     normalized_profile = _normalize_profile(profile)
     profile_root = root / normalized_profile
 
     if not profile_root.is_dir():
         raise FileNotFoundError(
-            f"No sanitized replay fixture profile found for {normalized_profile} at {profile_root}"
+            f"No local sample fixture profile found for {normalized_profile} at {profile_root}"
         )
 
     fixtures: dict[ReplayRequest, ReplayFixture] = {}
@@ -137,7 +136,7 @@ def load_sanitized_replay_fixture_set(
         if request in fixtures:
             existing_file_path = fixtures[request].file_path
             raise ValueError(
-                "Duplicate sanitized replay fixture for "
+                "Duplicate local sample fixture for "
                 f"{_format_request(request)}: {existing_file_path} conflicts with {file_path}"
             )
 
@@ -236,7 +235,7 @@ def _format_request(request: ReplayRequest) -> str:
 def _request_from_fixture_path(relative_path: Path) -> ReplayRequest:
     if len(relative_path.parts) < 3:
         raise ValueError(
-            "sanitized replay fixtures must include method, endpoint path, and file name"
+            "local sample fixtures must include method, endpoint path, and file name"
         )
 
     method = relative_path.parts[0]
