@@ -165,14 +165,14 @@ def local_sample_fixtures() -> dict[ReplayRequest, ReplayFixture]:
         return load_local_sample_fixture_set(LOCAL_SAMPLE_PROFILE)
     except FileNotFoundError as err:
         pytest.fail(str(err), pytrace=False)
-    except ValueError as err:
-        pytest.fail(
-            f"Invalid local sample profile {LOCAL_SAMPLE_PROFILE!r}: {err}",
-            pytrace=False,
-        )
     except json.JSONDecodeError as err:
         pytest.fail(
             f"Invalid JSON in local sample profile {LOCAL_SAMPLE_PROFILE!r}: {err}",
+            pytrace=False,
+        )
+    except ValueError as err:
+        pytest.fail(
+            f"Invalid local sample profile {LOCAL_SAMPLE_PROFILE!r}: {err}",
             pytrace=False,
         )
 
@@ -189,10 +189,12 @@ def test_local_sample_profile_covers_minimal_requests(
     SAMPLE_READ_CASES,
     ids=[f"{case.request.method}-{case.request.path}" for case in SAMPLE_READ_CASES],
 )
-async def test_local_sample_fixture_parses_through_typed_client(case: SampleReadCase) -> None:
+async def test_local_sample_fixture_parses_through_typed_client(
+    case: SampleReadCase,
+    local_sample_fixtures: dict[ReplayRequest, ReplayFixture],
+) -> None:
     """Configured local sample fixtures should parse through the selected readers."""
     requested: list[ReplayRequest] = []
-    fixtures = local_sample_fixtures
 
     async with aiohttp.ClientSession() as session:
         client = DucoClient(session=session, host="192.0.2.94")
@@ -208,10 +210,10 @@ async def test_local_sample_fixture_parses_through_typed_client(case: SampleRead
 
             request = build_replay_request(method, path, params=params)
             requested.append(request)
-            return fixtures[request].payload
+            return local_sample_fixtures[request].payload
 
         client._request_json = _request_json
         parsed = await case.invoke(client)
 
     assert requested == [case.request]
-    case.assert_parsed(parsed, fixtures[case.request].payload)
+    case.assert_parsed(parsed, local_sample_fixtures[case.request].payload)
