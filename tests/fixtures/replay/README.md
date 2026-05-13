@@ -1,7 +1,7 @@
 # Sanitized replay fixtures
 
 This directory stores sanitized real-world Duco payloads for replay-based
-compatibility tests.
+sample validation.
 
 For the full testing rationale and raw-to-sanitized workflow, start with
 `docs/replay-testing.md`.
@@ -50,6 +50,10 @@ They are used to:
 - resolve deterministic fixture paths
 - load one sanitized fixture
 - load a full sanitized fixture set for a profile
+
+They do not try to turn every stored fixture into a full compatibility contract.
+In this repository, replay stays intentionally narrow and focuses on keeping a
+small set of committed real-world samples parseable.
 
 ## Run the replay helper tests
 

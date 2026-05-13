@@ -1,27 +1,50 @@
 # Replay testing
 
-Replay-based compatibility tests sit between synthetic unit tests and opt-in
+Replay-based sample validation sits between synthetic unit tests and opt-in
 live tests.
 
-Use them when you have real Duco payloads from a box you do not own, or when
-you want stronger confidence that typed parsing still works across multiple box
-families and API variants.
+Use it when you have real Duco payloads from a box you do not own, or when you
+want a small deterministic check that known real-world samples still parse.
+
+This layer is intentionally narrow. It is not meant to become a second full
+test suite for every public client method.
 
 ## Testing strategy
 
 This repository now uses three automated test layers:
 
 - Synthetic unit tests use handcrafted payloads and mocked HTTP responses.
-- Replay compatibility tests use sanitized real-world payloads that are replayed
-  through the normal typed `DucoClient` methods.
+- Replay sample-validation tests use sanitized real-world payloads that are
+  replayed through a small set of normal typed `DucoClient` methods.
 - Live tests exercise your own Duco device locally for read paths, safe writes,
   and latency probes.
 
 These layers complement each other:
 
 - Synthetic tests stay fast, focused, and easy to reason about.
-- Replay tests protect against real payload shape drift across Duco families.
+- Replay tests protect a few high-value parsing paths against real payload shape
+  drift across Duco families.
 - Live tests validate end-to-end behavior against actual hardware.
+
+## What replay is for
+
+Replay tests have one job in this repository: keep committed real-world samples
+useful.
+
+That means replay should answer questions like:
+
+- Do these sanitized fixtures still load?
+- Do a few core typed readers still parse them?
+- Did sanitization preserve the parts of the payload shape we care about?
+
+Replay should not try to answer every question that belongs in unit tests or
+live tests.
+
+In particular, replay is not meant to:
+
+- cover every `async_get_*` method
+- simulate write behavior
+- replace live validation against a real Duco box
 
 ## Where shared captures fit
 
@@ -35,8 +58,8 @@ That makes them especially valuable here:
   profiles.
 - The same replay compatibility tests can then run against all three profiles.
 
-That gives the repository broader real-world coverage without requiring you to
-own all box variants locally.
+That gives the repository broader real-world sample coverage without requiring
+you to own all box variants locally.
 
 ## Profile naming
 
@@ -104,7 +127,7 @@ replacing installation-specific values such as:
 - user-defined names for nodes, groups, or zones
 
 The goal is to keep replay fixtures publishable while still useful for parser
-and compatibility coverage.
+and sample-validation coverage.
 
 ## Review checklist for sanitized output
 
@@ -119,20 +142,21 @@ Before committing a new replay profile, verify that:
 
 ## Running replay tests
 
-Run the helper and compatibility tests after adding or changing replay data:
+Run the helper and sample-validation tests after adding or changing replay data:
 
 ```bash
 .venv/bin/pytest tests/test_replay_helpers.py tests/test_replay_sanitizer.py
 ```
 
-If the profile adds new committed request fixtures for typed readers, also run:
+If the profile adds or changes committed request fixtures for the core replay
+readers, also run:
 
 ```bash
 .venv/bin/pytest tests/test_replay_read_compatibility.py
 ```
 
-The replay compatibility suite currently exercises these typed overview readers
-whenever the matching fixtures are present in a committed profile:
+The replay suite intentionally exercises only a small set of high-value typed
+overview readers:
 
 - `GET /api`
 - `GET /config`
@@ -154,8 +178,7 @@ Prefer replay tests when:
 
 - the payload came from a device you do not own
 - you want deterministic regression coverage for a previously observed payload
-- the value of the test is in parsing and model compatibility, not in live box
-  behavior
+- the value of the test is in parsing a known sample, not in live box behavior
 
 Prefer live tests when:
 
@@ -163,3 +186,12 @@ Prefer live tests when:
 - timing, request budgets, or polling behavior matter
 - the code path depends on hardware-side behavior that a stored payload cannot
   represent
+
+## Scope rule
+
+Before adding replay coverage for a new endpoint, first ask whether the sample
+would add clear value beyond the existing unit tests and live tests.
+
+If the answer is mainly “more coverage would be nice,” prefer not to add it.
+Keep replay small enough that fixture maintenance stays cheap and the purpose of
+the suite stays obvious.

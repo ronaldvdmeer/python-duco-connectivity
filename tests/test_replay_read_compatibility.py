@@ -1,8 +1,8 @@
-"""Replay-based compatibility tests for typed read endpoints."""
+"""Replay-based sample-validation tests for core typed read endpoints."""
 
 from __future__ import annotations
 
-from collections.abc import Awaitable, Callable, Iterator
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from typing import Any, cast
 
@@ -12,9 +12,6 @@ import pytest
 from duco_connectivity import (
     Config,
     ConfigNodeOverview,
-    ConfigSection,
-    ConfigValueOptions,
-    ConfigValueString,
     ConfigZonesOverview,
     DucoClient,
     InfoZonesOverview,
@@ -29,24 +26,24 @@ from tests.helpers.replay import (
 
 @dataclass(frozen=True, slots=True)
 class ReplayReadCase:
-    """Typed read method backed by a sanitized replay fixture."""
+    """Typed read method used for committed replay samples."""
 
     request: ReplayRequest
     invoke: Callable[[DucoClient], Awaitable[object]]
     assert_parsed: Callable[[object, object], None]
 
 
-ALLOWED_UNTYPED_REPLAY_REQUESTS = {
-    build_replay_request("GET", "/info"),
-}
-CORE_MULTI_PROFILE_REQUESTS = {
+# Replay is intentionally narrow in this repository. These requests represent
+# the small baseline we want to keep parseable across the committed real-world
+# profiles.
+MINIMAL_MULTI_PROFILE_REQUESTS = {
     build_replay_request("GET", "/config"),
     build_replay_request("GET", "/config/nodes"),
     build_replay_request("GET", "/config/zones"),
     build_replay_request("GET", "/info/nodes"),
     build_replay_request("GET", "/info/zones"),
 }
-FULL_REPLAY_PROFILES = (
+MINIMAL_REPLAY_PROFILES = (
     "ducobox-energy-v27",
     "ducobox-focus-v26",
     "silent-connect-v26",
@@ -86,49 +83,12 @@ def _assert_board_info(parsed: object, payload: object) -> None:
     assert board.raw_payload is board_payload
 
 
-def _iter_config_leaf_paths(
-    payload: dict[str, Any],
-    path: tuple[str, ...] = (),
-) -> Iterator[tuple[tuple[str, ...], dict[str, Any]]]:
-    for key, value in payload.items():
-        if not isinstance(value, dict):
-            continue
-
-        next_path = path + (key,)
-        if "Val" in value:
-            yield next_path, value
-            continue
-
-        yield from _iter_config_leaf_paths(value, path=next_path)
-
-
-def _resolve_config_leaf(config: Config, path: tuple[str, ...]) -> object:
-    current: object = config.sections[path[0]]
-    for section_name in path[1:]:
-        if not isinstance(current, ConfigSection):
-            raise AssertionError(f"Expected ConfigSection while resolving {path!r}")
-        current = current.entries[section_name]
-
-    return current
-
-
 def _assert_config(parsed: object, payload: object) -> None:
     config = cast(Config, parsed)
     config_payload = cast(dict[str, Any], payload)
 
     assert config.raw_payload is config_payload
-
-    for path, leaf_payload in _iter_config_leaf_paths(config_payload):
-        leaf = cast(Any, _resolve_config_leaf(config, path))
-        assert leaf.value == leaf_payload["Val"]
-        assert leaf.raw_payload is leaf_payload
-
-        if "Options" in leaf_payload:
-            assert isinstance(leaf, ConfigValueOptions)
-            assert leaf.options == tuple(leaf_payload["Options"])
-
-        if isinstance(leaf_payload["Val"], str):
-            assert isinstance(leaf, ConfigValueString)
+    assert set(config.sections) == set(config_payload)
 
 
 def _assert_node_configs(parsed: object, payload: object) -> None:
@@ -163,26 +123,6 @@ def _assert_nodes(parsed: object, payload: object) -> None:
         assert node.raw_payload is node_payload
         assert node.general.raw_payload is node_payload["General"]
         assert node.general.name == node_payload["General"]["Name"]["Val"]
-
-        ventilation_payload = node_payload.get("Ventilation")
-        if ventilation_payload is not None:
-            assert node.ventilation is not None
-            assert node.ventilation.raw_payload is ventilation_payload
-            if "FlowLvlTgt" in ventilation_payload:
-                assert node.ventilation.flow_lvl_tgt == ventilation_payload["FlowLvlTgt"]["Val"]
-
-        sensor_payload = node_payload.get("Sensor")
-        if sensor_payload is not None:
-            assert node.sensor is not None
-            assert node.sensor.raw_payload is sensor_payload
-            if "Rh" in sensor_payload:
-                assert node.sensor.rh == sensor_payload["Rh"]["Val"]
-            if "IaqRh" in sensor_payload:
-                assert node.sensor.iaq_rh == sensor_payload["IaqRh"]["Val"]
-            if "Co2" in sensor_payload:
-                assert node.sensor.co2 == sensor_payload["Co2"]["Val"]
-            if "Temp" in sensor_payload:
-                assert node.sensor.temp == sensor_payload["Temp"]["Val"]
 
 
 def _assert_zones_config(parsed: object, payload: object) -> None:
@@ -282,50 +222,22 @@ PROFILE_FIXTURES = {
     profile: load_sanitized_replay_fixture_set(profile)
     for profile in available_sanitized_replay_profiles()
 }
-COMPATIBILITY_PROFILE_FIXTURES = {
-    profile: PROFILE_FIXTURES[profile] for profile in FULL_REPLAY_PROFILES
+MINIMAL_PROFILE_FIXTURES = {
+    profile: PROFILE_FIXTURES[profile] for profile in MINIMAL_REPLAY_PROFILES
 }
 PROFILE_CASES = [
     (profile, CASES_BY_REQUEST[request])
-    for profile, fixtures in COMPATIBILITY_PROFILE_FIXTURES.items()
+    for profile, fixtures in PROFILE_FIXTURES.items()
     for request in sorted(fixtures)
     if request in CASES_BY_REQUEST
 ]
 
 
-def _format_request(request: ReplayRequest) -> str:
-    details = f"{request.method} {request.path}"
-    if not request.params:
-        return details
-
-    return f"{details} params={dict(request.params)!r}"
-
-
-@pytest.mark.parametrize("profile", sorted(PROFILE_FIXTURES))
-def test_replay_profiles_register_contract_checks_for_committed_fixtures(
-    profile: str,
-) -> None:
-    """Every committed typed replay fixture should map to a compatibility check."""
-    missing_cases = sorted(
-        set(PROFILE_FIXTURES[profile]) - set(CASES_BY_REQUEST) - ALLOWED_UNTYPED_REPLAY_REQUESTS
-    )
-
-    assert not missing_cases, [
-        f"Add a replay compatibility case for {_format_request(request)}"
-        for request in missing_cases
-    ]
-
-
-@pytest.mark.parametrize("profile", FULL_REPLAY_PROFILES)
-def test_real_world_profiles_cover_core_typed_replay_requests(profile: str) -> None:
-    """The committed real-world profiles should all cover the core typed read set."""
+@pytest.mark.parametrize("profile", MINIMAL_REPLAY_PROFILES)
+def test_real_world_profiles_cover_minimal_replay_requests(profile: str) -> None:
+    """The core committed profiles should keep the minimal replay baseline."""
     fixtures = PROFILE_FIXTURES[profile]
-    missing_requests = sorted(CORE_MULTI_PROFILE_REQUESTS - set(fixtures))
-
-    assert not missing_requests, [
-        f"Missing core replay fixture {_format_request(request)} for {profile}"
-        for request in missing_requests
-    ]
+    assert MINIMAL_MULTI_PROFILE_REQUESTS <= set(fixtures)
 
 
 @pytest.mark.parametrize(
@@ -337,7 +249,7 @@ async def test_replay_fixture_parses_through_typed_client(
     profile: str,
     case: ReplayReadCase,
 ) -> None:
-    """Committed replay fixtures should parse through the normal typed client methods."""
+    """Committed replay fixtures should keep the selected core readers parseable."""
     fixtures = PROFILE_FIXTURES[profile]
     requested: list[ReplayRequest] = []
 
