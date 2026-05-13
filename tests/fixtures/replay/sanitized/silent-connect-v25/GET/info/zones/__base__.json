@@ -1,0 +1,44 @@
+{
+  "Zones": [
+    {
+      "Zone": 1,
+      "DeviceGroupConfig": {
+        "General": {
+          "Name": {
+            "Val": "Ground floor"
+          }
+        }
+      },
+      "Groups": [
+        {
+          "Group": 1,
+          "DeviceGroupConfig": {
+            "General": {
+              "Nodes": [
+                7,
+                8
+              ]
+            }
+          },
+          "FutureGroupField": {
+            "Val": true
+          }
+        },
+        {
+          "Group": 2,
+          "DeviceGroupConfig": {
+            "General": {
+              "Nodes": []
+            }
+          }
+        }
+      ],
+      "FutureZoneField": {
+        "Val": "kept"
+      }
+    },
+    {
+      "Zone": 2
+    }
+  ]
+}
