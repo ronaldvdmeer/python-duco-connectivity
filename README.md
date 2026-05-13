@@ -103,6 +103,9 @@ python -m venv .venv
 For local real-device validation against your own Duco box, use the opt-in
 workflow documented in `docs/live-testing.md`.
 
+If you want to contribute sanitized replay fixtures for compatibility tests,
+follow the workflow in `tests/fixtures/replay/README.md`.
+
 ## Validation
 
 The current API surface was validated against a real Duco box during the first
