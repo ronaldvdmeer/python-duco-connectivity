@@ -63,7 +63,10 @@ def test_build_sanitized_replay_fixture_path_uses_stable_layout() -> None:
 
 def test_available_sanitized_replay_profiles_lists_sample_profile() -> None:
     """Profile discovery should return sanitized profiles in sorted order."""
-    assert available_sanitized_replay_profiles() == ("silent-connect-v25",)
+    profiles = available_sanitized_replay_profiles()
+
+    assert profiles == tuple(sorted(profiles))
+    assert "silent-connect-v25" in profiles
 
 
 def test_available_sanitized_replay_profiles_ignores_non_directory_root(

@@ -1,0 +1,88 @@
+{
+  "General": {
+    "Time": {
+      "TimeZone": {
+        "Val": 1,
+        "Min": -11,
+        "Inc": 1,
+        "Max": 12
+      },
+      "Dst": {
+        "Val": 1,
+        "Min": 0,
+        "Inc": 1,
+        "Max": 1
+      }
+    },
+    "Modbus": {
+      "Addr": {
+        "Val": 1,
+        "Min": 1,
+        "Inc": 1,
+        "Max": 254
+      },
+      "Offset": {
+        "Val": 0,
+        "Min": 0,
+        "Inc": 1,
+        "Max": 1
+      }
+    },
+    "Lan": {
+      "Mode": {
+        "Val": 1,
+        "Min": 1,
+        "Inc": 1,
+        "Max": 1
+      },
+      "Dhcp": {
+        "Val": 1,
+        "Min": 0,
+        "Inc": 1,
+        "Max": 1
+      },
+      "StaticIp": {
+        "Val": "0.0.0.0"
+      },
+      "StaticNetMask": {
+        "Val": "255.255.255.0"
+      },
+      "StaticDefaultGateway": {
+        "Val": "0.0.0.0"
+      },
+      "StaticDns": {
+        "Val": "192.0.2.1"
+      },
+      "WifiClientSsid": {
+        "Val": "sanitized-ssid-1"
+      },
+      "WifiClientKey": {
+        "Val": ""
+      }
+    },
+    "AutoRebootComm": {
+      "Period": {
+        "Val": 7,
+        "Min": 0,
+        "Inc": 1,
+        "Max": 365
+      },
+      "Time": {
+        "Val": 0,
+        "Min": 0,
+        "Inc": 1,
+        "Max": 1439
+      }
+    }
+  },
+  "HeatRecovery": {
+    "Bypass": {
+      "TempSupTgtZone1": {
+        "Val": 215,
+        "Min": 100,
+        "Inc": 1,
+        "Max": 255
+      }
+    }
+  }
+}

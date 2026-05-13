@@ -1,0 +1,148 @@
+{
+  "Nodes": [
+    {
+      "Node": 1,
+      "General": {
+        "Type": {
+          "Val": "BOX"
+        },
+        "SubType": {
+          "Val": 63
+        },
+        "NetworkType": {
+          "Val": "VIRT"
+        },
+        "Parent": {
+          "Val": 0
+        },
+        "Asso": {
+          "Val": 0
+        },
+        "Name": {
+          "Val": ""
+        },
+        "Identify": {
+          "Val": 0
+        }
+      },
+      "Ventilation": {
+        "State": {
+          "Val": "AUTO"
+        },
+        "TimeStateRemain": {
+          "Val": 0
+        },
+        "TimeStateEnd": {
+          "Val": 0
+        },
+        "Mode": {
+          "Val": "AUTO"
+        },
+        "FlowLvlTgt": {
+          "Val": 30
+        }
+      },
+      "Sensor": {
+        "Rh": {
+          "Val": 32
+        },
+        "IaqRh": {
+          "Val": 72
+        }
+      }
+    },
+    {
+      "Node": 52,
+      "General": {
+        "Type": {
+          "Val": "SWITCH"
+        },
+        "SubType": {
+          "Val": 0
+        },
+        "NetworkType": {
+          "Val": "VIRT"
+        },
+        "Parent": {
+          "Val": 1
+        },
+        "Asso": {
+          "Val": 1
+        },
+        "Name": {
+          "Val": ""
+        },
+        "Identify": {
+          "Val": 0
+        }
+      },
+      "Ventilation": {
+        "State": {
+          "Val": "AUTO"
+        },
+        "TimeStateRemain": {
+          "Val": 0
+        },
+        "TimeStateEnd": {
+          "Val": 0
+        },
+        "Mode": {
+          "Val": "-"
+        }
+      },
+      "Input": {
+        "Pos": {
+          "Val": 0
+        }
+      }
+    },
+    {
+      "Node": 58,
+      "General": {
+        "Type": {
+          "Val": "BSRH"
+        },
+        "SubType": {
+          "Val": 0
+        },
+        "NetworkType": {
+          "Val": "VIRT"
+        },
+        "Parent": {
+          "Val": 1
+        },
+        "Asso": {
+          "Val": 1
+        },
+        "Name": {
+          "Val": ""
+        },
+        "Identify": {
+          "Val": 0
+        }
+      },
+      "Ventilation": {
+        "State": {
+          "Val": "AUTO"
+        },
+        "TimeStateRemain": {
+          "Val": 0
+        },
+        "TimeStateEnd": {
+          "Val": 0
+        },
+        "Mode": {
+          "Val": "-"
+        }
+      },
+      "Sensor": {
+        "Rh": {
+          "Val": 32
+        },
+        "IaqRh": {
+          "Val": 72
+        }
+      }
+    }
+  ]
+}

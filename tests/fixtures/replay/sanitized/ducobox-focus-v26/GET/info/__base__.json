@@ -1,0 +1,94 @@
+{
+  "General": {
+    "Board": {
+      "PublicApiVersion": {
+        "Val": "2.6"
+      },
+      "BoxName": {
+        "Val": "FOCUS"
+      },
+      "BoxSubTypeName": {
+        "Val": "Eu"
+      },
+      "SerialBoardBox": {
+        "Val": "sanitized-serial-1"
+      },
+      "SerialBoardComm": {
+        "Val": "sanitized-serial-2"
+      },
+      "SerialDucoBox": {
+        "Val": "sanitized-serial-3"
+      },
+      "SerialDucoComm": {
+        "Val": "sanitized-serial-4"
+      },
+      "Time": {
+        "Val": 1778595987
+      }
+    },
+    "Lan": {
+      "Mode": {
+        "Val": "ETHERNET"
+      },
+      "Ip": {
+        "Val": "192.0.2.2"
+      },
+      "NetMask": {
+        "Val": "255.255.255.0"
+      },
+      "DefaultGateway": {
+        "Val": "192.0.2.3"
+      },
+      "Dns": {
+        "Val": "192.0.2.4"
+      },
+      "Mac": {
+        "Val": "02:00:00:00:00:01"
+      },
+      "HostName": {
+        "Val": "sanitized-hostname-1"
+      },
+      "DucoClientIp": {
+        "Val": "0.0.0.0"
+      },
+      "WifiApSsid": {
+        "Val": "sanitized-ssid-2"
+      },
+      "WifiApKey": {
+        "Val": "sanitized-secret-1"
+      },
+      "ScanWifi": []
+    },
+    "PublicApi": {
+      "WriteReqCntRemain": {
+        "Val": 500
+      }
+    },
+    "Modbus": {
+      "WriteReqCntRemain": {
+        "Val": 500
+      }
+    },
+    "Cloud": {
+      "RegistrationMode": {
+        "Val": false
+      }
+    }
+  },
+  "Diag": {
+    "SubSystems": [
+      {
+        "Component": "Ventilation",
+        "Status": "Error"
+      },
+      {
+        "Component": "VentCool",
+        "Status": "Ok"
+      },
+      {
+        "Component": "SunCtrl",
+        "Status": "Ok"
+      }
+    ]
+  }
+}

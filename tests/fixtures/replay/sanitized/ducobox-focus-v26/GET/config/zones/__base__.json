@@ -1,0 +1,54 @@
+{
+  "Zones": [
+    {
+      "Zone": 1,
+      "DeviceGroupConfig": {
+        "General": {
+          "Name": {
+            "Val": "sanitized-name-1"
+          }
+        }
+      }
+    },
+    {
+      "Zone": 2,
+      "DeviceGroupConfig": {
+        "General": {
+          "Name": {
+            "Val": "sanitized-name-2"
+          }
+        }
+      }
+    },
+    {
+      "Zone": 3,
+      "DeviceGroupConfig": {
+        "General": {
+          "Name": {
+            "Val": "sanitized-name-2"
+          }
+        }
+      }
+    },
+    {
+      "Zone": 4,
+      "DeviceGroupConfig": {
+        "General": {
+          "Name": {
+            "Val": "sanitized-name-2"
+          }
+        }
+      }
+    },
+    {
+      "Zone": 5,
+      "DeviceGroupConfig": {
+        "General": {
+          "Name": {
+            "Val": "sanitized-name-2"
+          }
+        }
+      }
+    }
+  ]
+}

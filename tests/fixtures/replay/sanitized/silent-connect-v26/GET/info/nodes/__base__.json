@@ -1,0 +1,151 @@
+{
+  "Nodes": [
+    {
+      "Node": 1,
+      "General": {
+        "Type": {
+          "Val": "BOX"
+        },
+        "SubType": {
+          "Val": 1
+        },
+        "NetworkType": {
+          "Val": "VIRT"
+        },
+        "Parent": {
+          "Val": 0
+        },
+        "Asso": {
+          "Val": 0
+        },
+        "Name": {
+          "Val": ""
+        },
+        "Identify": {
+          "Val": 0
+        }
+      },
+      "Ventilation": {
+        "State": {
+          "Val": "CNT1"
+        },
+        "TimeStateRemain": {
+          "Val": 0
+        },
+        "TimeStateEnd": {
+          "Val": 0
+        },
+        "Mode": {
+          "Val": "MANU"
+        },
+        "FlowLvlTgt": {
+          "Val": 15
+        }
+      },
+      "Sensor": {
+        "Rh": {
+          "Val": 37
+        },
+        "IaqRh": {
+          "Val": 86
+        }
+      }
+    },
+    {
+      "Node": 2,
+      "General": {
+        "Type": {
+          "Val": "UCCO2"
+        },
+        "SubType": {
+          "Val": 0
+        },
+        "NetworkType": {
+          "Val": "RF"
+        },
+        "Parent": {
+          "Val": 1
+        },
+        "Asso": {
+          "Val": 1
+        },
+        "Name": {
+          "Val": ""
+        },
+        "Identify": {
+          "Val": 0
+        }
+      },
+      "Ventilation": {
+        "State": {
+          "Val": "CNT1"
+        },
+        "TimeStateRemain": {
+          "Val": 0
+        },
+        "TimeStateEnd": {
+          "Val": 0
+        },
+        "Mode": {
+          "Val": "-"
+        }
+      },
+      "Sensor": {
+        "Co2": {
+          "Val": 544
+        },
+        "IaqCo2": {
+          "Val": 100
+        }
+      }
+    },
+    {
+      "Node": 113,
+      "General": {
+        "Type": {
+          "Val": "BSRH"
+        },
+        "SubType": {
+          "Val": 0
+        },
+        "NetworkType": {
+          "Val": "VIRT"
+        },
+        "Parent": {
+          "Val": 1
+        },
+        "Asso": {
+          "Val": 1
+        },
+        "Name": {
+          "Val": ""
+        },
+        "Identify": {
+          "Val": 0
+        }
+      },
+      "Ventilation": {
+        "State": {
+          "Val": "CNT1"
+        },
+        "TimeStateRemain": {
+          "Val": 0
+        },
+        "TimeStateEnd": {
+          "Val": 0
+        },
+        "Mode": {
+          "Val": "-"
+        }
+      },
+      "Sensor": {
+        "Rh": {
+          "Val": 37
+        },
+        "IaqRh": {
+          "Val": 86
+        }
+      }
+    }
+  ]
+}
