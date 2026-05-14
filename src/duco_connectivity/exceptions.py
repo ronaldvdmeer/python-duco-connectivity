@@ -23,7 +23,12 @@ class DucoResponseError(DucoError):
         self.status = status
         self.path = path
         self.body = body
-        detail = message or f"Unexpected response {status} for {path}: {body}"
+        if message is None:
+            detail = f"Unexpected response {status} for {path}"
+            if body.strip():
+                detail = f"{detail}: {body}"
+        else:
+            detail = message
         super().__init__(detail)
 
 

@@ -481,8 +481,10 @@ def render_api_reference() -> str:
         "- Unbracketed IPv6 host values are rejected; use `[addr]` or `[addr]:port`.",
         "- Invalid host input raises `ValueError` before any request is attempted.",
         "- Request transport failures raise `DucoConnectionError`.",
-        "- HTTP error responses raise `DucoError`.",
-        "- Write-budget exhaustion raises `DucoWriteLimitError`.",
+        "- HTTP error responses raise `DucoResponseError`, a `DucoError` subclass "
+        "that exposes `status`, `path`, and `body`.",
+        "- Write-budget exhaustion raises `DucoWriteLimitError`, a "
+        "`DucoResponseError` subclass with status `429`.",
         "",
         "## Client methods",
         "",
