@@ -83,6 +83,13 @@ def test_api_reference_contains_expected_sections() -> None:
     assert "-> ConfigZone`" in content
 
 
+def test_api_reference_hides_compatibility_only_method_aliases() -> None:
+    """Compatibility-only client aliases should not be published as documented methods."""
+    content = render_api_reference()
+
+    assert "async_get_write_req_remaining" not in content
+
+
 def test_doc_path_points_to_generated_file() -> None:
     """The helper should target the checked-in docs page."""
     assert DOC_PATH == ROOT / "docs" / "api-reference.md"

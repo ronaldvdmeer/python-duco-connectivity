@@ -39,8 +39,12 @@ CATEGORY_ORDER = [
     "Node configuration",
     "Zone information and configuration",
     "Node and system information",
-    "Compatibility methods",
 ]
+
+
+UNDOCUMENTED_CLIENT_METHODS = {
+    "async_get_write_req_remaining",
+}
 
 
 METHOD_METADATA: dict[str, MethodMetadata] = {
@@ -240,12 +244,6 @@ METHOD_METADATA: dict[str, MethodMetadata] = {
         endpoint="GET /info?module=General&submodule=PublicApi",
         surface="typed",
     ),
-    "async_get_write_req_remaining": MethodMetadata(
-        category="Compatibility methods",
-        endpoint="Alias of async_get_write_requests_remaining()",
-        surface="compatibility alias",
-        notes=("Kept for callers still using the previous `python-duco-client` method name.",),
-    ),
 }
 
 
@@ -256,7 +254,6 @@ COMPATIBILITY_EXPORTS = {
 
 
 COMPATIBILITY_NOTES = (
-    "`async_get_write_req_remaining()` delegates to `async_get_write_requests_remaining()`.",
     "`DucoRateLimitError` is a backward-compatible alias of `DucoWriteLimitError`.",
     "`ApiEndpointInfo` is a backward-compatible alias of `ApiEndpoint`.",
     "`ApiInfo(api_version=...)` and `ApiInfo.api_version` remain available for migration "
@@ -364,11 +361,13 @@ def _format_signature(method: object, name: str) -> str:
 
 
 def collect_method_references() -> dict[str, list[MethodReference]]:
-    """Collect public client methods grouped by documentation category."""
+    """Collect documented client methods grouped by documentation category."""
     public_methods = {
         name: member
         for name, member in DucoClient.__dict__.items()
-        if name.startswith(("async_get_", "async_set_")) and inspect.iscoroutinefunction(member)
+        if name.startswith(("async_get_", "async_set_"))
+        and inspect.iscoroutinefunction(member)
+        and name not in UNDOCUMENTED_CLIENT_METHODS
     }
 
     public_names = set(public_methods)

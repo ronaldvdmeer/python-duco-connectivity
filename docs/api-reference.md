@@ -198,14 +198,6 @@ python tools/api_reference.py write
   - Surface: typed
   - Summary: Return the remaining write budget reported by the box.
 
-### Compatibility methods
-
-- `async_get_write_req_remaining() -> int`
-  - Endpoint: `Alias of async_get_write_requests_remaining()`
-  - Surface: compatibility alias
-  - Summary: Backward-compatible alias for the old write budget method name.
-  - Note: Kept for callers still using the previous `python-duco-client` method name.
-
 ## Public exports
 
 The package exports the following public symbols through `duco_connectivity.__all__`.
@@ -283,7 +275,6 @@ The package exports the following public symbols through `duco_connectivity.__al
 
 ## Compatibility details
 
-- `async_get_write_req_remaining()` delegates to `async_get_write_requests_remaining()`.
 - `DucoRateLimitError` is a backward-compatible alias of `DucoWriteLimitError`.
 - `ApiEndpointInfo` is a backward-compatible alias of `ApiEndpoint`.
 - `ApiInfo(api_version=...)` and `ApiInfo.api_version` remain available for migration compatibility while the public field name is `public_api_version`.
