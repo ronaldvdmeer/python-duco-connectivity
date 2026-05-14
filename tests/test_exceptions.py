@@ -4,6 +4,7 @@ from duco_connectivity import (
     DucoConnectionError,
     DucoError,
     DucoRateLimitError,
+    DucoResponseError,
     DucoWriteLimitError,
 )
 
@@ -20,6 +21,15 @@ def test_write_limit_error_inherits_from_base_error() -> None:
     assert isinstance(err, DucoError)
 
 
+def test_response_error_stores_http_metadata() -> None:
+    """DucoResponseError should expose status, path, and body."""
+    err = DucoResponseError(404, "/info", "missing")
+    assert err.status == 404
+    assert err.path == "/info"
+    assert err.body == "missing"
+    assert isinstance(err, DucoError)
+
+
 def test_write_limit_error_stores_remaining_count() -> None:
     """DucoWriteLimitError should expose the remaining count when present."""
     err = DucoWriteLimitError(remaining=10)
@@ -33,3 +43,11 @@ def test_rate_limit_error_alias_points_to_write_limit_error() -> None:
     err = DucoRateLimitError(remaining=3)
     assert isinstance(err, DucoWriteLimitError)
     assert err.remaining == 3
+
+
+def test_write_limit_error_exposes_http_metadata() -> None:
+    """DucoWriteLimitError should expose HTTP metadata for 429 responses."""
+    err = DucoWriteLimitError(path="/config", body="rate limited")
+    assert err.status == 429
+    assert err.path == "/config"
+    assert err.body == "rate limited"

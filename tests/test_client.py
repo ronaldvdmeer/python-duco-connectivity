@@ -27,6 +27,7 @@ from duco_connectivity import (
     DucoClient,
     DucoConnectionError,
     DucoError,
+    DucoResponseError,
     DucoWriteLimitError,
     InfoGroup,
     InfoZone,
@@ -3320,15 +3321,24 @@ async def test_timeout_raises_duco_connection_error() -> None:
                 await client.async_get_api_info()
 
 
-async def test_http_error_raises_duco_error() -> None:
-    """HTTP >= 400 should raise DucoError."""
+async def test_http_error_raises_duco_response_error() -> None:
+    """HTTP >= 400 should raise DucoResponseError with HTTP metadata."""
     mock_response = _response(status=500, json_payload={}, text_payload="boom")
 
     async with aiohttp.ClientSession() as session:
         client = DucoClient(session=session, host="192.0.2.94")
         with patch.object(session, "request", _request(mock_response)):
-            with pytest.raises(DucoError, match="Unexpected response 500"):
+            with pytest.raises(
+                DucoResponseError,
+                match="Unexpected response 500 for /api: boom",
+            ) as err_info:
                 await client.async_get_api_info()
+
+    err = err_info.value
+    assert isinstance(err, DucoError)
+    assert err.status == 500
+    assert err.path == "/api"
+    assert err.body == "boom"
 
 
 async def test_invalid_json_raises_duco_error(api_info_data: dict[str, object]) -> None:
@@ -3355,10 +3365,18 @@ async def test_write_limit_error_is_raised() -> None:
     async with aiohttp.ClientSession() as session:
         client = DucoClient(session=session, host="192.0.2.94")
         with patch.object(session, "request", MagicMock(return_value=request_context)):
-            with pytest.raises(DucoWriteLimitError, match="Duco write capacity exhausted"):
+            with pytest.raises(
+                DucoWriteLimitError,
+                match="Duco write capacity exhausted",
+            ) as err_info:
                 await client.async_set_ventilation_state(1, "MAN2")
 
     request_context.__aexit__.assert_awaited_once()
+    err = err_info.value
+    assert isinstance(err, DucoError)
+    assert err.status == 429
+    assert err.path == "/action/nodes/1"
+    assert err.body == ""
 
 
 async def test_get_actions_returns_typed_items(
