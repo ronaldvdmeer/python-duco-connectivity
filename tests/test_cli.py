@@ -271,13 +271,9 @@ def test_call_rejects_unsupported_method_flags(
 def test_compatibility_alias_is_not_exposed_by_cli() -> None:
     """Compatibility-only client aliases should not be probeable from the CLI."""
     parser = duco_cli.build_parser()
-    subparsers_action = next(
-        action for action in parser._actions if action.dest == "command"
-    )
+    subparsers_action = next(action for action in parser._actions if action.dest == "command")
     call_parser = subparsers_action.choices["call"]
-    method_action = next(
-        action for action in call_parser._actions if action.dest == "method"
-    )
+    method_action = next(action for action in call_parser._actions if action.dest == "method")
 
     assert "async_get_write_req_remaining" not in duco_cli.METHOD_SPECS
     assert "async_get_write_req_remaining" not in method_action.choices
