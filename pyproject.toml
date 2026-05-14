@@ -26,6 +26,9 @@ dependencies = [
     "aiohttp>=3.9.0",
 ]
 
+[project.scripts]
+duco-probe = "duco_connectivity.cli:main"
+
 [project.optional-dependencies]
 dev = [
     "aioresponses>=0.7",

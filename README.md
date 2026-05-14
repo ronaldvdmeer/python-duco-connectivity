@@ -21,6 +21,11 @@ After the package is published on PyPI, install it with:
 pip install python-duco-connectivity
 ```
 
+The package also installs a `duco-probe` CLI and supports module execution for
+quick function probes against a local Duco box. When you are not running inside
+an activated virtual environment, use the explicit `.venv/bin/...` paths shown
+in the development examples below.
+
 ## Current scope
 
 - HTTP only
@@ -58,6 +63,7 @@ Start with `docs/api-reference.md` when you want a compact inventory of the
 public client methods, exports, compatibility aliases, and construction rules.
 
 - `docs/api-reference.md` for the central public API inventory
+- `docs/cli.md` for the function probe CLI and shell examples
 - `docs/config.md` for system, node, and zone config reads and writes
 - `docs/live-testing.md` for local opt-in tests against a real Duco device
 - `docs/replay-testing.md` for local sample validation against ignored raw API
@@ -116,6 +122,13 @@ python -m venv .venv
 .venv/bin/mypy src
 .venv/bin/bandit -r src -ll
 .venv/bin/pip-audit --desc on
+```
+
+For local function probes without activating the environment first:
+
+```bash
+.venv/bin/python -m duco_connectivity --host 192.168.1.10 call async_get_board_info
+.venv/bin/duco-probe --host 192.168.1.10 call async_get_board_info
 ```
 
 For local real-device validation against your own Duco box, use the opt-in
