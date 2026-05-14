@@ -99,9 +99,6 @@ METHOD_SPECS: dict[str, MethodSpec] = {
     "async_get_write_requests_remaining": MethodSpec(
         description="Return the remaining write budget.",
     ),
-    "async_get_write_req_remaining": MethodSpec(
-        description="Return the backward-compatible write budget alias.",
-    ),
 }
 
 PARAMETER_FLAGS = {

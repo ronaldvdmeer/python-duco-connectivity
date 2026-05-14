@@ -70,7 +70,6 @@ cases:
 - `async_get_nodes_overview`
 - `async_get_node_info`
 - `async_get_write_requests_remaining`
-- `async_get_write_req_remaining`
 
 Write methods are intentionally out of scope for the first CLI iteration.
 
