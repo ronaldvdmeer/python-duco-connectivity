@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-05-14
+
+### Added
+
+- Add typed HTTP response errors so non-2xx responses expose the HTTP status,
+  request path, and response body through `DucoResponseError` without changing
+  typed success returns.
+
+### Fixed
+
+- Keep default response error messages clean when the response body is empty or
+  whitespace-only.
+- Keep the generated API reference aligned with the published response error
+  surface.
+
 ## [0.3.0] - 2026-05-14
 
 ### Added
@@ -96,7 +111,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CI validation with pytest, Ruff, mypy, Bandit, and pip-audit.
 - PyPI Trusted Publishing workflow for tagged releases.
 
-[Unreleased]: https://github.com/ronaldvdmeer/python-duco-connectivity/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/ronaldvdmeer/python-duco-connectivity/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/ronaldvdmeer/python-duco-connectivity/releases/tag/v0.4.0
 [0.3.0]: https://github.com/ronaldvdmeer/python-duco-connectivity/releases/tag/v0.3.0
 [0.2.0]: https://github.com/ronaldvdmeer/python-duco-connectivity/releases/tag/v0.2.0
 [0.1.1]: https://github.com/ronaldvdmeer/python-duco-connectivity/releases/tag/v0.1.1
