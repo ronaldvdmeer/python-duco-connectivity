@@ -7,6 +7,7 @@ from .exceptions import (
     DucoConnectionError,
     DucoError,
     DucoRateLimitError,
+    DucoResponseError,
     DucoWriteLimitError,
 )
 from .models import (
@@ -93,6 +94,7 @@ __all__ = [
     "DucoConnectionError",
     "DucoError",
     "DucoRateLimitError",
+    "DucoResponseError",
     "DucoWriteLimitError",
     "DiagComponent",
     "DiagStatus",

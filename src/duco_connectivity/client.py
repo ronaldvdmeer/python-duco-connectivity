@@ -9,7 +9,12 @@ from urllib.parse import urlsplit
 
 import aiohttp
 
-from .exceptions import DucoConnectionError, DucoError, DucoWriteLimitError
+from .exceptions import (
+    DucoConnectionError,
+    DucoError,
+    DucoResponseError,
+    DucoWriteLimitError,
+)
 from .models import (
     ActionItem,
     ActionItemList,
@@ -215,18 +220,18 @@ class DucoClient:
                     path,
                 )
                 if response.status == 429:
+                    body = await response.text()
                     _LOGGER.debug(
                         "Write limit reached for %s %s%s",
                         method,
                         self._base_url,
                         path,
                     )
-                    raise DucoWriteLimitError()
+                    raise DucoWriteLimitError(path=path, body=body)
 
                 if response.status >= 400:
                     body = await response.text()
-                    msg = f"Unexpected response {response.status} for {path}: {body}"
-                    raise DucoError(msg)
+                    raise DucoResponseError(response.status, path, body)
 
                 try:
                     return await response.json(content_type=None)
