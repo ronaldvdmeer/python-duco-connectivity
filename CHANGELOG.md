@@ -7,23 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-05-14
+
 ### Added
 
-- Add generic `async_get_info()` support for `GET /info` with `module`,
-  `submodule`, and `parameter` queries.
+- Expand the public client surface with generic `GET /info`, `GET /config`,
+  and `PATCH /config` helpers, plus focused typed readers for node, zone, and
+  zone-group data.
+- Add public system and node action discovery and execution support, including
+  typed action request and discovery models.
+- Add a raw `GET` escape hatch for unmapped endpoints so callers can inspect
+  additional public API data without waiting for a typed wrapper.
+- Add the `duco-probe` function probe CLI, generated API reference tooling,
+  and focused documentation for actions, config, live testing, replay testing,
+  payload preservation, ventilation states, and zones.
+- Add local live-test coverage and replay-based compatibility validation for
+  supported public read paths.
+
+### Changed
+
 - Preserve the original API object on typed response models through
   `raw_payload` so unknown fields remain inspectable without abandoning typed
   accessors.
 - Expose the public `MotorStateCtrl` node payload through optional
   `Node.motor_state` and `NodeMotorStateInfo` fields.
-- Reuse the new generic `async_get_info()` entry point in the focused
-  `GET /info` convenience readers.
-- Expand `NetworkType` to cover the full documented public API transport value
-  set, including `-`, while preserving `UNKNOWN` fallback behavior for truly
-  unmapped future values.
-- Expand `NodeType` to cover the broader Duco public API v2.5 node type set,
-  while preserving `UNKNOWN` fallback behavior for truly unmapped future
-  values.
+- Expand `NodeType`, `NetworkType`, `VentilationState`, and
+  `VentilationMode` to cover more documented public API values while
+  preserving `UNKNOWN` fallback behavior for future unmapped values.
 
 ## [0.2.0] - 2026-05-09
 
@@ -86,7 +96,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CI validation with pytest, Ruff, mypy, Bandit, and pip-audit.
 - PyPI Trusted Publishing workflow for tagged releases.
 
-[Unreleased]: https://github.com/ronaldvdmeer/python-duco-connectivity/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/ronaldvdmeer/python-duco-connectivity/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/ronaldvdmeer/python-duco-connectivity/releases/tag/v0.3.0
 [0.2.0]: https://github.com/ronaldvdmeer/python-duco-connectivity/releases/tag/v0.2.0
 [0.1.1]: https://github.com/ronaldvdmeer/python-duco-connectivity/releases/tag/v0.1.1
 [0.1.0]: https://github.com/ronaldvdmeer/python-duco-connectivity/releases/tag/v0.1.0
