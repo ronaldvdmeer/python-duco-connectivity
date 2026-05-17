@@ -4,6 +4,10 @@
 surface, but many typed response models now also retain the original API
 object in `raw_payload`.
 
+See [public-api-boundaries.md](public-api-boundaries.md) for the broader rule
+that defines when callers should prefer typed models, when raw access is still
+expected, and how these escape hatches fit into the public contract.
+
 This is intended as a forward-compatibility escape hatch:
 
 - use the typed fields when the library already models the part of the payload

@@ -70,16 +70,19 @@ public client methods, exports, compatibility aliases, and construction rules.
   captures
 - `docs/actions.md` for action discovery and execution
 - `docs/nodes.md` for node models and node information readers
+- `docs/public-api-boundaries.md` for the typed-model contract and raw escape
+  hatch boundaries
 - `docs/zones.md` for zone and group info and config readers
 - `docs/ventilation-states.md` for ventilation enum values and compatibility
   members
 - `docs/payload-preservation.md` for raw payload preservation and raw endpoint
   access
 
-The public surface keeps a split between stable typed readers and broader raw
-escape hatches. Use the typed methods when the model already matches the data
-you need, and use the raw helpers when you need endpoint coverage that has not
-been typed yet.
+The public surface keeps a deliberate split between stable typed readers and
+broader raw escape hatches. Use the typed methods when the model already
+matches the data you need, and use the raw helpers when you need endpoint
+coverage, selector flexibility, or payload fields that have not been typed yet.
+See `docs/public-api-boundaries.md` for the full contract.
 
 ## Testing strategy
 
