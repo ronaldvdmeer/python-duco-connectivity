@@ -4,7 +4,18 @@ from collections.abc import Callable
 
 import pytest
 
-from duco_connectivity import BoardName, DiagStatus, DucoClient, DucoVersion
+from duco_connectivity import (
+    BoardName,
+    DiagStatus,
+    DucoClient,
+    DucoSerialNumber,
+    DucoVersion,
+    HostName,
+    IpAddress,
+    KnownLanMode,
+    LanMode,
+    MacAddress,
+)
 
 pytestmark = pytest.mark.live
 
@@ -29,10 +40,21 @@ async def test_live_reads_core_device_info(
     assert not api_info.endpoints or any(endpoint.url == "/api" for endpoint in api_info.endpoints)
     assert isinstance(board_info.box_name, BoardName)
     assert board_info.box_name
+    assert isinstance(board_info.serial_board_comm, DucoSerialNumber)
     assert board_info.serial_board_comm
     assert board_info.time > 0
+    assert isinstance(lan_info.mode, LanMode)
+    assert lan_info.mode.known_value in {
+        KnownLanMode.NO_CONNECTION,
+        KnownLanMode.WIFI_AP,
+        KnownLanMode.WIFI_CLIENT,
+        KnownLanMode.ETHERNET,
+    }
+    assert isinstance(lan_info.ip, IpAddress)
     assert lan_info.ip
+    assert isinstance(lan_info.mac, MacAddress)
     assert lan_info.mac
+    assert isinstance(lan_info.host_name, HostName)
     assert lan_info.host_name
     assert remaining_writes >= 0
 

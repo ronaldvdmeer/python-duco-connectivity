@@ -33,7 +33,8 @@ Typed primitives can still be compatibility-conscious. When a Duco field has a
 stable domain meaning but callers still benefit from string behavior, the
 library can expose a string-compatible public type instead of a nested wrapper.
 That is the pattern used for board and version primitives like `BoardName` and
-`DucoVersion`.
+`DucoVersion`, and for adjacent metadata families like `DucoSerialNumber`,
+`LanMode`, `IpAddress`, `MacAddress`, and `HostName`.
 
 That includes:
 

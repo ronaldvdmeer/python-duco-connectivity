@@ -25,7 +25,9 @@ from duco_connectivity import (
     ConfigZonesOverview,
     ConfigZoneStruct,
     DeviceGroupConfigSubmoduleSelector,
+    DucoSerialNumber,
     DucoVersion,
+    HostName,
     InfoGeneralSubmoduleSelector,
     InfoGroup,
     InfoGroupStruct,
@@ -34,7 +36,12 @@ from duco_connectivity import (
     InfoZoneGroup,
     InfoZonesOverview,
     InfoZoneStruct,
+    IpAddress,
     KnownBoardName,
+    KnownLanMode,
+    LanInfo,
+    LanMode,
+    MacAddress,
     NetworkType,
     Node,
     NodeActionItemList,
@@ -328,6 +335,10 @@ def test_board_info_optional_software_version() -> None:
     )
     assert isinstance(board.box_name, BoardName)
     assert board.box_name.known_value is KnownBoardName.SILENT_CONNECT
+    assert isinstance(board.serial_board_box, DucoSerialNumber)
+    assert isinstance(board.serial_board_comm, DucoSerialNumber)
+    assert isinstance(board.serial_duco_box, DucoSerialNumber)
+    assert isinstance(board.serial_duco_comm, DucoSerialNumber)
     assert board.public_api_version is None
     assert board.software_version is None
     assert board.raw_payload == {}
@@ -363,8 +374,73 @@ def test_board_info_constructor_signature_accepts_compatibility_types() -> None:
     signature = inspect.signature(BoardInfo)
 
     assert signature.parameters["box_name"].annotation == BoardName | str
+    assert signature.parameters["serial_board_box"].annotation == DucoSerialNumber | str
+    assert signature.parameters["serial_board_comm"].annotation == DucoSerialNumber | str
+    assert signature.parameters["serial_duco_box"].annotation == DucoSerialNumber | str
+    assert signature.parameters["serial_duco_comm"].annotation == DucoSerialNumber | str
     assert signature.parameters["public_api_version"].annotation == DucoVersion | str | None
     assert signature.parameters["software_version"].annotation == DucoVersion | str | None
+
+
+def test_lan_info_coerces_string_metadata_primitives() -> None:
+    """LanInfo should coerce exposed metadata into string-compatible typed wrappers."""
+    lan = LanInfo(
+        mode="WIFI_CLIENT",
+        ip="192.0.2.94",
+        net_mask="255.255.255.0",
+        default_gateway="192.0.2.1",
+        dns="192.0.2.1",
+        mac="a0:dd:6c:06:12:90",
+        host_name="duco_test_box",
+        rssi_wifi=-44,
+    )
+
+    assert isinstance(lan.mode, LanMode)
+    assert lan.mode.known_value is KnownLanMode.WIFI_CLIENT
+    assert isinstance(lan.ip, IpAddress)
+    assert isinstance(lan.net_mask, IpAddress)
+    assert isinstance(lan.default_gateway, IpAddress)
+    assert isinstance(lan.dns, IpAddress)
+    assert isinstance(lan.mac, MacAddress)
+    assert isinstance(lan.host_name, HostName)
+    assert lan.raw_payload == {}
+
+
+def test_lan_info_preserves_unknown_mode_and_unusual_metadata_strings() -> None:
+    """LanInfo should keep forward-looking string values accessible."""
+    lan = LanInfo(
+        mode="FUTURE_WIFI",
+        ip="not-an-ip",
+        net_mask="maskish",
+        default_gateway="gatewayish",
+        dns="dnsish",
+        mac="macish",
+        host_name="future host",
+        rssi_wifi=None,
+    )
+
+    assert isinstance(lan.mode, LanMode)
+    assert lan.mode == "FUTURE_WIFI"
+    assert lan.mode.known_value is None
+    assert isinstance(lan.ip, IpAddress)
+    assert lan.ip == "not-an-ip"
+    assert isinstance(lan.mac, MacAddress)
+    assert lan.mac == "macish"
+    assert isinstance(lan.host_name, HostName)
+    assert lan.host_name == "future host"
+
+
+def test_lan_info_constructor_signature_accepts_compatibility_types() -> None:
+    """LanInfo should advertise compatibility-friendly constructor annotations."""
+    signature = inspect.signature(LanInfo)
+
+    assert signature.parameters["mode"].annotation == LanMode | str
+    assert signature.parameters["ip"].annotation == IpAddress | str
+    assert signature.parameters["net_mask"].annotation == IpAddress | str
+    assert signature.parameters["default_gateway"].annotation == IpAddress | str
+    assert signature.parameters["dns"].annotation == IpAddress | str
+    assert signature.parameters["mac"].annotation == MacAddress | str
+    assert signature.parameters["host_name"].annotation == HostName | str
 
 
 def test_info_group_struct_defaults() -> None:

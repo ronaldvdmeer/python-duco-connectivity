@@ -88,6 +88,63 @@ class DucoVersion(str):
         return components[1]
 
 
+class DucoSerialNumber(str):
+    """String-compatible serial identifier reported by the Duco API."""
+
+    def __new__(cls, value: str) -> Self:
+        return super().__new__(cls, value)
+
+
+class IpAddress(str):
+    """String-compatible IP-like metadata value reported by the Duco API."""
+
+    def __new__(cls, value: str) -> Self:
+        return super().__new__(cls, value)
+
+
+class MacAddress(str):
+    """String-compatible MAC address value reported by the Duco API."""
+
+    def __new__(cls, value: str) -> Self:
+        return super().__new__(cls, value)
+
+
+class HostName(str):
+    """String-compatible host name value reported by the Duco API."""
+
+    def __new__(cls, value: str) -> Self:
+        return super().__new__(cls, value)
+
+
+class KnownLanMode(StrEnum):
+    """Observed stable LAN mode values exposed through `Lan.Mode`."""
+
+    NO_CONNECTION = "NO_CONNECTION"
+    WIFI_AP = "WIFI_AP"
+    WIFI_CLIENT = "WIFI_CLIENT"
+    ETHERNET = "ETHERNET"
+
+
+class LanMode(str):
+    """String-compatible LAN mode with optional known-value matching."""
+
+    def __new__(cls, value: str) -> Self:
+        return super().__new__(cls, value)
+
+    @property
+    def known_value(self) -> KnownLanMode | None:
+        """Return the matched known LAN mode when available."""
+        try:
+            return KnownLanMode(self)
+        except ValueError:
+            return None
+
+    @property
+    def is_known(self) -> bool:
+        """Return whether the LAN mode matches a known stable value."""
+        return self.known_value is not None
+
+
 def _coerce_board_name(value: BoardName | str) -> BoardName:
     """Normalize public board identity values to `BoardName`."""
     if isinstance(value, BoardName):
@@ -100,6 +157,41 @@ def _coerce_duco_version(value: DucoVersion | str) -> DucoVersion:
     if isinstance(value, DucoVersion):
         return value
     return DucoVersion(value)
+
+
+def _coerce_duco_serial_number(value: DucoSerialNumber | str) -> DucoSerialNumber:
+    """Normalize public serial values to `DucoSerialNumber`."""
+    if isinstance(value, DucoSerialNumber):
+        return value
+    return DucoSerialNumber(value)
+
+
+def _coerce_ip_address(value: IpAddress | str) -> IpAddress:
+    """Normalize public IP-like values to `IpAddress`."""
+    if isinstance(value, IpAddress):
+        return value
+    return IpAddress(value)
+
+
+def _coerce_mac_address(value: MacAddress | str) -> MacAddress:
+    """Normalize public MAC values to `MacAddress`."""
+    if isinstance(value, MacAddress):
+        return value
+    return MacAddress(value)
+
+
+def _coerce_host_name(value: HostName | str) -> HostName:
+    """Normalize public host name values to `HostName`."""
+    if isinstance(value, HostName):
+        return value
+    return HostName(value)
+
+
+def _coerce_lan_mode(value: LanMode | str) -> LanMode:
+    """Normalize public LAN mode values to `LanMode`."""
+    if isinstance(value, LanMode):
+        return value
+    return LanMode(value)
 
 
 class NodeType(StrEnum):
@@ -399,10 +491,10 @@ class BoardInfo:
 
     box_name: BoardName
     box_sub_type_name: str
-    serial_board_box: str
-    serial_board_comm: str
-    serial_duco_box: str
-    serial_duco_comm: str
+    serial_board_box: DucoSerialNumber
+    serial_board_comm: DucoSerialNumber
+    serial_duco_box: DucoSerialNumber
+    serial_duco_comm: DucoSerialNumber
     time: int
     public_api_version: DucoVersion | None = None
     software_version: DucoVersion | None = None
@@ -412,10 +504,10 @@ class BoardInfo:
         self,
         box_name: BoardName | str,
         box_sub_type_name: str,
-        serial_board_box: str,
-        serial_board_comm: str,
-        serial_duco_box: str,
-        serial_duco_comm: str,
+        serial_board_box: DucoSerialNumber | str,
+        serial_board_comm: DucoSerialNumber | str,
+        serial_duco_box: DucoSerialNumber | str,
+        serial_duco_comm: DucoSerialNumber | str,
         time: int,
         public_api_version: DucoVersion | str | None = None,
         software_version: DucoVersion | str | None = None,
@@ -424,10 +516,26 @@ class BoardInfo:
         """Initialize board info with compatibility-friendly constructor types."""
         object.__setattr__(self, "box_name", _coerce_board_name(box_name))
         object.__setattr__(self, "box_sub_type_name", box_sub_type_name)
-        object.__setattr__(self, "serial_board_box", serial_board_box)
-        object.__setattr__(self, "serial_board_comm", serial_board_comm)
-        object.__setattr__(self, "serial_duco_box", serial_duco_box)
-        object.__setattr__(self, "serial_duco_comm", serial_duco_comm)
+        object.__setattr__(
+            self,
+            "serial_board_box",
+            _coerce_duco_serial_number(serial_board_box),
+        )
+        object.__setattr__(
+            self,
+            "serial_board_comm",
+            _coerce_duco_serial_number(serial_board_comm),
+        )
+        object.__setattr__(
+            self,
+            "serial_duco_box",
+            _coerce_duco_serial_number(serial_duco_box),
+        )
+        object.__setattr__(
+            self,
+            "serial_duco_comm",
+            _coerce_duco_serial_number(serial_duco_comm),
+        )
         object.__setattr__(self, "time", time)
         object.__setattr__(
             self,
@@ -442,19 +550,42 @@ class BoardInfo:
         object.__setattr__(self, "raw_payload", {} if raw_payload is None else raw_payload)
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True, slots=True, init=False)
 class LanInfo:
     """LAN settings reported by the main unit."""
 
-    mode: str
-    ip: str
-    net_mask: str
-    default_gateway: str
-    dns: str
-    mac: str
-    host_name: str
+    mode: LanMode
+    ip: IpAddress
+    net_mask: IpAddress
+    default_gateway: IpAddress
+    dns: IpAddress
+    mac: MacAddress
+    host_name: HostName
     rssi_wifi: int | None
     raw_payload: dict[str, Any] = field(default_factory=dict, repr=False, compare=False)
+
+    def __init__(
+        self,
+        mode: LanMode | str,
+        ip: IpAddress | str,
+        net_mask: IpAddress | str,
+        default_gateway: IpAddress | str,
+        dns: IpAddress | str,
+        mac: MacAddress | str,
+        host_name: HostName | str,
+        rssi_wifi: int | None,
+        raw_payload: dict[str, Any] | None = None,
+    ) -> None:
+        """Initialize LAN info with compatibility-friendly constructor types."""
+        object.__setattr__(self, "mode", _coerce_lan_mode(mode))
+        object.__setattr__(self, "ip", _coerce_ip_address(ip))
+        object.__setattr__(self, "net_mask", _coerce_ip_address(net_mask))
+        object.__setattr__(self, "default_gateway", _coerce_ip_address(default_gateway))
+        object.__setattr__(self, "dns", _coerce_ip_address(dns))
+        object.__setattr__(self, "mac", _coerce_mac_address(mac))
+        object.__setattr__(self, "host_name", _coerce_host_name(host_name))
+        object.__setattr__(self, "rssi_wifi", rssi_wifi)
+        object.__setattr__(self, "raw_payload", {} if raw_payload is None else raw_payload)
 
 
 @dataclass(frozen=True, slots=True)
