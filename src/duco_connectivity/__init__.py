@@ -12,8 +12,10 @@ from .exceptions import (
 )
 from .models import (
     Action,
+    ActionEnumValue,
     ActionItem,
     ActionItemList,
+    ActionName,
     ActionNode,
     ActionResult,
     ActionResultStatus,
@@ -61,6 +63,7 @@ from .models import (
     InfoZonesOverview,
     InfoZoneStruct,
     IpAddress,
+    KnownActionName,
     KnownBoardName,
     KnownLanMode,
     LanInfo,
@@ -116,8 +119,10 @@ except PackageNotFoundError:
 
 __all__ = [
     "Action",
+    "ActionEnumValue",
     "ActionItem",
     "ActionItemList",
+    "ActionName",
     "ActionNode",
     "ActionResult",
     "ActionResultStatus",
@@ -171,6 +176,7 @@ __all__ = [
     "InfoZonesOverview",
     "InfoZoneStruct",
     "IpAddress",
+    "KnownActionName",
     "KnownBoardName",
     "KnownLanMode",
     "LanInfo",

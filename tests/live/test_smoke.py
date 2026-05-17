@@ -5,6 +5,8 @@ from collections.abc import Callable
 import pytest
 
 from duco_connectivity import (
+    ActionEnumValue,
+    ActionName,
     BoardName,
     ConfigValue,
     ConfigValueString,
@@ -191,8 +193,25 @@ async def test_live_reads_actions_and_zones(
 
     assert actions
     assert all(item.action for item in actions)
+    assert all(isinstance(item.action, ActionName) for item in actions)
+    assert all(
+        isinstance(enum_value, ActionEnumValue)
+        for item in actions
+        for enum_value in item.enum_values
+    )
     assert node_actions.nodes
     assert all(item.node_id > 0 for item in node_actions.nodes)
     assert all(action.action for item in node_actions.nodes for action in item.actions)
+    assert all(
+        isinstance(action.action, ActionName)
+        for item in node_actions.nodes
+        for action in item.actions
+    )
+    assert all(
+        isinstance(enum_value, ActionEnumValue)
+        for item in node_actions.nodes
+        for action in item.actions
+        for enum_value in action.enum_values
+    )
     assert all(zone.zone_id > 0 for zone in zones.zones)
     assert all(group.group_id > 0 for zone in zones.zones for group in zone.groups)

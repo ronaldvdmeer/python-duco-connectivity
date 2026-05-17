@@ -76,7 +76,7 @@ python tools/api_reference.py write
   - Surface: typed
   - Summary: Return supported actions for a specific node.
   - Details: [actions.md](actions.md)
-- `async_set_action(action: str, val: str | int | bool | None = None) -> ActionResult`
+- `async_set_action(action: ActionName | str, val: str | int | bool | None = None) -> ActionResult`
   - Endpoint: `POST /action`
   - Surface: typed
   - Summary: Execute a generic system action through the local Duco API.
@@ -87,7 +87,7 @@ python tools/api_reference.py write
   - Summary: Request a ventilation state change for a node.
   - Details: [actions.md](actions.md)
   - Note: Thin convenience wrapper over `async_set_node_action()` for `SetVentilationState`.
-- `async_set_node_action(node_id: int, action: str, val: str | int | bool | None = None) -> ActionResult`
+- `async_set_node_action(node_id: int, action: ActionName | str, val: str | int | bool | None = None) -> ActionResult`
   - Endpoint: `POST /action/nodes/{node}`
   - Surface: typed
   - Summary: Execute a generic node action through the local Duco API.
@@ -209,8 +209,10 @@ The package exports the following public symbols through `duco_connectivity.__al
 ### Models
 
 - `Action`
+- `ActionEnumValue`
 - `ActionItem`
 - `ActionItemList`
+- `ActionName`
 - `ActionNode`
 - `ActionResult`
 - `ApiEndpoint`
@@ -298,6 +300,7 @@ The package exports the following public symbols through `duco_connectivity.__al
 - `DiagStatus`
 - `InfoGeneralSubmoduleSelector`
 - `InfoModuleSelector`
+- `KnownActionName`
 - `KnownBoardName`
 - `KnownLanMode`
 - `NetworkType`

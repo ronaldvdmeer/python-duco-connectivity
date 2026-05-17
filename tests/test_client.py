@@ -10,7 +10,9 @@ import aiohttp
 import pytest
 
 from duco_connectivity import (
+    ActionEnumValue,
     ActionItem,
+    ActionName,
     ActionResultStatus,
     ActionValueType,
     BoardName,
@@ -3841,6 +3843,8 @@ async def test_get_actions_returns_typed_items(
     ]
     assert request.call_args.args[:2] == ("GET", "http://192.0.2.94/action")
     assert result[0].raw_payload is action_items_data[0]
+    assert isinstance(result[0].action, ActionName)
+    assert isinstance(result[1].enum_values[0], ActionEnumValue)
 
 
 async def test_get_actions_unknown_val_type_falls_back_to_unknown() -> None:
@@ -3860,6 +3864,30 @@ async def test_get_actions_unknown_val_type_falls_back_to_unknown() -> None:
             result = await client.async_get_actions()
 
     assert result == [ActionItem(action="SetFutureAction", val_type=ActionValueType.UNKNOWN)]
+    assert isinstance(result[0].action, ActionName)
+    assert result[0].action.known_value is None
+
+
+async def test_get_actions_preserves_forward_compatible_enum_options() -> None:
+    """Action discovery should keep future action names and enum options usable."""
+    payload: list[dict[str, object]] = [
+        {
+            "Action": "SetFutureAction",
+            "ValType": "Enum",
+            "Enum": ["FutureOff", "FutureOn"],
+        }
+    ]
+    mock_response = _response(json_payload=payload)
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with patch.object(session, "request", _request(mock_response)):
+            result = await client.async_get_actions()
+
+    assert result[0].action == "SetFutureAction"
+    assert result[0].action.known_value is None
+    assert result[0].enum_values == ["FutureOff", "FutureOn"]
+    assert all(isinstance(value, ActionEnumValue) for value in result[0].enum_values)
 
 
 @pytest.mark.parametrize(
@@ -3947,6 +3975,8 @@ async def test_get_node_actions_returns_typed_items(
     assert request.call_args.args[:2] == ("GET", "http://192.0.2.94/action/nodes")
     assert result.raw_payload is node_action_items_data
     assert result.nodes[0].raw_payload is node_action_items_data["Nodes"][0]
+    assert isinstance(result.nodes[0].actions[0].action, ActionName)
+    assert isinstance(result.nodes[1].actions[0].enum_values[0], ActionEnumValue)
 
 
 @pytest.mark.parametrize(
@@ -4024,6 +4054,8 @@ async def test_get_node_actions_for_node_returns_typed_items(
     )
     assert request.call_args.args[:2] == ("GET", "http://192.0.2.94/action/nodes/7")
     assert result.raw_payload is node_action_item_data
+    assert isinstance(result.actions[0].action, ActionName)
+    assert isinstance(result.actions[0].enum_values[0], ActionEnumValue)
 
 
 @pytest.mark.parametrize(
@@ -4087,7 +4119,7 @@ async def test_set_action_returns_typed_result(
         client = DucoClient(session=session, host="192.0.2.94")
         request = MagicMock(return_value=_request_context(mock_response))
         with patch.object(session, "request", request):
-            result = await client.async_set_action("SetWifiApMode", "On")
+            result = await client.async_set_action(ActionName("SetWifiApMode"), "On")
 
     assert result.result is ActionResultStatus.SUCCESS
     assert result.code is None
@@ -4203,7 +4235,11 @@ async def test_set_node_action_returns_typed_result(
         client = DucoClient(session=session, host="192.0.2.94")
         request = MagicMock(return_value=_request_context(mock_response))
         with patch.object(session, "request", request):
-            result = await client.async_set_node_action(1, "SetVentilationState", "MAN2")
+            result = await client.async_set_node_action(
+                1,
+                ActionName("SetVentilationState"),
+                "MAN2",
+            )
 
     assert result.result is ActionResultStatus.SUCCESS
     assert result.code is None
