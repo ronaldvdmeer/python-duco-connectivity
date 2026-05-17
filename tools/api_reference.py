@@ -258,6 +258,9 @@ COMPATIBILITY_NOTES = (
     "`ApiEndpointInfo` is a backward-compatible alias of `ApiEndpoint`.",
     "`ApiInfo(api_version=...)` and `ApiInfo.api_version` remain available for migration "
     "compatibility while the public field name is `public_api_version`.",
+    "`BoardName` and `DucoVersion` are string-compatible typed primitives, so existing "
+    "string comparisons and JSON serialization continue to work while exposing typed "
+    "helpers like `known_value` and `components`.",
 )
 
 

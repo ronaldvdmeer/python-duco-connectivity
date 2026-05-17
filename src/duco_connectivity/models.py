@@ -1,13 +1,15 @@
 """Typed models for values exposed by the local Duco API."""
 
 import logging
+import re
 import sys
 from dataclasses import dataclass, field
 from enum import StrEnum
 from types import FrameType
-from typing import Any
+from typing import Any, Self
 
 _LOGGER = logging.getLogger(__name__)
+_VERSION_PATTERN = re.compile(r"^\d+(?:\.\d+)*$")
 
 
 def _compat_caller() -> str | None:
@@ -21,6 +23,83 @@ def _compat_caller() -> str | None:
         frame = frame.f_back
 
     return None
+
+
+class KnownBoardName(StrEnum):
+    """Observed stable board identity values exposed through `BoxName`."""
+
+    ENERGY = "ENERGY"
+    FOCUS = "FOCUS"
+    SILENT_CONNECT = "SILENT_CONNECT"
+
+
+class BoardName(str):
+    """String-compatible board identity with optional known-value matching."""
+
+    def __new__(cls, value: str) -> Self:
+        return super().__new__(cls, value)
+
+    @property
+    def known_value(self) -> KnownBoardName | None:
+        """Return the matched known board identity when available."""
+        try:
+            return KnownBoardName(self)
+        except ValueError:
+            return None
+
+    @property
+    def is_known(self) -> bool:
+        """Return whether the board identity matches a known stable value."""
+        return self.known_value is not None
+
+
+class DucoVersion(str):
+    """String-compatible Duco version value with parsed numeric components."""
+
+    def __new__(cls, value: str) -> Self:
+        return super().__new__(cls, value)
+
+    @property
+    def components(self) -> tuple[int, ...] | None:
+        """Return parsed integer version components when the value is numeric."""
+        if not _VERSION_PATTERN.fullmatch(self):
+            return None
+        return tuple(int(part) for part in self.split("."))
+
+    @property
+    def is_well_formed(self) -> bool:
+        """Return whether the version matches the numeric dotted format."""
+        return self.components is not None
+
+    @property
+    def major(self) -> int | None:
+        """Return the first parsed version component when available."""
+        components = self.components
+        if components is None:
+            return None
+        return components[0]
+
+    @property
+    def minor(self) -> int | None:
+        """Return the second parsed version component when available."""
+        components = self.components
+        if components is None or len(components) < 2:
+            return None
+        return components[1]
+
+
+def _coerce_board_name(value: BoardName | str) -> BoardName:
+    """Normalize public board identity values to `BoardName`."""
+    if isinstance(value, BoardName):
+        return value
+    return BoardName(value)
+
+
+def _coerce_duco_version(value: DucoVersion | str) -> DucoVersion:
+    """Normalize public version values to `DucoVersion`."""
+    if isinstance(value, DucoVersion):
+        return value
+    return DucoVersion(value)
 
 
 class NodeType(StrEnum):
@@ -245,18 +324,18 @@ class ApiEndpoint:
 class ApiInfo:
     """Version and endpoint metadata returned by the API root."""
 
-    public_api_version: str
+    public_api_version: DucoVersion
     reported_api_version: str | None = None
     endpoints: list[ApiEndpoint] = field(default_factory=list)
     raw_payload: dict[str, Any] = field(default_factory=dict, repr=False, compare=False)
 
     def __init__(
         self,
-        public_api_version: str | None = None,
+        public_api_version: DucoVersion | str | None = None,
         reported_api_version: str | None = None,
         endpoints: list[ApiEndpoint] | None = None,
         *,
-        api_version: str | None = None,
+        api_version: DucoVersion | str | None = None,
         raw_payload: dict[str, Any] | None = None,
     ) -> None:
         """Initialize API info with backward-compatible api_version support."""
@@ -285,13 +364,17 @@ class ApiInfo:
             msg = "public_api_version or api_version must be provided"
             raise TypeError(msg)
 
-        object.__setattr__(self, "public_api_version", resolved_public_api_version)
+        object.__setattr__(
+            self,
+            "public_api_version",
+            _coerce_duco_version(resolved_public_api_version),
+        )
         object.__setattr__(self, "reported_api_version", reported_api_version)
         object.__setattr__(self, "endpoints", [] if endpoints is None else endpoints)
         object.__setattr__(self, "raw_payload", {} if raw_payload is None else raw_payload)
 
     @property
-    def api_version(self) -> str:
+    def api_version(self) -> DucoVersion:
         """Backward-compatible alias for the old api_version field name."""
         caller = _compat_caller()
         if caller is None:
@@ -314,16 +397,32 @@ ApiEndpointInfo = ApiEndpoint
 class BoardInfo:
     """Identity and version fields for the main Duco unit."""
 
-    box_name: str
+    box_name: BoardName
     box_sub_type_name: str
     serial_board_box: str
     serial_board_comm: str
     serial_duco_box: str
     serial_duco_comm: str
     time: int
-    public_api_version: str | None = None
-    software_version: str | None = None
+    public_api_version: DucoVersion | None = None
+    software_version: DucoVersion | None = None
     raw_payload: dict[str, Any] = field(default_factory=dict, repr=False, compare=False)
+
+    def __post_init__(self) -> None:
+        """Normalize board and version fields to the typed public primitives."""
+        object.__setattr__(self, "box_name", _coerce_board_name(self.box_name))
+        if self.public_api_version is not None:
+            object.__setattr__(
+                self,
+                "public_api_version",
+                _coerce_duco_version(self.public_api_version),
+            )
+        if self.software_version is not None:
+            object.__setattr__(
+                self,
+                "software_version",
+                _coerce_duco_version(self.software_version),
+            )
 
 
 @dataclass(frozen=True, slots=True)
