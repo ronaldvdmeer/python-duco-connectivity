@@ -52,7 +52,7 @@ python tools/api_reference.py write
   - Surface: typed
   - Summary: Return configuration values from the generic config endpoint.
   - Details: [config.md](config.md)
-- `async_set_config(payload: dict[str, Any], module: ConfigModuleSelector | str | None = None, submodule: ConfigGeneralSubmoduleSelector | ConfigHeatRecoverySubmoduleSelector | str | None = None, parameter: str | None = None) -> Config`
+- `async_set_config(payload: dict[str, Any] | PatchConfigModel, module: ConfigModuleSelector | str | None = None, submodule: ConfigGeneralSubmoduleSelector | ConfigHeatRecoverySubmoduleSelector | str | None = None, parameter: str | None = None) -> Config`
   - Endpoint: `PATCH /config`
   - Surface: typed
   - Summary: Patch configuration values through the generic config endpoint.
@@ -123,7 +123,7 @@ python tools/api_reference.py write
   - Summary: Return node-level configuration values from `/config/nodes/{node}`.
   - Details: [config.md](config.md)
   - Note: The typed reader currently supports only `parameter='Name'`.
-- `async_set_node_config(node_id: int, payload: dict[str, Any], parameter: Literal['Name'] = 'Name') -> ConfigNode`
+- `async_set_node_config(node_id: int, payload: dict[str, Any] | PatchConfigNodeStruct, parameter: Literal['Name'] = 'Name') -> ConfigNode`
   - Endpoint: `PATCH /config/nodes/{node}`
   - Surface: typed
   - Summary: Patch node-level configuration values through `/config/nodes/{node}`.
@@ -218,12 +218,19 @@ The package exports the following public symbols through `duco_connectivity.__al
 - `BoardInfo`
 - `BoardName`
 - `Config`
+- `ConfigAutoRebootComm`
+- `ConfigGeneral`
 - `ConfigGroup`
 - `ConfigGroupStruct`
+- `ConfigHeatRecovery`
+- `ConfigHeatRecoveryBypass`
+- `ConfigLan`
+- `ConfigModbus`
 - `ConfigNode`
 - `ConfigNodeOverview`
 - `ConfigNodeStruct`
 - `ConfigSection`
+- `ConfigTime`
 - `ConfigValue`
 - `ConfigValueOptions`
 - `ConfigValueString`
@@ -264,7 +271,17 @@ The package exports the following public symbols through `duco_connectivity.__al
 - `NodeSubtype`
 - `NodeTemperature`
 - `NodeVentilationInfo`
+- `PatchConfig`
+- `PatchConfigAutoRebootComm`
+- `PatchConfigGeneral`
+- `PatchConfigHeatRecovery`
+- `PatchConfigHeatRecoveryBypass`
+- `PatchConfigLan`
+- `PatchConfigModbus`
+- `PatchConfigModel`
+- `PatchConfigNodeStruct`
 - `PatchConfigNodeValue`
+- `PatchConfigTime`
 - `PatchConfigValue`
 - `VentilationFlowLevelTarget`
 - `VentilationTimeEnd`

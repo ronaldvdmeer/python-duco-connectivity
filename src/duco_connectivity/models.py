@@ -907,10 +907,88 @@ type ConfigItem = ConfigSection | ConfigValue | ConfigValueOptions | ConfigValue
 
 
 @dataclass(frozen=True, slots=True)
+class ConfigTime:
+    """Stable time-related config fields returned by `/config`."""
+
+    time_zone: ConfigValue | None = None
+    dst: ConfigValue | None = None
+    raw_payload: dict[str, Any] = field(default_factory=dict, repr=False, compare=False)
+
+
+@dataclass(frozen=True, slots=True)
+class ConfigModbus:
+    """Stable Modbus config fields returned by `/config`."""
+
+    addr: ConfigValue | None = None
+    offset: ConfigValue | None = None
+    raw_payload: dict[str, Any] = field(default_factory=dict, repr=False, compare=False)
+
+
+@dataclass(frozen=True, slots=True)
+class ConfigLan:
+    """Stable LAN config fields returned by `/config`."""
+
+    mode: ConfigValue | None = None
+    dhcp: ConfigValue | None = None
+    static_ip: ConfigValueString | None = None
+    static_net_mask: ConfigValueString | None = None
+    static_default_gateway: ConfigValueString | None = None
+    static_dns: ConfigValueString | None = None
+    wifi_client_ssid: ConfigValueString | None = None
+    wifi_client_key: ConfigValueString | None = None
+    raw_payload: dict[str, Any] = field(default_factory=dict, repr=False, compare=False)
+
+
+@dataclass(frozen=True, slots=True)
+class ConfigAutoRebootComm:
+    """Stable communication reboot config fields returned by `/config`."""
+
+    period: ConfigValue | None = None
+    time: ConfigValue | None = None
+    raw_payload: dict[str, Any] = field(default_factory=dict, repr=False, compare=False)
+
+
+@dataclass(frozen=True, slots=True)
+class ConfigGeneral:
+    """Stable `General` config fields returned by `/config`."""
+
+    time: ConfigTime | None = None
+    modbus: ConfigModbus | None = None
+    lan: ConfigLan | None = None
+    auto_reboot_comm: ConfigAutoRebootComm | None = None
+    raw_payload: dict[str, Any] = field(default_factory=dict, repr=False, compare=False)
+
+
+@dataclass(frozen=True, slots=True)
+class ConfigHeatRecoveryBypass:
+    """Stable bypass config fields returned by `/config`."""
+
+    temp_sup_tgt_zone_1: ConfigValue | None = None
+    temp_sup_tgt_zone_2: ConfigValue | None = None
+    temp_sup_tgt_zone_3: ConfigValue | None = None
+    temp_sup_tgt_zone_4: ConfigValue | None = None
+    temp_sup_tgt_zone_5: ConfigValue | None = None
+    temp_sup_tgt_zone_6: ConfigValue | None = None
+    temp_sup_tgt_zone_7: ConfigValue | None = None
+    temp_sup_tgt_zone_8: ConfigValue | None = None
+    raw_payload: dict[str, Any] = field(default_factory=dict, repr=False, compare=False)
+
+
+@dataclass(frozen=True, slots=True)
+class ConfigHeatRecovery:
+    """Stable `HeatRecovery` config fields returned by `/config`."""
+
+    bypass: ConfigHeatRecoveryBypass | None = None
+    raw_payload: dict[str, Any] = field(default_factory=dict, repr=False, compare=False)
+
+
+@dataclass(frozen=True, slots=True)
 class Config:
     """Top-level config payload returned by the local Duco API."""
 
     sections: dict[str, ConfigSection] = field(default_factory=dict)
+    general: ConfigGeneral | None = None
+    heat_recovery: ConfigHeatRecovery | None = None
     raw_payload: dict[str, Any] = field(default_factory=dict, repr=False, compare=False)
 
 
@@ -980,11 +1058,105 @@ class ConfigZonesOverview:
     raw_payload: dict[str, Any] = field(default_factory=dict, repr=False, compare=False)
 
 
+class _PatchPayloadModel:
+    """Internal marker base class for typed patch payload models."""
+
+    __slots__ = ()
+
+
+def _patch_field(api_name: str) -> Any:
+    """Return a dataclass field that stores the API key mapping."""
+    return field(default=None, metadata={"api_name": api_name})
+
+
+class PatchConfigModel(_PatchPayloadModel):
+    """Base class for typed `/config` patch payload models."""
+
+    __slots__ = ()
+
+
 @dataclass(frozen=True, slots=True)
 class PatchConfigValue:
     """Leaf config payload used by generic config write methods."""
 
     value: int | str
+
+
+@dataclass(frozen=True, slots=True)
+class PatchConfigTime(PatchConfigModel):
+    """Typed time-related patch payload for `/config`."""
+
+    time_zone: PatchConfigValue | None = _patch_field("TimeZone")
+    dst: PatchConfigValue | None = _patch_field("Dst")
+
+
+@dataclass(frozen=True, slots=True)
+class PatchConfigModbus(PatchConfigModel):
+    """Typed Modbus patch payload for `/config`."""
+
+    addr: PatchConfigValue | None = _patch_field("Addr")
+    offset: PatchConfigValue | None = _patch_field("Offset")
+
+
+@dataclass(frozen=True, slots=True)
+class PatchConfigLan(PatchConfigModel):
+    """Typed LAN patch payload for `/config`."""
+
+    mode: PatchConfigValue | None = _patch_field("Mode")
+    dhcp: PatchConfigValue | None = _patch_field("Dhcp")
+    static_ip: PatchConfigValue | None = _patch_field("StaticIp")
+    static_net_mask: PatchConfigValue | None = _patch_field("StaticNetMask")
+    static_default_gateway: PatchConfigValue | None = _patch_field("StaticDefaultGateway")
+    static_dns: PatchConfigValue | None = _patch_field("StaticDns")
+    wifi_client_ssid: PatchConfigValue | None = _patch_field("WifiClientSsid")
+    wifi_client_key: PatchConfigValue | None = _patch_field("WifiClientKey")
+
+
+@dataclass(frozen=True, slots=True)
+class PatchConfigAutoRebootComm(PatchConfigModel):
+    """Typed auto-reboot communication patch payload for `/config`."""
+
+    period: PatchConfigValue | None = _patch_field("Period")
+    time: PatchConfigValue | None = _patch_field("Time")
+
+
+@dataclass(frozen=True, slots=True)
+class PatchConfigGeneral(PatchConfigModel):
+    """Typed `General` patch payload for `/config`."""
+
+    time: PatchConfigTime | None = _patch_field("Time")
+    modbus: PatchConfigModbus | None = _patch_field("Modbus")
+    lan: PatchConfigLan | None = _patch_field("Lan")
+    auto_reboot_comm: PatchConfigAutoRebootComm | None = _patch_field("AutoRebootComm")
+
+
+@dataclass(frozen=True, slots=True)
+class PatchConfigHeatRecoveryBypass(PatchConfigModel):
+    """Typed bypass patch payload for `/config`."""
+
+    temp_sup_tgt_zone_1: PatchConfigValue | None = _patch_field("TempSupTgtZone1")
+    temp_sup_tgt_zone_2: PatchConfigValue | None = _patch_field("TempSupTgtZone2")
+    temp_sup_tgt_zone_3: PatchConfigValue | None = _patch_field("TempSupTgtZone3")
+    temp_sup_tgt_zone_4: PatchConfigValue | None = _patch_field("TempSupTgtZone4")
+    temp_sup_tgt_zone_5: PatchConfigValue | None = _patch_field("TempSupTgtZone5")
+    temp_sup_tgt_zone_6: PatchConfigValue | None = _patch_field("TempSupTgtZone6")
+    temp_sup_tgt_zone_7: PatchConfigValue | None = _patch_field("TempSupTgtZone7")
+    temp_sup_tgt_zone_8: PatchConfigValue | None = _patch_field("TempSupTgtZone8")
+
+
+@dataclass(frozen=True, slots=True)
+class PatchConfigHeatRecovery(PatchConfigModel):
+    """Typed `HeatRecovery` patch payload for `/config`."""
+
+    bypass: PatchConfigHeatRecoveryBypass | None = _patch_field("Bypass")
+
+
+@dataclass(frozen=True, slots=True)
+class PatchConfig(PatchConfigModel):
+    """Typed top-level patch payload for `/config`."""
+
+    general: PatchConfigGeneral | None = _patch_field("General")
+    heat_recovery: PatchConfigHeatRecovery | None = _patch_field("HeatRecovery")
 
 
 @dataclass(frozen=True, slots=True)
@@ -1046,6 +1218,13 @@ class PatchConfigNodeValue:
     """Leaf node config payload used by future node config write methods."""
 
     value: int | str
+
+
+@dataclass(frozen=True, slots=True)
+class PatchConfigNodeStruct(_PatchPayloadModel):
+    """Typed node config patch payload for stable writable node fields."""
+
+    name: PatchConfigNodeValue | None = _patch_field("Name")
 
 
 @dataclass(frozen=True, slots=True, init=False)

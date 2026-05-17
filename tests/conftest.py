@@ -167,16 +167,29 @@ def config_data() -> dict[str, object]:
                 "TimeZone": {"Val": 1, "Min": -12, "Inc": 1, "Max": 12},
                 "Dst": {"Val": 1, "Min": 0, "Inc": 1, "Max": 1},
             },
+            "Modbus": {
+                "Addr": {"Val": 10, "Min": 1, "Inc": 1, "Max": 247},
+                "Offset": {"Val": 0, "Min": 0, "Inc": 1, "Max": 255},
+            },
             "Lan": {
                 "Mode": {"Val": 1, "Options": [1, 2, 4]},
                 "Dhcp": {"Val": 1, "Min": 0, "Inc": 1, "Max": 1},
                 "StaticIp": {"Val": "192.0.2.94"},
+                "StaticNetMask": {"Val": "255.255.255.0"},
+                "StaticDefaultGateway": {"Val": "192.0.2.1"},
+                "StaticDns": {"Val": "192.0.2.1"},
                 "WifiClientSsid": {"Val": "duco-test-net"},
+                "WifiClientKey": {"Val": "duco-secret"},
+            },
+            "AutoRebootComm": {
+                "Period": {"Val": 7, "Min": 0, "Inc": 1, "Max": 30},
+                "Time": {"Val": 120, "Min": 0, "Inc": 30, "Max": 1440},
             },
         },
         "HeatRecovery": {
             "Bypass": {
                 "TempSupTgtZone1": {"Val": 180, "Min": 120, "Inc": 5, "Max": 220},
+                "TempSupTgtZone2": {"Val": 185, "Min": 120, "Inc": 5, "Max": 220},
             }
         },
     }
