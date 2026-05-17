@@ -646,6 +646,19 @@ def test_node_ventilation_info_coerces_typed_primitives() -> None:
     )
 
 
+def test_node_ventilation_info_preserves_unknown_state_and_mode() -> None:
+    """NodeVentilationInfo should remain forward-tolerant for unknown enum values."""
+    ventilation = NodeVentilationInfo(
+        state="FUTURE_STATE",
+        time_state_remain=1200,
+        time_state_end=1778269000,
+        mode="FUTURE_MODE",
+    )
+
+    assert ventilation.state is VentilationState.UNKNOWN
+    assert ventilation.mode is VentilationMode.UNKNOWN
+
+
 def test_node_general_info_coerces_typed_primitives() -> None:
     """NodeGeneralInfo should coerce stable general values into typed primitives."""
     general = NodeGeneralInfo(
@@ -674,6 +687,22 @@ def test_node_general_info_coerces_typed_primitives() -> None:
     assert signature.parameters["asso"].annotation == NodeAssociationId | int
     assert signature.parameters["name"].annotation == NodeName | str
     assert signature.parameters["identify"].annotation == NodeIdentify | int
+
+
+def test_node_general_info_preserves_unknown_node_and_network_types() -> None:
+    """NodeGeneralInfo should remain forward-tolerant for unknown enum values."""
+    general = NodeGeneralInfo(
+        node_type="FUTURE_NODE",
+        sub_type=1,
+        network_type="FUTURE_NETWORK",
+        parent=0,
+        asso=0,
+        name="Kitchen",
+        identify=0,
+    )
+
+    assert general.node_type is NodeType.UNKNOWN
+    assert general.network_type is NetworkType.UNKNOWN
 
 
 def test_node_is_frozen() -> None:

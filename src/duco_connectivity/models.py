@@ -415,14 +415,30 @@ def _coerce_node_type(value: NodeType | str) -> NodeType:
     """Normalize public node type values to `NodeType`."""
     if isinstance(value, NodeType):
         return value
-    return NodeType(value)
+    try:
+        return NodeType(value)
+    except ValueError:
+        _LOGGER.debug(
+            "Unknown node type %r received through public model construction; "
+            "falling back to UNKNOWN",
+            value,
+        )
+        return NodeType.UNKNOWN
 
 
 def _coerce_network_type(value: NetworkType | str) -> NetworkType:
     """Normalize public network type values to `NetworkType`."""
     if isinstance(value, NetworkType):
         return value
-    return NetworkType(value)
+    try:
+        return NetworkType(value)
+    except ValueError:
+        _LOGGER.debug(
+            "Unknown network type %r received through public model construction; "
+            "falling back to UNKNOWN",
+            value,
+        )
+        return NetworkType.UNKNOWN
 
 
 def _coerce_node_subtype(value: NodeSubtype | int) -> NodeSubtype:
@@ -464,14 +480,30 @@ def _coerce_ventilation_state(value: VentilationState | str) -> VentilationState
     """Normalize public ventilation state values to `VentilationState`."""
     if isinstance(value, VentilationState):
         return value
-    return VentilationState(value)
+    try:
+        return VentilationState(value)
+    except ValueError:
+        _LOGGER.debug(
+            "Unknown ventilation state %r received through public model construction; "
+            "falling back to UNKNOWN",
+            value,
+        )
+        return VentilationState.UNKNOWN
 
 
 def _coerce_ventilation_mode(value: VentilationMode | str) -> VentilationMode:
     """Normalize public ventilation mode values to `VentilationMode`."""
     if isinstance(value, VentilationMode):
         return value
-    return VentilationMode(value)
+    try:
+        return VentilationMode(value)
+    except ValueError:
+        _LOGGER.debug(
+            "Unknown ventilation mode %r received through public model construction; "
+            "falling back to UNKNOWN",
+            value,
+        )
+        return VentilationMode.UNKNOWN
 
 
 def _coerce_ventilation_time_remaining(
