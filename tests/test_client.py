@@ -33,15 +33,21 @@ from duco_connectivity import (
     DucoConnectionError,
     DucoError,
     DucoResponseError,
+    DucoSerialNumber,
     DucoVersion,
     DucoWriteLimitError,
+    HostName,
     InfoGeneralSubmoduleSelector,
     InfoGroup,
     InfoModuleSelector,
     InfoZone,
     InfoZoneGroup,
     InfoZonesOverview,
+    IpAddress,
     KnownBoardName,
+    KnownLanMode,
+    LanMode,
+    MacAddress,
     NetworkType,
     NodeActionItemList,
     NodeInfoModuleSelector,
@@ -1692,7 +1698,11 @@ async def test_board_info_is_parsed(board_info_data: dict[str, object]) -> None:
     assert board.box_name == "SILENT_CONNECT"
     assert board.box_name.known_value is KnownBoardName.SILENT_CONNECT
     assert board.box_sub_type_name == "Eu"
+    assert isinstance(board.serial_board_box, DucoSerialNumber)
     assert board.serial_board_box == "RS0000000001"
+    assert isinstance(board.serial_board_comm, DucoSerialNumber)
+    assert isinstance(board.serial_duco_box, DucoSerialNumber)
+    assert isinstance(board.serial_duco_comm, DucoSerialNumber)
     assert board.time == 1775082497
     assert isinstance(board.public_api_version, DucoVersion)
     assert board.public_api_version == "2.5"
@@ -1764,8 +1774,16 @@ async def test_lan_info_wifi_is_parsed(lan_info_data: dict[str, object]) -> None
         with patch.object(session, "request", _request(mock_response)):
             lan = await client.async_get_lan_info()
 
+    assert isinstance(lan.mode, LanMode)
     assert lan.mode == "WIFI_CLIENT"
+    assert lan.mode.known_value is KnownLanMode.WIFI_CLIENT
+    assert isinstance(lan.ip, IpAddress)
     assert lan.ip == "192.0.2.94"
+    assert isinstance(lan.net_mask, IpAddress)
+    assert isinstance(lan.default_gateway, IpAddress)
+    assert isinstance(lan.dns, IpAddress)
+    assert isinstance(lan.mac, MacAddress)
+    assert isinstance(lan.host_name, HostName)
     assert lan.rssi_wifi == -44
     assert lan.raw_payload is lan_info_data["General"]["Lan"]
 
@@ -1781,9 +1799,45 @@ async def test_lan_info_ethernet_is_parsed(
         with patch.object(session, "request", _request(mock_response)):
             lan = await client.async_get_lan_info()
 
+    assert isinstance(lan.mode, LanMode)
     assert lan.mode == "ETHERNET"
+    assert lan.mode.known_value is KnownLanMode.ETHERNET
     assert lan.ip == "198.51.100.97"
     assert lan.rssi_wifi is None
+
+
+async def test_lan_info_preserves_unknown_mode_and_unusual_strings() -> None:
+    """LAN parsing should keep forward-looking metadata strings accessible."""
+    mock_response = _response(
+        json_payload={
+            "General": {
+                "Lan": {
+                    "Mode": {"Val": "FUTURE_WIFI"},
+                    "Ip": {"Val": "not-an-ip"},
+                    "NetMask": {"Val": "maskish"},
+                    "DefaultGateway": {"Val": "gatewayish"},
+                    "Dns": {"Val": "dnsish"},
+                    "Mac": {"Val": "macish"},
+                    "HostName": {"Val": "future host"},
+                }
+            }
+        }
+    )
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with patch.object(session, "request", _request(mock_response)):
+            lan = await client.async_get_lan_info()
+
+    assert isinstance(lan.mode, LanMode)
+    assert lan.mode == "FUTURE_WIFI"
+    assert lan.mode.known_value is None
+    assert isinstance(lan.ip, IpAddress)
+    assert lan.ip == "not-an-ip"
+    assert isinstance(lan.mac, MacAddress)
+    assert lan.mac == "macish"
+    assert isinstance(lan.host_name, HostName)
+    assert lan.host_name == "future host"
 
 
 async def test_get_diagnostics(diag_data: dict[str, object]) -> None:
