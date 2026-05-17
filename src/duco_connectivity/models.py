@@ -163,6 +163,73 @@ class ActionValueType(StrEnum):
     UNKNOWN = "UNKNOWN"
 
 
+class InfoModuleSelector(StrEnum):
+    """Known stable module selectors for the generic `/info` endpoint.
+
+    These values come from the published Duco public API notes and the typed
+    reader families already exposed by this library. Generic info readers keep
+    accepting raw strings alongside these enums for forward compatibility.
+    """
+
+    GENERAL = "General"
+    DIAG = "Diag"
+    VENTILATION = "Ventilation"
+    HEAT_RECOVERY = "HeatRecovery"
+    WEATHER_HANDLER = "WeatherHandler"
+
+
+class InfoGeneralSubmoduleSelector(StrEnum):
+    """Known stable `General` submodule selectors for `/info`."""
+
+    BOARD = "Board"
+    LAN = "Lan"
+    PUBLIC_API = "PublicApi"
+    MODBUS = "Modbus"
+
+
+class ConfigModuleSelector(StrEnum):
+    """Known stable module selectors for the generic `/config` endpoint."""
+
+    GENERAL = "General"
+    HEAT_RECOVERY = "HeatRecovery"
+
+
+class ConfigGeneralSubmoduleSelector(StrEnum):
+    """Known stable `General` submodule selectors for `/config`."""
+
+    TIME = "Time"
+    MODBUS = "Modbus"
+    LAN = "Lan"
+    AUTO_REBOOT_COMM = "AutoRebootComm"
+
+
+class ConfigHeatRecoverySubmoduleSelector(StrEnum):
+    """Known stable `HeatRecovery` submodule selectors for `/config`."""
+
+    BYPASS = "Bypass"
+
+
+class NodeInfoModuleSelector(StrEnum):
+    """Known stable module selectors for `/info/nodes/{node}`."""
+
+    GENERAL = "General"
+    VENTILATION = "Ventilation"
+    SENSOR = "Sensor"
+    MOTOR_STATE_CTRL = "MotorStateCtrl"
+
+
+class ZoneModuleSelector(StrEnum):
+    """Known stable module selectors for zone info and config endpoints."""
+
+    DEVICE_GROUP_CONFIG = "DeviceGroupConfig"
+
+
+class DeviceGroupConfigSubmoduleSelector(StrEnum):
+    """Known stable `DeviceGroupConfig` submodule selectors for zone endpoints."""
+
+    GENERAL = "General"
+
+
 @dataclass(frozen=True, slots=True)
 class ApiEndpoint:
     """Capabilities advertised for a single API endpoint."""

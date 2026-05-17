@@ -13,7 +13,10 @@ from duco_connectivity import (
     ActionResultStatus,
     ActionValueType,
     Config,
+    ConfigGeneralSubmoduleSelector,
     ConfigGroup,
+    ConfigHeatRecoverySubmoduleSelector,
+    ConfigModuleSelector,
     ConfigNode,
     ConfigNodeOverview,
     ConfigNodeStruct,
@@ -23,18 +26,22 @@ from duco_connectivity import (
     ConfigValueString,
     ConfigZone,
     ConfigZonesOverview,
+    DeviceGroupConfigSubmoduleSelector,
     DiagStatus,
     DucoClient,
     DucoConnectionError,
     DucoError,
     DucoResponseError,
     DucoWriteLimitError,
+    InfoGeneralSubmoduleSelector,
     InfoGroup,
+    InfoModuleSelector,
     InfoZone,
     InfoZoneGroup,
     InfoZonesOverview,
     NetworkType,
     NodeActionItemList,
+    NodeInfoModuleSelector,
     NodeListActionItemList,
     NodeOverview,
     NodeType,
@@ -42,6 +49,7 @@ from duco_connectivity import (
     PatchConfigValue,
     VentilationMode,
     VentilationState,
+    ZoneModuleSelector,
 )
 
 
@@ -666,6 +674,29 @@ async def test_get_info_with_module_submodule_and_parameter_forwards_query_param
     }
 
 
+async def test_get_info_accepts_selector_enums(
+    generic_info_board_data: dict[str, object],
+) -> None:
+    """Known info selector enums should serialize to the documented raw query values."""
+    mock_response = _response(json_payload=generic_info_board_data)
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        request_mock = _request(mock_response)
+        with patch.object(session, "request", request_mock):
+            await client.async_get_info(
+                module=InfoModuleSelector.GENERAL,
+                submodule=InfoGeneralSubmoduleSelector.BOARD,
+                parameter="PublicApiVersion",
+            )
+
+    assert request_mock.call_args.kwargs["params"] == {
+        "module": "General",
+        "submodule": "Board",
+        "parameter": "PublicApiVersion",
+    }
+
+
 async def test_get_info_api_error_raises_duco_error() -> None:
     """HTTP errors from the generic info endpoint should surface as DucoError."""
     mock_response = _response(status=400, text_payload="unsupported query")
@@ -913,6 +944,29 @@ async def test_get_config_with_module_submodule_and_parameter_forwards_query_par
         "module": "General",
         "submodule": "Lan",
         "parameter": "StaticIp",
+    }
+
+
+async def test_get_config_accepts_selector_enums(
+    config_data: dict[str, object],
+) -> None:
+    """Known config selector enums should serialize to the documented raw query values."""
+    mock_response = _response(json_payload=config_data)
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        request_mock = _request(mock_response)
+        with patch.object(session, "request", request_mock):
+            await client.async_get_config(
+                module=ConfigModuleSelector.HEAT_RECOVERY,
+                submodule=ConfigHeatRecoverySubmoduleSelector.BYPASS,
+                parameter="TempSupTgtZone1",
+            )
+
+    assert request_mock.call_args.kwargs["params"] == {
+        "module": "HeatRecovery",
+        "submodule": "Bypass",
+        "parameter": "TempSupTgtZone1",
     }
 
 
@@ -1968,6 +2022,32 @@ async def test_get_zone_info_forwards_query_params(
     }
 
 
+async def test_get_zone_info_accepts_selector_enums(
+    zone_info_data: dict[str, object],
+) -> None:
+    """Known zone selector enums should serialize to the documented raw query values."""
+    mock_response = _response(json_payload=zone_info_data)
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        request_mock = _request(mock_response)
+        with patch.object(session, "request", request_mock):
+            await client.async_get_zone_info(
+                1,
+                group=2,
+                module=ZoneModuleSelector.DEVICE_GROUP_CONFIG,
+                submodule=DeviceGroupConfigSubmoduleSelector.GENERAL,
+                parameter="Name",
+            )
+
+    assert request_mock.call_args.kwargs["params"] == {
+        "group": "2",
+        "module": "DeviceGroupConfig",
+        "submodule": "General",
+        "parameter": "Name",
+    }
+
+
 @pytest.mark.parametrize(("payload", "message"), ZONE_INFO_MALFORMED_PAYLOADS)
 async def test_get_zone_info_malformed_payload_raises_duco_error(
     payload: object,
@@ -2766,6 +2846,54 @@ async def test_get_node_info_forwards_query_params(node_data: dict[str, object])
     assert request_mock.call_args.kwargs["params"] == {
         "module": "Sensor",
         "parameter": "Co2",
+    }
+
+
+async def test_get_node_info_accepts_selector_enums(node_data: dict[str, object]) -> None:
+    """Known node selector enums should serialize to the documented raw query values."""
+    mock_response = _response(json_payload=node_data)
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        request_mock = _request(mock_response)
+        with patch.object(session, "request", request_mock):
+            await client.async_get_node_info(
+                2,
+                module=NodeInfoModuleSelector.SENSOR,
+                parameter="Co2",
+            )
+
+    assert request_mock.call_args.kwargs["params"] == {
+        "module": "Sensor",
+        "parameter": "Co2",
+    }
+
+
+async def test_set_config_accepts_selector_enums(
+    config_data: dict[str, object],
+) -> None:
+    """Known config selector enums should also serialize correctly for writes."""
+    mock_response = _response(json_payload=config_data)
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        request = MagicMock(return_value=_request_context(mock_response))
+        with patch.object(session, "request", request):
+            await client.async_set_config(
+                {"General": {"Lan": {"Mode": PatchConfigValue(value=2)}}},
+                module=ConfigModuleSelector.GENERAL,
+                submodule=ConfigGeneralSubmoduleSelector.LAN,
+                parameter="Mode",
+            )
+
+    assert request.call_args.args[:2] == (
+        "PATCH",
+        "http://192.0.2.94/config",
+    )
+    assert request.call_args.kwargs["params"] == {
+        "module": "General",
+        "submodule": "Lan",
+        "parameter": "Mode",
     }
 
 

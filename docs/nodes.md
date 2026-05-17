@@ -5,6 +5,11 @@ The library keeps that model close to the Duco payload shape while still using
 explicit typed submodels for the sections that are already stable in the public
 API notes.
 
+For selector-taking reads like `async_get_node_info(node_id, module=..., parameter=...)`,
+the client exposes known stable node-module selectors as enums while still
+accepting raw strings for newly observed firmware values. See
+[selectors.md](selectors.md) for the selector contract.
+
 ## Node sections
 
 - `Node.general` is always present and uses `NodeGeneralInfo`.

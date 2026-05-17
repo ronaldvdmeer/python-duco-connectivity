@@ -25,9 +25,12 @@ from .models import (
     ApiInfo,
     BoardInfo,
     Config,
+    ConfigGeneralSubmoduleSelector,
     ConfigGroup,
     ConfigGroupStruct,
+    ConfigHeatRecoverySubmoduleSelector,
     ConfigItem,
+    ConfigModuleSelector,
     ConfigNode,
     ConfigNodeOverview,
     ConfigNodeStruct,
@@ -38,10 +41,13 @@ from .models import (
     ConfigZone,
     ConfigZonesOverview,
     ConfigZoneStruct,
+    DeviceGroupConfigSubmoduleSelector,
     DiagComponent,
     DiagStatus,
+    InfoGeneralSubmoduleSelector,
     InfoGroup,
     InfoGroupStruct,
+    InfoModuleSelector,
     InfoZone,
     InfoZoneGroup,
     InfoZonesOverview,
@@ -51,6 +57,7 @@ from .models import (
     Node,
     NodeActionItemList,
     NodeGeneralInfo,
+    NodeInfoModuleSelector,
     NodeListActionItemList,
     NodeMotorStateInfo,
     NodeOverview,
@@ -61,6 +68,7 @@ from .models import (
     PatchConfigValue,
     VentilationMode,
     VentilationState,
+    ZoneModuleSelector,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -1242,35 +1250,38 @@ class DucoClient:
 
     async def async_get_info(
         self,
-        module: str | None = None,
-        submodule: str | None = None,
+        module: InfoModuleSelector | str | None = None,
+        submodule: InfoGeneralSubmoduleSelector | str | None = None,
         parameter: str | None = None,
     ) -> Any:
         """Return the raw payload from the generic info endpoint."""
         params: dict[str, str] = {}
         if module is not None:
-            params["module"] = module
+            params["module"] = str(module)
         if submodule is not None:
-            params["submodule"] = submodule
+            params["submodule"] = str(submodule)
         if parameter is not None:
-            params["parameter"] = parameter
+            params["parameter"] = str(parameter)
 
         return await self.async_get_raw("/info", params=params or None)
 
     async def async_get_config(
         self,
-        module: str | None = None,
-        submodule: str | None = None,
+        module: ConfigModuleSelector | str | None = None,
+        submodule: ConfigGeneralSubmoduleSelector
+        | ConfigHeatRecoverySubmoduleSelector
+        | str
+        | None = None,
         parameter: str | None = None,
     ) -> Config:
         """Return configuration values from the generic config endpoint."""
         params: dict[str, str] = {}
         if module is not None:
-            params["module"] = module
+            params["module"] = str(module)
         if submodule is not None:
-            params["submodule"] = submodule
+            params["submodule"] = str(submodule)
         if parameter is not None:
-            params["parameter"] = parameter
+            params["parameter"] = str(parameter)
 
         if params:
             payload = await self._request_json("GET", "/config", params=params)
@@ -1282,18 +1293,21 @@ class DucoClient:
     async def async_set_config(
         self,
         payload: dict[str, Any],
-        module: str | None = None,
-        submodule: str | None = None,
+        module: ConfigModuleSelector | str | None = None,
+        submodule: ConfigGeneralSubmoduleSelector
+        | ConfigHeatRecoverySubmoduleSelector
+        | str
+        | None = None,
         parameter: str | None = None,
     ) -> Config:
         """Patch configuration values through the generic config endpoint."""
         params: dict[str, str] = {}
         if module is not None:
-            params["module"] = module
+            params["module"] = str(module)
         if submodule is not None:
-            params["submodule"] = submodule
+            params["submodule"] = str(submodule)
         if parameter is not None:
-            params["parameter"] = parameter
+            params["parameter"] = str(parameter)
 
         normalized_payload = self._normalize_patch_config_payload(payload, path="config")
 
@@ -1427,8 +1441,8 @@ class DucoClient:
         self,
         zone: int | None = None,
         group: int | None = None,
-        module: str | None = None,
-        submodule: str | None = None,
+        module: ZoneModuleSelector | str | None = None,
+        submodule: DeviceGroupConfigSubmoduleSelector | str | None = None,
         parameter: str | None = None,
     ) -> ConfigZonesOverview:
         """Return zone-level configuration values from `/config/zones`."""
@@ -1438,11 +1452,11 @@ class DucoClient:
         if group is not None:
             params["group"] = str(group)
         if module is not None:
-            params["module"] = module
+            params["module"] = str(module)
         if submodule is not None:
-            params["submodule"] = submodule
+            params["submodule"] = str(submodule)
         if parameter is not None:
-            params["parameter"] = parameter
+            params["parameter"] = str(parameter)
 
         if params:
             payload = await self._request_json("GET", "/config/zones", params=params)
@@ -1455,8 +1469,8 @@ class DucoClient:
         self,
         zone_id: int,
         group: int | None = None,
-        module: str | None = None,
-        submodule: str | None = None,
+        module: ZoneModuleSelector | str | None = None,
+        submodule: DeviceGroupConfigSubmoduleSelector | str | None = None,
         parameter: str | None = None,
     ) -> ConfigZone:
         """Return detailed configuration values for a specific zone."""
@@ -1464,11 +1478,11 @@ class DucoClient:
         if group is not None:
             params["group"] = str(group)
         if module is not None:
-            params["module"] = module
+            params["module"] = str(module)
         if submodule is not None:
-            params["submodule"] = submodule
+            params["submodule"] = str(submodule)
         if parameter is not None:
-            params["parameter"] = parameter
+            params["parameter"] = str(parameter)
 
         path = f"/config/zones/{zone_id}"
         if params:
@@ -1482,18 +1496,18 @@ class DucoClient:
         self,
         zone_id: int,
         payload: dict[str, Any],
-        module: str | None = None,
-        submodule: str | None = None,
+        module: ZoneModuleSelector | str | None = None,
+        submodule: DeviceGroupConfigSubmoduleSelector | str | None = None,
         parameter: str | None = None,
     ) -> ConfigZone:
         """Patch zone-level configuration values through `/config/zones/{zone}`."""
         params: dict[str, str] = {}
         if module is not None:
-            params["module"] = module
+            params["module"] = str(module)
         if submodule is not None:
-            params["submodule"] = submodule
+            params["submodule"] = str(submodule)
         if parameter is not None:
-            params["parameter"] = parameter
+            params["parameter"] = str(parameter)
 
         normalized_payload = self._normalize_patch_config_payload(
             payload,
@@ -1621,8 +1635,8 @@ class DucoClient:
         self,
         zone_id: int,
         group: int | None = None,
-        module: str | None = None,
-        submodule: str | None = None,
+        module: ZoneModuleSelector | str | None = None,
+        submodule: DeviceGroupConfigSubmoduleSelector | str | None = None,
         parameter: str | None = None,
     ) -> InfoZone:
         """Return detailed information for a specific zone."""
@@ -1630,11 +1644,11 @@ class DucoClient:
         if group is not None:
             params["group"] = str(group)
         if module is not None:
-            params["module"] = module
+            params["module"] = str(module)
         if submodule is not None:
-            params["submodule"] = submodule
+            params["submodule"] = str(submodule)
         if parameter is not None:
-            params["parameter"] = parameter
+            params["parameter"] = str(parameter)
 
         if params:
             payload = await self._request_json(
@@ -1655,18 +1669,18 @@ class DucoClient:
         self,
         zone_id: int,
         group_id: int,
-        module: str | None = None,
-        submodule: str | None = None,
+        module: ZoneModuleSelector | str | None = None,
+        submodule: DeviceGroupConfigSubmoduleSelector | str | None = None,
         parameter: str | None = None,
     ) -> InfoZoneGroup:
         """Return detailed information for a specific zone group."""
         params: dict[str, str] = {}
         if module is not None:
-            params["module"] = module
+            params["module"] = str(module)
         if submodule is not None:
-            params["submodule"] = submodule
+            params["submodule"] = str(submodule)
         if parameter is not None:
-            params["parameter"] = parameter
+            params["parameter"] = str(parameter)
 
         path = f"/info/zones/{zone_id}/groups/{group_id}"
         if params:
@@ -1684,15 +1698,15 @@ class DucoClient:
     async def async_get_node_info(
         self,
         node_id: int,
-        module: str | None = None,
+        module: NodeInfoModuleSelector | str | None = None,
         parameter: str | None = None,
     ) -> Node:
         """Return detailed information for a specific node."""
         params: dict[str, str] = {}
         if module is not None:
-            params["module"] = module
+            params["module"] = str(module)
         if parameter is not None:
-            params["parameter"] = parameter
+            params["parameter"] = str(parameter)
 
         if params:
             payload = await self._request_json(
