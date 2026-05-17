@@ -194,6 +194,111 @@ def _coerce_lan_mode(value: LanMode | str) -> LanMode:
     return LanMode(value)
 
 
+class NodeSubtype(int):
+    """Integer-compatible node subtype value reported by the API."""
+
+    def __new__(cls, value: int) -> Self:
+        return super().__new__(cls, value)
+
+
+class NodeParentId(int):
+    """Integer-compatible parent node identifier reported by the API."""
+
+    def __new__(cls, value: int) -> Self:
+        return super().__new__(cls, value)
+
+
+class NodeAssociationId(int):
+    """Integer-compatible associated node identifier reported by the API."""
+
+    def __new__(cls, value: int) -> Self:
+        return super().__new__(cls, value)
+
+
+class NodeName(str):
+    """String-compatible node name value reported by the API."""
+
+    def __new__(cls, value: str) -> Self:
+        return super().__new__(cls, value)
+
+
+class NodeIdentify(int):
+    """Integer-compatible identify state value reported by the API."""
+
+    def __new__(cls, value: int) -> Self:
+        return super().__new__(cls, value)
+
+
+class VentilationTimeRemaining(int):
+    """Integer-compatible remaining ventilation timer value reported by the API."""
+
+    def __new__(cls, value: int) -> Self:
+        return super().__new__(cls, value)
+
+
+class VentilationTimeEnd(int):
+    """Integer-compatible ventilation timer end value reported by the API."""
+
+    def __new__(cls, value: int) -> Self:
+        return super().__new__(cls, value)
+
+
+class VentilationFlowLevelTarget(int):
+    """Integer-compatible ventilation flow target value reported by the API."""
+
+    def __new__(cls, value: int) -> Self:
+        return super().__new__(cls, value)
+
+
+class NodeCo2Ppm(int):
+    """Integer-compatible CO2 reading reported by node sensors."""
+
+    def __new__(cls, value: int) -> Self:
+        return super().__new__(cls, value)
+
+
+class NodeAirQualityIndex(int):
+    """Integer-compatible node air-quality score reported by the API."""
+
+    def __new__(cls, value: int) -> Self:
+        return super().__new__(cls, value)
+
+
+class NodeRelativeHumidity(float):
+    """Float-compatible relative humidity reading reported by node sensors."""
+
+    def __new__(cls, value: float) -> Self:
+        return super().__new__(cls, value)
+
+
+class NodeTemperature(float):
+    """Float-compatible temperature reading reported by node sensors."""
+
+    def __new__(cls, value: float) -> Self:
+        return super().__new__(cls, value)
+
+
+class NodeMotorDeviceType(int):
+    """Integer-compatible node motor device type reported by the API."""
+
+    def __new__(cls, value: int) -> Self:
+        return super().__new__(cls, value)
+
+
+class NodeMotorRequest(int):
+    """Integer-compatible node motor request value reported by the API."""
+
+    def __new__(cls, value: int) -> Self:
+        return super().__new__(cls, value)
+
+
+class NodeMotorPosition(int):
+    """Integer-compatible node motor position value reported by the API."""
+
+    def __new__(cls, value: int) -> Self:
+        return super().__new__(cls, value)
+
+
 class NodeType(StrEnum):
     """Node categories reported by the API.
 
@@ -304,6 +409,181 @@ class VentilationState(StrEnum):
     MAN2x3 = "MAN2x3"
     MAN3x3 = "MAN3x3"
     UNKNOWN = "UNKNOWN"
+
+
+def _coerce_node_type(value: NodeType | str) -> NodeType:
+    """Normalize public node type values to `NodeType`."""
+    if isinstance(value, NodeType):
+        return value
+    try:
+        return NodeType(value)
+    except ValueError:
+        _LOGGER.debug(
+            "Unknown node type %r received through public model construction; "
+            "falling back to UNKNOWN",
+            value,
+        )
+        return NodeType.UNKNOWN
+
+
+def _coerce_network_type(value: NetworkType | str) -> NetworkType:
+    """Normalize public network type values to `NetworkType`."""
+    if isinstance(value, NetworkType):
+        return value
+    try:
+        return NetworkType(value)
+    except ValueError:
+        _LOGGER.debug(
+            "Unknown network type %r received through public model construction; "
+            "falling back to UNKNOWN",
+            value,
+        )
+        return NetworkType.UNKNOWN
+
+
+def _coerce_node_subtype(value: NodeSubtype | int) -> NodeSubtype:
+    """Normalize public node subtype values to `NodeSubtype`."""
+    if isinstance(value, NodeSubtype):
+        return value
+    return NodeSubtype(value)
+
+
+def _coerce_node_parent_id(value: NodeParentId | int) -> NodeParentId:
+    """Normalize public node parent values to `NodeParentId`."""
+    if isinstance(value, NodeParentId):
+        return value
+    return NodeParentId(value)
+
+
+def _coerce_node_association_id(value: NodeAssociationId | int) -> NodeAssociationId:
+    """Normalize public node association values to `NodeAssociationId`."""
+    if isinstance(value, NodeAssociationId):
+        return value
+    return NodeAssociationId(value)
+
+
+def _coerce_node_name(value: NodeName | str) -> NodeName:
+    """Normalize public node name values to `NodeName`."""
+    if isinstance(value, NodeName):
+        return value
+    return NodeName(value)
+
+
+def _coerce_node_identify(value: NodeIdentify | int) -> NodeIdentify:
+    """Normalize public node identify values to `NodeIdentify`."""
+    if isinstance(value, NodeIdentify):
+        return value
+    return NodeIdentify(value)
+
+
+def _coerce_ventilation_state(value: VentilationState | str) -> VentilationState:
+    """Normalize public ventilation state values to `VentilationState`."""
+    if isinstance(value, VentilationState):
+        return value
+    try:
+        return VentilationState(value)
+    except ValueError:
+        _LOGGER.debug(
+            "Unknown ventilation state %r received through public model construction; "
+            "falling back to UNKNOWN",
+            value,
+        )
+        return VentilationState.UNKNOWN
+
+
+def _coerce_ventilation_mode(value: VentilationMode | str) -> VentilationMode:
+    """Normalize public ventilation mode values to `VentilationMode`."""
+    if isinstance(value, VentilationMode):
+        return value
+    try:
+        return VentilationMode(value)
+    except ValueError:
+        _LOGGER.debug(
+            "Unknown ventilation mode %r received through public model construction; "
+            "falling back to UNKNOWN",
+            value,
+        )
+        return VentilationMode.UNKNOWN
+
+
+def _coerce_ventilation_time_remaining(
+    value: VentilationTimeRemaining | int,
+) -> VentilationTimeRemaining:
+    """Normalize public ventilation remaining-time values."""
+    if isinstance(value, VentilationTimeRemaining):
+        return value
+    return VentilationTimeRemaining(value)
+
+
+def _coerce_ventilation_time_end(value: VentilationTimeEnd | int) -> VentilationTimeEnd:
+    """Normalize public ventilation end-time values."""
+    if isinstance(value, VentilationTimeEnd):
+        return value
+    return VentilationTimeEnd(value)
+
+
+def _coerce_ventilation_flow_level_target(
+    value: VentilationFlowLevelTarget | int,
+) -> VentilationFlowLevelTarget:
+    """Normalize public ventilation flow target values."""
+    if isinstance(value, VentilationFlowLevelTarget):
+        return value
+    return VentilationFlowLevelTarget(value)
+
+
+def _coerce_node_co2_ppm(value: NodeCo2Ppm | int) -> NodeCo2Ppm:
+    """Normalize public CO2 sensor values to `NodeCo2Ppm`."""
+    if isinstance(value, NodeCo2Ppm):
+        return value
+    return NodeCo2Ppm(value)
+
+
+def _coerce_node_air_quality_index(
+    value: NodeAirQualityIndex | int,
+) -> NodeAirQualityIndex:
+    """Normalize public air-quality values to `NodeAirQualityIndex`."""
+    if isinstance(value, NodeAirQualityIndex):
+        return value
+    return NodeAirQualityIndex(value)
+
+
+def _coerce_node_relative_humidity(
+    value: NodeRelativeHumidity | float,
+) -> NodeRelativeHumidity:
+    """Normalize public humidity values to `NodeRelativeHumidity`."""
+    if isinstance(value, NodeRelativeHumidity):
+        return value
+    return NodeRelativeHumidity(value)
+
+
+def _coerce_node_temperature(value: NodeTemperature | float) -> NodeTemperature:
+    """Normalize public temperature values to `NodeTemperature`."""
+    if isinstance(value, NodeTemperature):
+        return value
+    return NodeTemperature(value)
+
+
+def _coerce_node_motor_device_type(
+    value: NodeMotorDeviceType | int,
+) -> NodeMotorDeviceType:
+    """Normalize public motor device type values."""
+    if isinstance(value, NodeMotorDeviceType):
+        return value
+    return NodeMotorDeviceType(value)
+
+
+def _coerce_node_motor_request(value: NodeMotorRequest | int) -> NodeMotorRequest:
+    """Normalize public motor request values to `NodeMotorRequest`."""
+    if isinstance(value, NodeMotorRequest):
+        return value
+    return NodeMotorRequest(value)
+
+
+def _coerce_node_motor_position(value: NodeMotorPosition | int) -> NodeMotorPosition:
+    """Normalize public motor position values to `NodeMotorPosition`."""
+    if isinstance(value, NodeMotorPosition):
+        return value
+    return NodeMotorPosition(value)
 
 
 class DiagStatus(StrEnum):
@@ -768,53 +1048,167 @@ class PatchConfigNodeValue:
     value: int | str
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True, slots=True, init=False)
 class NodeSensorInfo:
     """Sensor readings reported for a node."""
 
-    co2: int | None = None
-    iaq_co2: int | None = None
-    rh: float | None = None
-    iaq_rh: int | None = None
-    temp: float | None = None
+    co2: NodeCo2Ppm | None = None
+    iaq_co2: NodeAirQualityIndex | None = None
+    rh: NodeRelativeHumidity | None = None
+    iaq_rh: NodeAirQualityIndex | None = None
+    temp: NodeTemperature | None = None
     raw_payload: dict[str, Any] = field(default_factory=dict, repr=False, compare=False)
 
+    def __init__(
+        self,
+        co2: NodeCo2Ppm | int | None = None,
+        iaq_co2: NodeAirQualityIndex | int | None = None,
+        rh: NodeRelativeHumidity | float | None = None,
+        iaq_rh: NodeAirQualityIndex | int | None = None,
+        temp: NodeTemperature | float | None = None,
+        raw_payload: dict[str, Any] | None = None,
+    ) -> None:
+        """Initialize node sensor info with compatibility-friendly constructor types."""
+        object.__setattr__(self, "co2", None if co2 is None else _coerce_node_co2_ppm(co2))
+        object.__setattr__(
+            self,
+            "iaq_co2",
+            None if iaq_co2 is None else _coerce_node_air_quality_index(iaq_co2),
+        )
+        object.__setattr__(
+            self,
+            "rh",
+            None if rh is None else _coerce_node_relative_humidity(rh),
+        )
+        object.__setattr__(
+            self,
+            "iaq_rh",
+            None if iaq_rh is None else _coerce_node_air_quality_index(iaq_rh),
+        )
+        object.__setattr__(
+            self,
+            "temp",
+            None if temp is None else _coerce_node_temperature(temp),
+        )
+        object.__setattr__(self, "raw_payload", {} if raw_payload is None else raw_payload)
 
-@dataclass(frozen=True, slots=True)
+
+@dataclass(frozen=True, slots=True, init=False)
 class NodeMotorStateInfo:
     """Motor controller state reported for a node."""
 
-    device_type: int | None = None
-    req: int | None = None
-    pos_req: int | None = None
-    pos: int | None = None
+    device_type: NodeMotorDeviceType | None = None
+    req: NodeMotorRequest | None = None
+    pos_req: NodeMotorPosition | None = None
+    pos: NodeMotorPosition | None = None
     raw_payload: dict[str, Any] = field(default_factory=dict, repr=False, compare=False)
 
+    def __init__(
+        self,
+        device_type: NodeMotorDeviceType | int | None = None,
+        req: NodeMotorRequest | int | None = None,
+        pos_req: NodeMotorPosition | int | None = None,
+        pos: NodeMotorPosition | int | None = None,
+        raw_payload: dict[str, Any] | None = None,
+    ) -> None:
+        """Initialize motor state info with compatibility-friendly constructor types."""
+        object.__setattr__(
+            self,
+            "device_type",
+            None if device_type is None else _coerce_node_motor_device_type(device_type),
+        )
+        object.__setattr__(
+            self,
+            "req",
+            None if req is None else _coerce_node_motor_request(req),
+        )
+        object.__setattr__(
+            self,
+            "pos_req",
+            None if pos_req is None else _coerce_node_motor_position(pos_req),
+        )
+        object.__setattr__(
+            self,
+            "pos",
+            None if pos is None else _coerce_node_motor_position(pos),
+        )
+        object.__setattr__(self, "raw_payload", {} if raw_payload is None else raw_payload)
 
-@dataclass(frozen=True, slots=True)
+
+@dataclass(frozen=True, slots=True, init=False)
 class NodeVentilationInfo:
     """Ventilation state and timers reported for a node."""
 
     state: VentilationState
     mode: VentilationMode
-    time_state_remain: int
-    time_state_end: int
-    flow_lvl_tgt: int | None = None
+    time_state_remain: VentilationTimeRemaining
+    time_state_end: VentilationTimeEnd
+    flow_lvl_tgt: VentilationFlowLevelTarget | None = None
     raw_payload: dict[str, Any] = field(default_factory=dict, repr=False, compare=False)
 
+    def __init__(
+        self,
+        state: VentilationState | str,
+        mode: VentilationMode | str,
+        time_state_remain: VentilationTimeRemaining | int,
+        time_state_end: VentilationTimeEnd | int,
+        flow_lvl_tgt: VentilationFlowLevelTarget | int | None = None,
+        raw_payload: dict[str, Any] | None = None,
+    ) -> None:
+        """Initialize ventilation info with compatibility-friendly constructor types."""
+        object.__setattr__(self, "state", _coerce_ventilation_state(state))
+        object.__setattr__(self, "mode", _coerce_ventilation_mode(mode))
+        object.__setattr__(
+            self,
+            "time_state_remain",
+            _coerce_ventilation_time_remaining(time_state_remain),
+        )
+        object.__setattr__(
+            self,
+            "time_state_end",
+            _coerce_ventilation_time_end(time_state_end),
+        )
+        object.__setattr__(
+            self,
+            "flow_lvl_tgt",
+            None if flow_lvl_tgt is None else _coerce_ventilation_flow_level_target(flow_lvl_tgt),
+        )
+        object.__setattr__(self, "raw_payload", {} if raw_payload is None else raw_payload)
 
-@dataclass(frozen=True, slots=True)
+
+@dataclass(frozen=True, slots=True, init=False)
 class NodeGeneralInfo:
     """Static node metadata used to identify a device."""
 
     node_type: NodeType
-    sub_type: int
+    sub_type: NodeSubtype
     network_type: NetworkType
-    parent: int
-    asso: int
-    name: str
-    identify: int
+    parent: NodeParentId
+    asso: NodeAssociationId
+    name: NodeName
+    identify: NodeIdentify
     raw_payload: dict[str, Any] = field(default_factory=dict, repr=False, compare=False)
+
+    def __init__(
+        self,
+        node_type: NodeType | str,
+        sub_type: NodeSubtype | int,
+        network_type: NetworkType | str,
+        parent: NodeParentId | int,
+        asso: NodeAssociationId | int,
+        name: NodeName | str,
+        identify: NodeIdentify | int,
+        raw_payload: dict[str, Any] | None = None,
+    ) -> None:
+        """Initialize node general info with compatibility-friendly constructor types."""
+        object.__setattr__(self, "node_type", _coerce_node_type(node_type))
+        object.__setattr__(self, "sub_type", _coerce_node_subtype(sub_type))
+        object.__setattr__(self, "network_type", _coerce_network_type(network_type))
+        object.__setattr__(self, "parent", _coerce_node_parent_id(parent))
+        object.__setattr__(self, "asso", _coerce_node_association_id(asso))
+        object.__setattr__(self, "name", _coerce_node_name(name))
+        object.__setattr__(self, "identify", _coerce_node_identify(identify))
+        object.__setattr__(self, "raw_payload", {} if raw_payload is None else raw_payload)
 
 
 @dataclass(frozen=True, slots=True)

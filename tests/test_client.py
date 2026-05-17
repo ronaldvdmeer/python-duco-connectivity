@@ -50,14 +50,29 @@ from duco_connectivity import (
     MacAddress,
     NetworkType,
     NodeActionItemList,
+    NodeAirQualityIndex,
+    NodeAssociationId,
+    NodeCo2Ppm,
+    NodeIdentify,
     NodeInfoModuleSelector,
     NodeListActionItemList,
+    NodeMotorDeviceType,
+    NodeMotorPosition,
+    NodeMotorRequest,
+    NodeName,
     NodeOverview,
+    NodeParentId,
+    NodeRelativeHumidity,
+    NodeSubtype,
+    NodeTemperature,
     NodeType,
     PatchConfigNodeValue,
     PatchConfigValue,
+    VentilationFlowLevelTarget,
     VentilationMode,
     VentilationState,
+    VentilationTimeEnd,
+    VentilationTimeRemaining,
     ZoneModuleSelector,
 )
 
@@ -1889,20 +1904,35 @@ async def test_get_nodes_parses_full_payload(nodes_data: dict[str, object]) -> N
     box = nodes[0]
     assert box.node_id == 1
     assert box.general.node_type == NodeType.BOX
+    assert isinstance(box.general.sub_type, NodeSubtype)
     assert box.general.network_type == NetworkType.VIRT
+    assert isinstance(box.general.parent, NodeParentId)
+    assert isinstance(box.general.asso, NodeAssociationId)
+    assert isinstance(box.general.name, NodeName)
+    assert isinstance(box.general.identify, NodeIdentify)
     assert box.ventilation is not None
     assert box.ventilation.state == VentilationState.CNT1
+    assert isinstance(box.ventilation.time_state_remain, VentilationTimeRemaining)
+    assert isinstance(box.ventilation.time_state_end, VentilationTimeEnd)
     assert box.ventilation.flow_lvl_tgt == 15
+    assert isinstance(box.ventilation.flow_lvl_tgt, VentilationFlowLevelTarget)
     assert box.sensor is not None
     assert box.sensor.rh == 35.5
+    assert isinstance(box.sensor.rh, NodeRelativeHumidity)
     assert box.sensor.iaq_rh == 83
+    assert isinstance(box.sensor.iaq_rh, NodeAirQualityIndex)
     assert box.sensor.co2 is None
     assert box.sensor.temp == 27.9
+    assert isinstance(box.sensor.temp, NodeTemperature)
     assert box.motor_state is not None
     assert box.motor_state.device_type == 2
+    assert isinstance(box.motor_state.device_type, NodeMotorDeviceType)
     assert box.motor_state.req == 1
+    assert isinstance(box.motor_state.req, NodeMotorRequest)
     assert box.motor_state.pos_req == 150
+    assert isinstance(box.motor_state.pos_req, NodeMotorPosition)
     assert box.motor_state.pos == 143
+    assert isinstance(box.motor_state.pos, NodeMotorPosition)
     assert box.raw_payload is nodes_data["Nodes"][0]
     assert box.general.raw_payload is nodes_data["Nodes"][0]["General"]
     assert box.ventilation.raw_payload is nodes_data["Nodes"][0]["Ventilation"]
@@ -1914,7 +1944,9 @@ async def test_get_nodes_parses_full_payload(nodes_data: dict[str, object]) -> N
     assert ucco2.general.network_type == NetworkType.RF
     assert ucco2.sensor is not None
     assert ucco2.sensor.co2 == 536
+    assert isinstance(ucco2.sensor.co2, NodeCo2Ppm)
     assert ucco2.sensor.iaq_co2 == 100
+    assert isinstance(ucco2.sensor.iaq_co2, NodeAirQualityIndex)
     assert ucco2.motor_state is None
 
 
@@ -1953,9 +1985,11 @@ async def test_get_nodes_preserves_unknown_sections_in_raw_payload() -> None:
 
     node = nodes[0]
     assert node.general.name == "Kitchen"
+    assert isinstance(node.general.name, NodeName)
     assert node.general.raw_payload["FirmwareFamily"] == {"Val": "future"}
     assert node.sensor is not None
     assert node.sensor.temp == 20.1
+    assert isinstance(node.sensor.temp, NodeTemperature)
     assert node.sensor.raw_payload["Voc"] == {"Val": 321}
     assert node.raw_payload["CustomSection"] == {"FutureFlag": {"Val": True}}
 
@@ -2907,9 +2941,12 @@ async def test_get_node_info_parses_payload(node_data: dict[str, object]) -> Non
     assert node.node_id == 2
     assert node.general.node_type == NodeType.UCCO2
     assert node.general.network_type == NetworkType.RF
+    assert isinstance(node.general.name, NodeName)
     assert node.sensor is not None
     assert node.sensor.co2 == 536
+    assert isinstance(node.sensor.co2, NodeCo2Ppm)
     assert node.sensor.iaq_co2 == 100
+    assert isinstance(node.sensor.iaq_co2, NodeAirQualityIndex)
     assert node.motor_state is None
     assert node.raw_payload is node_data
 

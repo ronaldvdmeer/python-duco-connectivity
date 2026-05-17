@@ -259,9 +259,10 @@ COMPATIBILITY_NOTES = (
     "`ApiInfo(api_version=...)` and `ApiInfo.api_version` remain available for migration "
     "compatibility while the public field name is `public_api_version`.",
     "`BoardName`, `DucoVersion`, `DucoSerialNumber`, `LanMode`, `IpAddress`, "
-    "`MacAddress`, and `HostName` are string-compatible typed primitives, so existing "
-    "string comparisons and JSON serialization continue to work while making the public "
-    "metadata contract more explicit.",
+    "`MacAddress`, `HostName`, and the node scalar families like `NodeName`, "
+    "`NodeSubtype`, `VentilationTimeRemaining`, and `NodeCo2Ppm` use string- or "
+    "number-compatible typed primitives, so existing comparisons and JSON serialization "
+    "continue to work while making the public metadata contract more explicit.",
 )
 
 

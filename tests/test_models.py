@@ -45,15 +45,30 @@ from duco_connectivity import (
     NetworkType,
     Node,
     NodeActionItemList,
+    NodeAirQualityIndex,
+    NodeAssociationId,
+    NodeCo2Ppm,
     NodeGeneralInfo,
+    NodeIdentify,
     NodeInfoModuleSelector,
     NodeListActionItemList,
+    NodeMotorDeviceType,
+    NodeMotorPosition,
+    NodeMotorRequest,
     NodeMotorStateInfo,
+    NodeName,
+    NodeParentId,
+    NodeRelativeHumidity,
     NodeSensorInfo,
+    NodeSubtype,
+    NodeTemperature,
     NodeType,
     NodeVentilationInfo,
+    VentilationFlowLevelTarget,
     VentilationMode,
     VentilationState,
+    VentilationTimeEnd,
+    VentilationTimeRemaining,
     ZoneModuleSelector,
 )
 
@@ -549,6 +564,24 @@ def test_node_sensor_info_defaults() -> None:
     assert sensor.raw_payload == {}
 
 
+def test_node_sensor_info_coerces_typed_primitives() -> None:
+    """NodeSensorInfo should coerce stable scalar values into typed primitives."""
+    sensor = NodeSensorInfo(co2=622, iaq_co2=84, rh=35.5, iaq_rh=81, temp=21.3)
+
+    assert isinstance(sensor.co2, NodeCo2Ppm)
+    assert isinstance(sensor.iaq_co2, NodeAirQualityIndex)
+    assert isinstance(sensor.rh, NodeRelativeHumidity)
+    assert isinstance(sensor.iaq_rh, NodeAirQualityIndex)
+    assert isinstance(sensor.temp, NodeTemperature)
+
+    signature = inspect.signature(NodeSensorInfo)
+    assert signature.parameters["co2"].annotation == NodeCo2Ppm | int | None
+    assert signature.parameters["iaq_co2"].annotation == NodeAirQualityIndex | int | None
+    assert signature.parameters["rh"].annotation == NodeRelativeHumidity | float | None
+    assert signature.parameters["iaq_rh"].annotation == NodeAirQualityIndex | int | None
+    assert signature.parameters["temp"].annotation == NodeTemperature | float | None
+
+
 def test_node_motor_state_info_defaults() -> None:
     """NodeMotorStateInfo should default all optional fields to None."""
     motor_state = NodeMotorStateInfo()
@@ -557,6 +590,22 @@ def test_node_motor_state_info_defaults() -> None:
     assert motor_state.pos_req is None
     assert motor_state.pos is None
     assert motor_state.raw_payload == {}
+
+
+def test_node_motor_state_info_coerces_typed_primitives() -> None:
+    """NodeMotorStateInfo should coerce motor values into typed primitives."""
+    motor_state = NodeMotorStateInfo(device_type=2, req=1, pos_req=150, pos=143)
+
+    assert isinstance(motor_state.device_type, NodeMotorDeviceType)
+    assert isinstance(motor_state.req, NodeMotorRequest)
+    assert isinstance(motor_state.pos_req, NodeMotorPosition)
+    assert isinstance(motor_state.pos, NodeMotorPosition)
+
+    signature = inspect.signature(NodeMotorStateInfo)
+    assert signature.parameters["device_type"].annotation == NodeMotorDeviceType | int | None
+    assert signature.parameters["req"].annotation == NodeMotorRequest | int | None
+    assert signature.parameters["pos_req"].annotation == NodeMotorPosition | int | None
+    assert signature.parameters["pos"].annotation == NodeMotorPosition | int | None
 
 
 def test_node_ventilation_info_flow_target_is_optional() -> None:
@@ -569,6 +618,91 @@ def test_node_ventilation_info_flow_target_is_optional() -> None:
     )
     assert ventilation.flow_lvl_tgt is None
     assert ventilation.raw_payload == {}
+
+
+def test_node_ventilation_info_coerces_typed_primitives() -> None:
+    """NodeVentilationInfo should coerce enums and timer values cleanly."""
+    ventilation = NodeVentilationInfo(
+        state="CNT1",
+        time_state_remain=1200,
+        time_state_end=1778269000,
+        mode="MANU",
+        flow_lvl_tgt=100,
+    )
+
+    assert ventilation.state is VentilationState.CNT1
+    assert ventilation.mode is VentilationMode.MANU
+    assert isinstance(ventilation.time_state_remain, VentilationTimeRemaining)
+    assert isinstance(ventilation.time_state_end, VentilationTimeEnd)
+    assert isinstance(ventilation.flow_lvl_tgt, VentilationFlowLevelTarget)
+
+    signature = inspect.signature(NodeVentilationInfo)
+    assert signature.parameters["state"].annotation == VentilationState | str
+    assert signature.parameters["mode"].annotation == VentilationMode | str
+    assert signature.parameters["time_state_remain"].annotation == VentilationTimeRemaining | int
+    assert signature.parameters["time_state_end"].annotation == VentilationTimeEnd | int
+    assert (
+        signature.parameters["flow_lvl_tgt"].annotation == VentilationFlowLevelTarget | int | None
+    )
+
+
+def test_node_ventilation_info_preserves_unknown_state_and_mode() -> None:
+    """NodeVentilationInfo should remain forward-tolerant for unknown enum values."""
+    ventilation = NodeVentilationInfo(
+        state="FUTURE_STATE",
+        time_state_remain=1200,
+        time_state_end=1778269000,
+        mode="FUTURE_MODE",
+    )
+
+    assert ventilation.state is VentilationState.UNKNOWN
+    assert ventilation.mode is VentilationMode.UNKNOWN
+
+
+def test_node_general_info_coerces_typed_primitives() -> None:
+    """NodeGeneralInfo should coerce stable general values into typed primitives."""
+    general = NodeGeneralInfo(
+        node_type="BOX",
+        sub_type=1,
+        network_type="VIRT",
+        parent=0,
+        asso=0,
+        name="Kitchen",
+        identify=0,
+    )
+
+    assert general.node_type is NodeType.BOX
+    assert general.network_type is NetworkType.VIRT
+    assert isinstance(general.sub_type, NodeSubtype)
+    assert isinstance(general.parent, NodeParentId)
+    assert isinstance(general.asso, NodeAssociationId)
+    assert isinstance(general.name, NodeName)
+    assert isinstance(general.identify, NodeIdentify)
+
+    signature = inspect.signature(NodeGeneralInfo)
+    assert signature.parameters["node_type"].annotation == NodeType | str
+    assert signature.parameters["sub_type"].annotation == NodeSubtype | int
+    assert signature.parameters["network_type"].annotation == NetworkType | str
+    assert signature.parameters["parent"].annotation == NodeParentId | int
+    assert signature.parameters["asso"].annotation == NodeAssociationId | int
+    assert signature.parameters["name"].annotation == NodeName | str
+    assert signature.parameters["identify"].annotation == NodeIdentify | int
+
+
+def test_node_general_info_preserves_unknown_node_and_network_types() -> None:
+    """NodeGeneralInfo should remain forward-tolerant for unknown enum values."""
+    general = NodeGeneralInfo(
+        node_type="FUTURE_NODE",
+        sub_type=1,
+        network_type="FUTURE_NETWORK",
+        parent=0,
+        asso=0,
+        name="Kitchen",
+        identify=0,
+    )
+
+    assert general.node_type is NodeType.UNKNOWN
+    assert general.network_type is NetworkType.UNKNOWN
 
 
 def test_node_is_frozen() -> None:
