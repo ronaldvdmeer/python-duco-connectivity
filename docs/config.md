@@ -8,6 +8,10 @@ endpoint.
 `python-duco-connectivity` exposes this through
 `DucoClient.async_set_config(payload, module=None, submodule=None, parameter=None)`.
 
+Selector inputs for `module` and `submodule` follow the endpoint-specific
+strategy documented in [selectors.md](selectors.md). Known stable selector sets
+are exposed as enums, while raw strings remain valid for forward compatibility.
+
 Behavior:
 
 - Sends `PATCH /config`
@@ -62,6 +66,10 @@ For node-level config endpoints, the client now exposes two layers:
 
 Use the raw methods when you need parameters that are not yet represented by
 the typed `ConfigNode` models.
+
+That boundary is deliberate: the typed node config helpers keep the stable
+`Name` contract, while broader node config parameters remain raw-string
+selectors. See [selectors.md](selectors.md) for the public rule.
 
 Example:
 

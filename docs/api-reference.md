@@ -42,17 +42,17 @@ python tools/api_reference.py write
   - Summary: Return the raw payload from an unmapped GET endpoint.
   - Details: [payload-preservation.md](payload-preservation.md)
   - Note: Use API-relative paths like `/info/nodes/7` and pass query arguments via `params`.
-- `async_get_info(module: str | None = None, submodule: str | None = None, parameter: str | None = None) -> Any`
+- `async_get_info(module: InfoModuleSelector | str | None = None, submodule: InfoGeneralSubmoduleSelector | str | None = None, parameter: str | None = None) -> Any`
   - Endpoint: `GET /info`
   - Surface: raw escape hatch
   - Summary: Return the raw payload from the generic info endpoint.
   - Details: [payload-preservation.md](payload-preservation.md)
-- `async_get_config(module: str | None = None, submodule: str | None = None, parameter: str | None = None) -> Config`
+- `async_get_config(module: ConfigModuleSelector | str | None = None, submodule: ConfigGeneralSubmoduleSelector | ConfigHeatRecoverySubmoduleSelector | str | None = None, parameter: str | None = None) -> Config`
   - Endpoint: `GET /config`
   - Surface: typed
   - Summary: Return configuration values from the generic config endpoint.
   - Details: [config.md](config.md)
-- `async_set_config(payload: dict[str, Any], module: str | None = None, submodule: str | None = None, parameter: str | None = None) -> Config`
+- `async_set_config(payload: dict[str, Any], module: ConfigModuleSelector | str | None = None, submodule: ConfigGeneralSubmoduleSelector | ConfigHeatRecoverySubmoduleSelector | str | None = None, parameter: str | None = None) -> Config`
   - Endpoint: `PATCH /config`
   - Surface: typed
   - Summary: Patch configuration values through the generic config endpoint.
@@ -132,17 +132,17 @@ python tools/api_reference.py write
 
 ### Zone information and configuration
 
-- `async_get_zones_config(zone: int | None = None, group: int | None = None, module: str | None = None, submodule: str | None = None, parameter: str | None = None) -> ConfigZonesOverview`
+- `async_get_zones_config(zone: int | None = None, group: int | None = None, module: ZoneModuleSelector | str | None = None, submodule: DeviceGroupConfigSubmoduleSelector | str | None = None, parameter: str | None = None) -> ConfigZonesOverview`
   - Endpoint: `GET /config/zones`
   - Surface: typed
   - Summary: Return zone-level configuration values from `/config/zones`.
   - Details: [zones.md](zones.md)
-- `async_get_zone_config(zone_id: int, group: int | None = None, module: str | None = None, submodule: str | None = None, parameter: str | None = None) -> ConfigZone`
+- `async_get_zone_config(zone_id: int, group: int | None = None, module: ZoneModuleSelector | str | None = None, submodule: DeviceGroupConfigSubmoduleSelector | str | None = None, parameter: str | None = None) -> ConfigZone`
   - Endpoint: `GET /config/zones/{zone}`
   - Surface: typed
   - Summary: Return detailed configuration values for a specific zone.
   - Details: [zones.md](zones.md)
-- `async_set_zone_config(zone_id: int, payload: dict[str, Any], module: str | None = None, submodule: str | None = None, parameter: str | None = None) -> ConfigZone`
+- `async_set_zone_config(zone_id: int, payload: dict[str, Any], module: ZoneModuleSelector | str | None = None, submodule: DeviceGroupConfigSubmoduleSelector | str | None = None, parameter: str | None = None) -> ConfigZone`
   - Endpoint: `PATCH /config/zones/{zone}`
   - Surface: typed
   - Summary: Patch zone-level configuration values through `/config/zones/{zone}`.
@@ -153,12 +153,12 @@ python tools/api_reference.py write
   - Surface: typed
   - Summary: Return zone information reported by the local API.
   - Details: [zones.md](zones.md)
-- `async_get_zone_info(zone_id: int, group: int | None = None, module: str | None = None, submodule: str | None = None, parameter: str | None = None) -> InfoZone`
+- `async_get_zone_info(zone_id: int, group: int | None = None, module: ZoneModuleSelector | str | None = None, submodule: DeviceGroupConfigSubmoduleSelector | str | None = None, parameter: str | None = None) -> InfoZone`
   - Endpoint: `GET /info/zones/{zone}`
   - Surface: typed
   - Summary: Return detailed information for a specific zone.
   - Details: [zones.md](zones.md)
-- `async_get_zone_group_info(zone_id: int, group_id: int, module: str | None = None, submodule: str | None = None, parameter: str | None = None) -> InfoZoneGroup`
+- `async_get_zone_group_info(zone_id: int, group_id: int, module: ZoneModuleSelector | str | None = None, submodule: DeviceGroupConfigSubmoduleSelector | str | None = None, parameter: str | None = None) -> InfoZoneGroup`
   - Endpoint: `GET /info/zones/{zone}/groups/{group}`
   - Surface: typed
   - Summary: Return detailed information for a specific zone group.
@@ -188,7 +188,7 @@ python tools/api_reference.py write
   - Surface: typed
   - Summary: Return lightweight node identifiers reported by the local API.
   - Details: [nodes.md](nodes.md)
-- `async_get_node_info(node_id: int, module: str | None = None, parameter: str | None = None) -> Node`
+- `async_get_node_info(node_id: int, module: NodeInfoModuleSelector | str | None = None, parameter: str | None = None) -> Node`
   - Endpoint: `GET /info/nodes/{node}`
   - Surface: typed
   - Summary: Return detailed information for a specific node.
@@ -252,11 +252,19 @@ The package exports the following public symbols through `duco_connectivity.__al
 
 - `ActionResultStatus`
 - `ActionValueType`
+- `ConfigGeneralSubmoduleSelector`
+- `ConfigHeatRecoverySubmoduleSelector`
+- `ConfigModuleSelector`
+- `DeviceGroupConfigSubmoduleSelector`
 - `DiagStatus`
+- `InfoGeneralSubmoduleSelector`
+- `InfoModuleSelector`
 - `NetworkType`
+- `NodeInfoModuleSelector`
 - `NodeType`
 - `VentilationMode`
 - `VentilationState`
+- `ZoneModuleSelector`
 
 ### Exceptions
 
@@ -285,6 +293,7 @@ The package exports the following public symbols through `duco_connectivity.__al
 - [config.md](config.md) for System, node, and zone config reads and writes
 - [actions.md](actions.md) for System and node action discovery and execution
 - [nodes.md](nodes.md) for Node models and node information readers
+- [selectors.md](selectors.md) for Selector strategy and known selector enums
 - [zones.md](zones.md) for Zone and group info and config models
 - [ventilation-states.md](ventilation-states.md) for Ventilation enums and compatibility values
 - [payload-preservation.md](payload-preservation.md) for Raw payload preservation and raw endpoint access

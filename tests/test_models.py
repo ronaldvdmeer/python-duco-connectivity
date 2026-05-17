@@ -13,14 +13,20 @@ from duco_connectivity import (
     ApiEndpointInfo,
     ApiInfo,
     BoardInfo,
+    ConfigGeneralSubmoduleSelector,
     ConfigGroup,
     ConfigGroupStruct,
+    ConfigHeatRecoverySubmoduleSelector,
+    ConfigModuleSelector,
     ConfigValueString,
     ConfigZone,
     ConfigZonesOverview,
     ConfigZoneStruct,
+    DeviceGroupConfigSubmoduleSelector,
+    InfoGeneralSubmoduleSelector,
     InfoGroup,
     InfoGroupStruct,
+    InfoModuleSelector,
     InfoZone,
     InfoZoneGroup,
     InfoZonesOverview,
@@ -29,6 +35,7 @@ from duco_connectivity import (
     Node,
     NodeActionItemList,
     NodeGeneralInfo,
+    NodeInfoModuleSelector,
     NodeListActionItemList,
     NodeMotorStateInfo,
     NodeSensorInfo,
@@ -36,6 +43,7 @@ from duco_connectivity import (
     NodeVentilationInfo,
     VentilationMode,
     VentilationState,
+    ZoneModuleSelector,
 )
 
 
@@ -145,6 +153,18 @@ def test_ventilation_state_values() -> None:
     }
     assert VentilationState.NONE.value == "-"
     assert VentilationState.MAN3x2.value == "MAN3x2"
+
+
+def test_selector_enum_values() -> None:
+    """Known selector enums should expose the documented stable selector values."""
+    assert InfoModuleSelector.GENERAL.value == "General"
+    assert InfoGeneralSubmoduleSelector.PUBLIC_API.value == "PublicApi"
+    assert ConfigModuleSelector.HEAT_RECOVERY.value == "HeatRecovery"
+    assert ConfigGeneralSubmoduleSelector.AUTO_REBOOT_COMM.value == "AutoRebootComm"
+    assert ConfigHeatRecoverySubmoduleSelector.BYPASS.value == "Bypass"
+    assert NodeInfoModuleSelector.MOTOR_STATE_CTRL.value == "MotorStateCtrl"
+    assert ZoneModuleSelector.DEVICE_GROUP_CONFIG.value == "DeviceGroupConfig"
+    assert DeviceGroupConfigSubmoduleSelector.GENERAL.value == "General"
 
 
 def test_api_info_defaults() -> None:

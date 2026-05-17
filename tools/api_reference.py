@@ -265,6 +265,7 @@ SEE_ALSO = (
     ("config.md", "System, node, and zone config reads and writes"),
     ("actions.md", "System and node action discovery and execution"),
     ("nodes.md", "Node models and node information readers"),
+    ("selectors.md", "Selector strategy and known selector enums"),
     ("zones.md", "Zone and group info and config models"),
     ("ventilation-states.md", "Ventilation enums and compatibility values"),
     ("payload-preservation.md", "Raw payload preservation and raw endpoint access"),

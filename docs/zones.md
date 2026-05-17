@@ -17,6 +17,10 @@ published zone info endpoints.
 `GET /info/zones/{zone}/groups/{group}` support for the published group-level
 zone info endpoint.
 
+For selector-taking zone methods, the client now exposes the documented stable
+module and submodule selectors as enums while still accepting raw strings when
+the box exposes new values. See [selectors.md](selectors.md) for the rule.
+
 ## Zone info readers
 
 - `async_get_zones_info()` returns an `InfoZonesOverview`.

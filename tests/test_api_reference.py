@@ -54,6 +54,7 @@ def test_collect_public_symbols_groups_known_exports() -> None:
 
     assert symbols["Client"] == ["DucoClient"]
     assert "VentilationState" in symbols["Enums"]
+    assert "InfoModuleSelector" in symbols["Enums"]
     assert "ConfigZone" in symbols["Models"]
     assert "DucoWriteLimitError" in symbols["Exceptions"]
     assert symbols["Compatibility exports"] == ["ApiEndpointInfo", "DucoRateLimitError"]
@@ -81,6 +82,7 @@ def test_api_reference_contains_expected_sections() -> None:
     assert "`ApiEndpointInfo`" in content
     assert "`async_get_zone_config(" in content
     assert "-> ConfigZone`" in content
+    assert "selectors.md" in content
 
 
 def test_api_reference_hides_compatibility_only_method_aliases() -> None:
