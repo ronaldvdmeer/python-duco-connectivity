@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-05-17
+
+### Added
+
+- Add explicit selector strategy and typed-versus-raw boundary documentation
+  for the public API surface.
+- Add typed board and software version primitives, plus typed model families
+  for action, config, zone, and group surfaces.
+
+### Changed
+
+- Tighten stable LAN metadata, node read models, and ventilation read models so
+  public callers receive deliberate typed values instead of incidental raw
+  strings where the API contract is stable.
+
+### Enhanced
+
+- Expand the generated API reference and regression coverage for the broader
+  typed public surface.
+
 ## [0.4.0] - 2026-05-14
 
 ### Added
@@ -111,7 +131,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CI validation with pytest, Ruff, mypy, Bandit, and pip-audit.
 - PyPI Trusted Publishing workflow for tagged releases.
 
-[Unreleased]: https://github.com/ronaldvdmeer/python-duco-connectivity/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/ronaldvdmeer/python-duco-connectivity/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/ronaldvdmeer/python-duco-connectivity/releases/tag/v0.5.0
 [0.4.0]: https://github.com/ronaldvdmeer/python-duco-connectivity/releases/tag/v0.4.0
 [0.3.0]: https://github.com/ronaldvdmeer/python-duco-connectivity/releases/tag/v0.3.0
 [0.2.0]: https://github.com/ronaldvdmeer/python-duco-connectivity/releases/tag/v0.2.0
