@@ -1,5 +1,6 @@
 """Tests for the public data models."""
 
+import inspect
 import logging
 
 import pytest
@@ -13,6 +14,7 @@ from duco_connectivity import (
     ApiEndpointInfo,
     ApiInfo,
     BoardInfo,
+    BoardName,
     ConfigGeneralSubmoduleSelector,
     ConfigGroup,
     ConfigGroupStruct,
@@ -23,6 +25,7 @@ from duco_connectivity import (
     ConfigZonesOverview,
     ConfigZoneStruct,
     DeviceGroupConfigSubmoduleSelector,
+    DucoVersion,
     InfoGeneralSubmoduleSelector,
     InfoGroup,
     InfoGroupStruct,
@@ -31,6 +34,7 @@ from duco_connectivity import (
     InfoZoneGroup,
     InfoZonesOverview,
     InfoZoneStruct,
+    KnownBoardName,
     NetworkType,
     Node,
     NodeActionItemList,
@@ -167,10 +171,52 @@ def test_selector_enum_values() -> None:
     assert DeviceGroupConfigSubmoduleSelector.GENERAL.value == "General"
 
 
+def test_board_name_known_value() -> None:
+    """BoardName should expose observed stable board identities."""
+    board_name = BoardName("SILENT_CONNECT")
+
+    assert board_name == "SILENT_CONNECT"
+    assert board_name.known_value is KnownBoardName.SILENT_CONNECT
+    assert board_name.is_known is True
+
+
+def test_board_name_unknown_value_is_forward_tolerant() -> None:
+    """BoardName should preserve unknown identities without coercing them away."""
+    board_name = BoardName("FUTURE_BOX")
+
+    assert board_name == "FUTURE_BOX"
+    assert board_name.known_value is None
+    assert board_name.is_known is False
+
+
+def test_duco_version_parses_numeric_components() -> None:
+    """DucoVersion should expose parsed numeric version components."""
+    version = DucoVersion("2.0.6.0")
+
+    assert version == "2.0.6.0"
+    assert version.components == (2, 0, 6, 0)
+    assert version.major == 2
+    assert version.minor == 0
+    assert version.is_well_formed is True
+
+
+def test_duco_version_preserves_malformed_values() -> None:
+    """DucoVersion should keep malformed values string-compatible."""
+    version = DucoVersion("2.beta")
+
+    assert version == "2.beta"
+    assert version.components is None
+    assert version.major is None
+    assert version.minor is None
+    assert version.is_well_formed is False
+
+
 def test_api_info_defaults() -> None:
     """ApiInfo should allow omitted optional fields."""
     info = ApiInfo(public_api_version="2.5")
+    assert isinstance(info.public_api_version, DucoVersion)
     assert info.public_api_version == "2.5"
+    assert info.public_api_version.components == (2, 5)
     assert info.api_version == "2.5"
     assert info.reported_api_version is None
     assert info.endpoints == []
@@ -180,6 +226,7 @@ def test_api_info_defaults() -> None:
 def test_api_info_accepts_legacy_api_version_argument() -> None:
     """ApiInfo should accept the old api_version keyword."""
     info = ApiInfo(api_version="2.5")
+    assert isinstance(info.public_api_version, DucoVersion)
     assert info.public_api_version == "2.5"
     assert info.api_version == "2.5"
 
@@ -279,8 +326,45 @@ def test_board_info_optional_software_version() -> None:
         serial_duco_comm="P000000-000000-001",
         time=1775082497,
     )
+    assert isinstance(board.box_name, BoardName)
+    assert board.box_name.known_value is KnownBoardName.SILENT_CONNECT
+    assert board.public_api_version is None
     assert board.software_version is None
     assert board.raw_payload == {}
+
+
+def test_board_info_preserves_unknown_board_and_malformed_versions() -> None:
+    """BoardInfo should keep unknown board names and malformed versions accessible."""
+    board = BoardInfo(
+        box_name="FUTURE_BOX",
+        box_sub_type_name="Prototype",
+        serial_board_box="RS0000000002",
+        serial_board_comm="PS0000000002",
+        serial_duco_box="P000000-000000-002",
+        serial_duco_comm="P000000-000000-003",
+        time=1775082498,
+        public_api_version="2.beta",
+        software_version="mainline",
+    )
+
+    assert isinstance(board.box_name, BoardName)
+    assert board.box_name == "FUTURE_BOX"
+    assert board.box_name.known_value is None
+    assert isinstance(board.public_api_version, DucoVersion)
+    assert board.public_api_version == "2.beta"
+    assert board.public_api_version.components is None
+    assert isinstance(board.software_version, DucoVersion)
+    assert board.software_version == "mainline"
+    assert board.software_version.components is None
+
+
+def test_board_info_constructor_signature_accepts_compatibility_types() -> None:
+    """BoardInfo should advertise compatibility-friendly constructor annotations."""
+    signature = inspect.signature(BoardInfo)
+
+    assert signature.parameters["box_name"].annotation == BoardName | str
+    assert signature.parameters["public_api_version"].annotation == DucoVersion | str | None
+    assert signature.parameters["software_version"].annotation == DucoVersion | str | None
 
 
 def test_info_group_struct_defaults() -> None:

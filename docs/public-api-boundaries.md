@@ -29,6 +29,12 @@ closed over only the parts of the Duco API that have already been modeled.
 The typed surface is the preferred entry point when it already describes the
 endpoint or payload section you need.
 
+Typed primitives can still be compatibility-conscious. When a Duco field has a
+stable domain meaning but callers still benefit from string behavior, the
+library can expose a string-compatible public type instead of a nested wrapper.
+That is the pattern used for board and version primitives like `BoardName` and
+`DucoVersion`.
+
 That includes:
 
 - typed readers like `async_get_api_info()`, `async_get_nodes()`,

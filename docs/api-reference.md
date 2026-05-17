@@ -216,6 +216,7 @@ The package exports the following public symbols through `duco_connectivity.__al
 - `ApiEndpoint`
 - `ApiInfo`
 - `BoardInfo`
+- `BoardName`
 - `Config`
 - `ConfigGroup`
 - `ConfigGroupStruct`
@@ -230,6 +231,7 @@ The package exports the following public symbols through `duco_connectivity.__al
 - `ConfigZoneStruct`
 - `ConfigZonesOverview`
 - `DiagComponent`
+- `DucoVersion`
 - `InfoGroup`
 - `InfoGroupStruct`
 - `InfoZone`
@@ -259,6 +261,7 @@ The package exports the following public symbols through `duco_connectivity.__al
 - `DiagStatus`
 - `InfoGeneralSubmoduleSelector`
 - `InfoModuleSelector`
+- `KnownBoardName`
 - `NetworkType`
 - `NodeInfoModuleSelector`
 - `NodeType`
@@ -287,6 +290,7 @@ The package exports the following public symbols through `duco_connectivity.__al
 - `DucoRateLimitError` is a backward-compatible alias of `DucoWriteLimitError`.
 - `ApiEndpointInfo` is a backward-compatible alias of `ApiEndpoint`.
 - `ApiInfo(api_version=...)` and `ApiInfo.api_version` remain available for migration compatibility while the public field name is `public_api_version`.
+- `BoardName` and `DucoVersion` are string-compatible typed primitives, so existing string comparisons and JSON serialization continue to work while exposing typed helpers like `known_value` and `components`.
 
 ## See also
 

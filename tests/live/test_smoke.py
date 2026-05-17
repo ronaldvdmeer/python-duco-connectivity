@@ -4,7 +4,7 @@ from collections.abc import Callable
 
 import pytest
 
-from duco_connectivity import DiagStatus, DucoClient
+from duco_connectivity import BoardName, DiagStatus, DucoClient, DucoVersion
 
 pytestmark = pytest.mark.live
 
@@ -24,8 +24,10 @@ async def test_live_reads_core_device_info(
         f"lan_ip={lan_info.ip} writes_remaining={remaining_writes}"
     )
 
+    assert isinstance(api_info.public_api_version, DucoVersion)
     assert api_info.public_api_version
     assert not api_info.endpoints or any(endpoint.url == "/api" for endpoint in api_info.endpoints)
+    assert isinstance(board_info.box_name, BoardName)
     assert board_info.box_name
     assert board_info.serial_board_comm
     assert board_info.time > 0

@@ -12,6 +12,7 @@ from duco_connectivity import (
     ActionItem,
     ActionResultStatus,
     ActionValueType,
+    BoardName,
     Config,
     ConfigGeneralSubmoduleSelector,
     ConfigGroup,
@@ -32,6 +33,7 @@ from duco_connectivity import (
     DucoConnectionError,
     DucoError,
     DucoResponseError,
+    DucoVersion,
     DucoWriteLimitError,
     InfoGeneralSubmoduleSelector,
     InfoGroup,
@@ -39,6 +41,7 @@ from duco_connectivity import (
     InfoZone,
     InfoZoneGroup,
     InfoZonesOverview,
+    KnownBoardName,
     NetworkType,
     NodeActionItemList,
     NodeInfoModuleSelector,
@@ -473,7 +476,9 @@ async def test_api_info_is_parsed(api_info_full_data: dict[str, object]) -> None
         with patch.object(session, "request", _request(mock_response)):
             api_info = await client.async_get_api_info()
 
+    assert isinstance(api_info.public_api_version, DucoVersion)
     assert api_info.public_api_version == "2.6"
+    assert api_info.public_api_version.components == (2, 6)
     assert api_info.reported_api_version == "MOCKAPI 2.6.0"
     assert len(api_info.endpoints) == 2
     assert api_info.endpoints[1].url == "/info"
@@ -1683,11 +1688,15 @@ async def test_board_info_is_parsed(board_info_data: dict[str, object]) -> None:
         with patch.object(session, "request", _request(mock_response)):
             board = await client.async_get_board_info()
 
+    assert isinstance(board.box_name, BoardName)
     assert board.box_name == "SILENT_CONNECT"
+    assert board.box_name.known_value is KnownBoardName.SILENT_CONNECT
     assert board.box_sub_type_name == "Eu"
     assert board.serial_board_box == "RS0000000001"
     assert board.time == 1775082497
+    assert isinstance(board.public_api_version, DucoVersion)
     assert board.public_api_version == "2.5"
+    assert board.public_api_version.components == (2, 5)
     assert board.software_version is None
     assert board.raw_payload is board_info_data["General"]["Board"]
 
@@ -1703,8 +1712,47 @@ async def test_board_info_with_optional_versions(
         with patch.object(session, "request", _request(mock_response)):
             board = await client.async_get_board_info()
 
+    assert isinstance(board.public_api_version, DucoVersion)
     assert board.public_api_version == "2.6"
+    assert isinstance(board.software_version, DucoVersion)
     assert board.software_version == "2.0.6.0"
+    assert board.software_version.components == (2, 0, 6, 0)
+
+
+async def test_board_info_preserves_unknown_board_and_malformed_versions() -> None:
+    """Board parsing should stay forward-tolerant for unknown identities and versions."""
+    mock_response = _response(
+        json_payload={
+            "General": {
+                "Board": {
+                    "PublicApiVersion": {"Val": "2.beta"},
+                    "BoxName": {"Val": "FUTURE_BOX"},
+                    "BoxSubTypeName": {"Val": "Prototype"},
+                    "SerialBoardBox": {"Val": "RS0000000999"},
+                    "SerialBoardComm": {"Val": "PS0000000999"},
+                    "SerialDucoBox": {"Val": "P000000-000000-999"},
+                    "SerialDucoComm": {"Val": "P000000-000000-998"},
+                    "Time": {"Val": 1778600999},
+                    "SwVersion": {"Val": "mainline"},
+                }
+            }
+        }
+    )
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with patch.object(session, "request", _request(mock_response)):
+            board = await client.async_get_board_info()
+
+    assert isinstance(board.box_name, BoardName)
+    assert board.box_name == "FUTURE_BOX"
+    assert board.box_name.known_value is None
+    assert isinstance(board.public_api_version, DucoVersion)
+    assert board.public_api_version == "2.beta"
+    assert board.public_api_version.components is None
+    assert isinstance(board.software_version, DucoVersion)
+    assert board.software_version == "mainline"
+    assert board.software_version.components is None
 
 
 async def test_lan_info_wifi_is_parsed(lan_info_data: dict[str, object]) -> None:
