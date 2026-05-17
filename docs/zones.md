@@ -43,6 +43,8 @@ the box exposes new values. See [selectors.md](selectors.md) for the rule.
 - `async_get_zone_config()` returns a single `ConfigZone`.
 - `async_set_zone_config()` returns a single `ConfigZone` after a successful
   patch.
+- `async_set_zone_config()` also accepts `PatchConfigZoneStruct` for the
+  stable writable zone branch under `DeviceGroupConfig.General.Name`.
 - The zone config overview reader forwards the documented optional `zone`,
   `group`, `module`, `submodule`, and `parameter` query arguments unchanged.
 - The single-zone config reader forwards the documented optional `group`,
@@ -72,12 +74,17 @@ the box exposes new values. See [selectors.md](selectors.md) for the rule.
 - `ConfigZonesOverview` wraps a list of `ConfigZone` entries.
 - `ConfigZone` keeps the typed `zone_id`, an optional `ConfigValueString`
   `name`, and a list of `ConfigGroup` entries.
+- `ConfigZoneWithGroupStruct` mirrors the readable zone body used by the
+  overview and single-zone config readers, including nested `groups`.
 - `ConfigZoneStruct` mirrors the zone-body fields without the outer `Zone`
   identifier and is reused by the typed single-zone config helper.
 - `ConfigGroupStruct` intentionally has no typed fields yet because the current
   public API note defines the struct as an empty object. The model still keeps
   `raw_payload` so newly observed fields remain inspectable without breaking the
   public surface.
+- `PatchConfigZoneStruct`, `PatchConfigZoneDeviceGroupConfig`, and
+  `PatchConfigZoneGeneral` mirror the stable writable zone path for typed zone
+  name writes.
 
 ## Raw payload preservation
 

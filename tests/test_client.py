@@ -37,6 +37,7 @@ from duco_connectivity import (
     ConfigValueString,
     ConfigZone,
     ConfigZonesOverview,
+    ConfigZoneWithGroupStruct,
     DeviceGroupConfigSubmoduleSelector,
     DiagStatus,
     DucoClient,
@@ -88,6 +89,9 @@ from duco_connectivity import (
     PatchConfigNodeValue,
     PatchConfigTime,
     PatchConfigValue,
+    PatchConfigZoneDeviceGroupConfig,
+    PatchConfigZoneGeneral,
+    PatchConfigZoneStruct,
     VentilationFlowLevelTarget,
     VentilationMode,
     VentilationState,
@@ -979,15 +983,30 @@ def test_generic_config_models_cover_node_and_patch_shapes() -> None:
     node_struct = ConfigNodeStruct(name=name)
     node = ConfigNode(node_id=7, name=name)
     overview = ConfigNodeOverview(nodes=[node])
+    zone_group_struct = ConfigZoneWithGroupStruct(name=name, groups=[ConfigGroup(group_id=2)])
     patch_value = PatchConfigValue(value=2)
     patch_node_value = PatchConfigNodeValue(value="Boost")
+    patch_zone_struct = PatchConfigZoneStruct(
+        device_group_config=PatchConfigZoneDeviceGroupConfig(
+            general=PatchConfigZoneGeneral(name=PatchConfigValue(value="Ground floor"))
+        )
+    )
 
     assert node_struct.name is name
     assert node.node_id == 7
     assert node.name is name
     assert overview.nodes == [node]
+    assert zone_group_struct.name is name
+    assert zone_group_struct.groups == [ConfigGroup(group_id=2)]
     assert patch_value.value == 2
     assert patch_node_value.value == "Boost"
+    assert patch_zone_struct.device_group_config is not None
+    assert patch_zone_struct.device_group_config.general is not None
+    assert patch_zone_struct.device_group_config.general.name == PatchConfigValue(
+        value="Ground floor"
+    )
+    assert not isinstance(patch_zone_struct.device_group_config.general, PatchConfigModel)
+    assert not isinstance(patch_zone_struct.device_group_config, PatchConfigModel)
 
 
 async def test_get_config_with_module_forwards_query_params(
@@ -2714,6 +2733,45 @@ async def test_set_zone_config_returns_typed_payload_and_compact_json_body(
     assert "params" not in kwargs
     assert kwargs["data"] == b'{"DeviceGroupConfig":{"General":{"Name":{"Val":"Ground floor"}}}}'
     assert kwargs["headers"] == {"Content-Type": "application/json"}
+
+
+async def test_set_zone_config_accepts_typed_zone_patch_model(
+    zone_config_data: dict[str, object],
+) -> None:
+    """Zone config writes should accept the typed zone patch model."""
+    mock_response = _response(json_payload=zone_config_data)
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        request = MagicMock(return_value=_request_context(mock_response))
+        with patch.object(session, "request", request):
+            payload = await client.async_set_zone_config(
+                1,
+                PatchConfigZoneStruct(
+                    device_group_config=PatchConfigZoneDeviceGroupConfig(
+                        general=PatchConfigZoneGeneral(name=PatchConfigValue(value="Ground floor"))
+                    )
+                ),
+                module=ZoneModuleSelector.DEVICE_GROUP_CONFIG,
+                submodule=DeviceGroupConfigSubmoduleSelector.GENERAL,
+                parameter="Name",
+            )
+
+    assert payload == ConfigZone(
+        zone_id=1,
+        name=ConfigValueString(value="Ground floor"),
+        groups=[
+            ConfigGroup(group_id=1),
+            ConfigGroup(group_id=2),
+        ],
+    )
+    _, kwargs = request.call_args
+    assert kwargs["params"] == {
+        "module": "DeviceGroupConfig",
+        "submodule": "General",
+        "parameter": "Name",
+    }
+    assert kwargs["data"] == b'{"DeviceGroupConfig":{"General":{"Name":{"Val":"Ground floor"}}}}'
 
 
 async def test_set_zone_config_accepts_api_shaped_leaf_payloads(

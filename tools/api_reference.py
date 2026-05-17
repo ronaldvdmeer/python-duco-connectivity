@@ -184,8 +184,8 @@ METHOD_METADATA: dict[str, MethodMetadata] = {
         surface="typed",
         details_path="zones.md",
         notes=(
-            "Accepts sparse payloads built from `PatchConfigValue(...)` leaves or raw "
-            "API-shaped `{'Val': ...}` objects.",
+            "Accepts `PatchConfigZoneStruct(...)`, sparse payloads built from "
+            "`PatchConfigValue(...)` leaves, or raw API-shaped `{'Val': ...}` objects.",
         ),
     ),
     "async_get_zones_info": MethodMetadata(

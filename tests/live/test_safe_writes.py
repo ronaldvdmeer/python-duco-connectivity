@@ -4,7 +4,16 @@ from collections.abc import Callable
 
 import pytest
 
-from duco_connectivity import ConfigSection, ConfigValue, DucoClient
+from duco_connectivity import (
+    ConfigSection,
+    ConfigValue,
+    ConfigValueString,
+    DucoClient,
+    PatchConfigValue,
+    PatchConfigZoneDeviceGroupConfig,
+    PatchConfigZoneGeneral,
+    PatchConfigZoneStruct,
+)
 
 pytestmark = [pytest.mark.live, pytest.mark.writes]
 
@@ -53,6 +62,47 @@ async def test_live_noop_timezone_write_round_trip(
     after_remaining = await live_client.async_get_write_requests_remaining()
     live_report(
         f"timezone_round_trip value={time_zone.value} "
+        f"writes_before={before_remaining} writes_after={after_remaining}"
+    )
+    assert 0 <= after_remaining <= before_remaining
+
+
+async def test_live_noop_zone_name_write_round_trip(
+    live_client: DucoClient,
+    live_report: Callable[[str], None],
+) -> None:
+    """Round-trip the current zone name through PATCH /config/zones/{zone}."""
+    before_remaining = await live_client.async_get_write_requests_remaining()
+    if before_remaining < 1:
+        pytest.skip("No Duco write requests remain for a live zone write test")
+
+    zones = await live_client.async_get_zones_config()
+    zone = next((item for item in zones.zones if item.name is not None), None)
+    if zone is None:
+        pytest.skip("No named zones available for a safe live zone write test")
+
+    assert zone.name is not None
+    assert isinstance(zone.name, ConfigValueString)
+
+    result = await live_client.async_set_zone_config(
+        zone.zone_id,
+        PatchConfigZoneStruct(
+            device_group_config=PatchConfigZoneDeviceGroupConfig(
+                general=PatchConfigZoneGeneral(name=PatchConfigValue(value=zone.name.value))
+            )
+        ),
+        module="DeviceGroupConfig",
+        submodule="General",
+        parameter="Name",
+    )
+
+    assert result.name is not None
+    assert isinstance(result.name, ConfigValueString)
+    assert result.name.value == zone.name.value
+
+    after_remaining = await live_client.async_get_write_requests_remaining()
+    live_report(
+        f"zone_name_round_trip zone={zone.zone_id} value={zone.name.value!r} "
         f"writes_before={before_remaining} writes_after={after_remaining}"
     )
     assert 0 <= after_remaining <= before_remaining

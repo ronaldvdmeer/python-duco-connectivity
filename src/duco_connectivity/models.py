@@ -1096,6 +1096,15 @@ class ConfigZoneStruct:
 
 
 @dataclass(frozen=True, slots=True)
+class ConfigZoneWithGroupStruct:
+    """Readable zone config fields that include nested group entries."""
+
+    name: ConfigValueString | None = None
+    groups: list[ConfigGroup] = field(default_factory=list)
+    raw_payload: dict[str, Any] = field(default_factory=dict, repr=False, compare=False)
+
+
+@dataclass(frozen=True, slots=True)
 class ConfigZone:
     """Zone-scoped config payload returned by the local Duco API."""
 
@@ -1212,6 +1221,27 @@ class PatchConfig(PatchConfigModel):
 
     general: PatchConfigGeneral | None = _patch_field("General")
     heat_recovery: PatchConfigHeatRecovery | None = _patch_field("HeatRecovery")
+
+
+@dataclass(frozen=True, slots=True)
+class PatchConfigZoneGeneral(_PatchPayloadModel):
+    """Typed `General` patch payload under `DeviceGroupConfig` for a zone."""
+
+    name: PatchConfigValue | None = _patch_field("Name")
+
+
+@dataclass(frozen=True, slots=True)
+class PatchConfigZoneDeviceGroupConfig(_PatchPayloadModel):
+    """Typed `DeviceGroupConfig` patch payload for `/config/zones/{zone}`."""
+
+    general: PatchConfigZoneGeneral | None = _patch_field("General")
+
+
+@dataclass(frozen=True, slots=True)
+class PatchConfigZoneStruct(_PatchPayloadModel):
+    """Typed zone config patch payload for stable writable zone fields."""
+
+    device_group_config: PatchConfigZoneDeviceGroupConfig | None = _patch_field("DeviceGroupConfig")
 
 
 @dataclass(frozen=True, slots=True)

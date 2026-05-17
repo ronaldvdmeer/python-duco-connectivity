@@ -142,12 +142,12 @@ python tools/api_reference.py write
   - Surface: typed
   - Summary: Return detailed configuration values for a specific zone.
   - Details: [zones.md](zones.md)
-- `async_set_zone_config(zone_id: int, payload: dict[str, Any], module: ZoneModuleSelector | str | None = None, submodule: DeviceGroupConfigSubmoduleSelector | str | None = None, parameter: str | None = None) -> ConfigZone`
+- `async_set_zone_config(zone_id: int, payload: dict[str, Any] | PatchConfigZoneStruct, module: ZoneModuleSelector | str | None = None, submodule: DeviceGroupConfigSubmoduleSelector | str | None = None, parameter: str | None = None) -> ConfigZone`
   - Endpoint: `PATCH /config/zones/{zone}`
   - Surface: typed
   - Summary: Patch zone-level configuration values through `/config/zones/{zone}`.
   - Details: [zones.md](zones.md)
-  - Note: Accepts sparse payloads built from `PatchConfigValue(...)` leaves or raw API-shaped `{'Val': ...}` objects.
+  - Note: Accepts `PatchConfigZoneStruct(...)`, sparse payloads built from `PatchConfigValue(...)` leaves, or raw API-shaped `{'Val': ...}` objects.
 - `async_get_zones_info() -> InfoZonesOverview`
   - Endpoint: `GET /info/zones`
   - Surface: typed
@@ -238,6 +238,7 @@ The package exports the following public symbols through `duco_connectivity.__al
 - `ConfigValueString`
 - `ConfigZone`
 - `ConfigZoneStruct`
+- `ConfigZoneWithGroupStruct`
 - `ConfigZonesOverview`
 - `DiagComponent`
 - `DucoSerialNumber`
@@ -285,6 +286,9 @@ The package exports the following public symbols through `duco_connectivity.__al
 - `PatchConfigNodeValue`
 - `PatchConfigTime`
 - `PatchConfigValue`
+- `PatchConfigZoneDeviceGroupConfig`
+- `PatchConfigZoneGeneral`
+- `PatchConfigZoneStruct`
 - `VentilationFlowLevelTarget`
 - `VentilationTimeEnd`
 - `VentilationTimeRemaining`
