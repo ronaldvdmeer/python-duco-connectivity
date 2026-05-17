@@ -614,6 +614,61 @@ class ActionValueType(StrEnum):
     UNKNOWN = "UNKNOWN"
 
 
+class KnownActionName(StrEnum):
+    """Observed stable action names published by the Duco public API notes."""
+
+    SET_TIME = "SetTime"
+    SET_IDENTIFY = "SetIdentify"
+    SET_IDENTIFY_ALL = "SetIdentifyAll"
+    RECONNECT_WIFI = "ReconnectWifi"
+    SCAN_WIFI = "ScanWifi"
+    SET_WIFI_AP_MODE = "SetWifiApMode"
+    SET_VENTILATION_STATE = "SetVentilationState"
+    SET_POS_MAN = "SetPosMan"
+    SET_POS_MAN_CNT = "SetPosManCnt"
+
+
+class ActionName(str):
+    """String-compatible action name with optional known-value matching."""
+
+    def __new__(cls, value: str) -> Self:
+        return super().__new__(cls, value)
+
+    @property
+    def known_value(self) -> KnownActionName | None:
+        """Return the matched known action name when available."""
+        try:
+            return KnownActionName(self)
+        except ValueError:
+            return None
+
+    @property
+    def is_known(self) -> bool:
+        """Return whether the action name matches a documented stable value."""
+        return self.known_value is not None
+
+
+class ActionEnumValue(str):
+    """String-compatible enum-backed option advertised for an action value."""
+
+    def __new__(cls, value: str) -> Self:
+        return super().__new__(cls, value)
+
+
+def _coerce_action_name(value: ActionName | str) -> ActionName:
+    """Normalize public action name values to `ActionName`."""
+    if isinstance(value, ActionName):
+        return value
+    return ActionName(value)
+
+
+def _coerce_action_enum_value(value: ActionEnumValue | str) -> ActionEnumValue:
+    """Normalize discovered action enum options to `ActionEnumValue`."""
+    if isinstance(value, ActionEnumValue):
+        return value
+    return ActionEnumValue(value)
+
+
 class InfoModuleSelector(StrEnum):
     """Known stable module selectors for the generic `/info` endpoint.
 
@@ -1419,30 +1474,67 @@ class DiagComponent:
     raw_payload: dict[str, Any] = field(default_factory=dict, repr=False, compare=False)
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True, slots=True, init=False)
 class Action:
     """System action request payload."""
 
-    action: str
+    action: ActionName
     val: str | int | bool | None = None
 
+    def __init__(
+        self,
+        action: ActionName | str,
+        val: str | int | bool | None = None,
+    ) -> None:
+        """Initialize a system action request with compatibility-friendly types."""
+        object.__setattr__(self, "action", _coerce_action_name(action))
+        object.__setattr__(self, "val", val)
 
-@dataclass(frozen=True, slots=True)
+
+@dataclass(frozen=True, slots=True, init=False)
 class ActionNode:
     """Node action request payload."""
 
-    action: str
+    action: ActionName
     val: str | int | bool | None = None
 
+    def __init__(
+        self,
+        action: ActionName | str,
+        val: str | int | bool | None = None,
+    ) -> None:
+        """Initialize a node action request with compatibility-friendly types."""
+        object.__setattr__(self, "action", _coerce_action_name(action))
+        object.__setattr__(self, "val", val)
 
-@dataclass(frozen=True, slots=True)
+
+@dataclass(frozen=True, slots=True, init=False)
 class ActionItem:
     """Action definition returned by action discovery endpoints."""
 
-    action: str
+    action: ActionName
     val_type: ActionValueType
-    enum_values: list[str] = field(default_factory=list)
+    enum_values: list[ActionEnumValue] = field(default_factory=list)
     raw_payload: dict[str, Any] = field(default_factory=dict, repr=False, compare=False)
+
+    def __init__(
+        self,
+        action: ActionName | str,
+        val_type: ActionValueType,
+        enum_values: list[ActionEnumValue | str] | None = None,
+        raw_payload: dict[str, Any] | None = None,
+    ) -> None:
+        """Initialize an action discovery item with compatibility-friendly types."""
+        object.__setattr__(self, "action", _coerce_action_name(action))
+        object.__setattr__(self, "val_type", val_type)
+        object.__setattr__(
+            self,
+            "enum_values",
+            []
+            if enum_values is None
+            else [_coerce_action_enum_value(value) for value in enum_values],
+        )
+        object.__setattr__(self, "raw_payload", {} if raw_payload is None else raw_payload)
 
 
 type ActionItemList = list[ActionItem]

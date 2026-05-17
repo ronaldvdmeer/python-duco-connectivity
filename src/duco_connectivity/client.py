@@ -19,6 +19,7 @@ from .exceptions import (
 from .models import (
     ActionItem,
     ActionItemList,
+    ActionName,
     ActionResult,
     ActionResultStatus,
     ActionValueType,
@@ -2031,7 +2032,7 @@ class DucoClient:
 
     async def async_set_action(
         self,
-        action: str,
+        action: ActionName | str,
         val: str | int | bool | None = None,
     ) -> ActionResult:
         """Execute a generic system action through the local Duco API."""
@@ -2060,7 +2061,7 @@ class DucoClient:
     async def async_set_node_action(
         self,
         node_id: int,
-        action: str,
+        action: ActionName | str,
         val: str | int | bool | None = None,
     ) -> ActionResult:
         """Execute a generic node action through the local Duco API."""

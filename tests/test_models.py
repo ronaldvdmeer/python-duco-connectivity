@@ -7,7 +7,9 @@ import pytest
 
 from duco_connectivity import (
     Action,
+    ActionEnumValue,
     ActionItem,
+    ActionName,
     ActionNode,
     ActionValueType,
     ApiEndpoint,
@@ -50,6 +52,7 @@ from duco_connectivity import (
     InfoZonesOverview,
     InfoZoneStruct,
     IpAddress,
+    KnownActionName,
     KnownBoardName,
     KnownLanMode,
     LanInfo,
@@ -117,24 +120,43 @@ def test_api_endpoint_defaults() -> None:
 def test_action_defaults() -> None:
     """Action should allow omitted optional values."""
     action = Action(action="SetTime")
+    assert isinstance(action.action, ActionName)
     assert action.action == "SetTime"
+    assert action.action.known_value is KnownActionName.SET_TIME
     assert action.val is None
 
 
 def test_action_node_defaults() -> None:
     """ActionNode should allow omitted optional values."""
     action = ActionNode(action="SetIdentify")
+    assert isinstance(action.action, ActionName)
     assert action.action == "SetIdentify"
+    assert action.action.known_value is KnownActionName.SET_IDENTIFY
     assert action.val is None
 
 
 def test_action_item_defaults() -> None:
     """ActionItem should default enum values to an empty list."""
     item = ActionItem(action="SetIdentify", val_type=ActionValueType.NONE)
+    assert isinstance(item.action, ActionName)
     assert item.action == "SetIdentify"
+    assert item.action.known_value is KnownActionName.SET_IDENTIFY
     assert item.val_type is ActionValueType.NONE
     assert item.enum_values == []
     assert item.raw_payload == {}
+
+
+def test_action_item_coerces_enum_values() -> None:
+    """ActionItem should type enum-backed option values without closing the set."""
+    item = ActionItem(
+        action="SetWifiApMode",
+        val_type=ActionValueType.ENUM,
+        enum_values=["Off", "On"],
+    )
+
+    assert item.action.known_value is KnownActionName.SET_WIFI_AP_MODE
+    assert item.enum_values == ["Off", "On"]
+    assert all(isinstance(value, ActionEnumValue) for value in item.enum_values)
 
 
 def test_node_action_item_list_defaults() -> None:
@@ -160,6 +182,39 @@ def test_action_value_type_values() -> None:
     assert ActionValueType.STRING.value == "String"
     assert ActionValueType.ENUM.value == "Enum"
     assert ActionValueType.UNKNOWN.value == "UNKNOWN"
+
+
+def test_known_action_name_values() -> None:
+    """KnownActionName should expose the published stable action names."""
+    assert {action.value for action in KnownActionName} == {
+        "SetTime",
+        "SetIdentify",
+        "SetIdentifyAll",
+        "ReconnectWifi",
+        "ScanWifi",
+        "SetWifiApMode",
+        "SetVentilationState",
+        "SetPosMan",
+        "SetPosManCnt",
+    }
+
+
+def test_action_name_known_value() -> None:
+    """ActionName should expose documented stable action names when recognized."""
+    action_name = ActionName("SetVentilationState")
+
+    assert action_name == "SetVentilationState"
+    assert action_name.known_value is KnownActionName.SET_VENTILATION_STATE
+    assert action_name.is_known is True
+
+
+def test_action_name_unknown_value_is_forward_tolerant() -> None:
+    """ActionName should preserve future action names without coercing them away."""
+    action_name = ActionName("SetFutureAction")
+
+    assert action_name == "SetFutureAction"
+    assert action_name.known_value is None
+    assert action_name.is_known is False
 
 
 def test_ventilation_mode_values() -> None:

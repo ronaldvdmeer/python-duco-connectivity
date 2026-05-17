@@ -15,18 +15,24 @@ Behavior:
 
 - Calls `GET /action`
 - Returns a typed `ActionItemList`
+- Types action names as `ActionName`
+- Types enum-backed discovery values as `ActionEnumValue`
 - Preserves the API-shaped `Action`, `ValType`, and optional `Enum` fields
 - Falls back to `ActionValueType.UNKNOWN` when the device reports a future
   unmapped `ValType`
+- Preserves future action names as string-compatible `ActionName` values with
+  `known_value is None`
 
 Example:
 
 ```python
-from duco_connectivity import ActionValueType
+from duco_connectivity import ActionValueType, KnownActionName
 
 actions = await client.async_get_actions()
 
 for item in actions:
+    if item.action.known_value is KnownActionName.SET_WIFI_AP_MODE:
+        print(item.action, item.enum_values)
     if item.val_type is ActionValueType.ENUM:
         print(item.action, item.enum_values)
 ```
@@ -38,17 +44,20 @@ for item in actions:
 
 Behavior:
 
+- Accepts an `ActionName` or plain string for the `Action` field
 - Sends the `Action` field exactly as requested
 - Sends `Val` only when a value is provided
+- Keeps `Val` open as `str | int | bool` because the Duco API only defines a
+  small stable action-name set, not a single closed value domain
 - Returns a typed `ActionResult`
 - Reuses the same action-result contract as node action execution
 
 Example:
 
 ```python
-from duco_connectivity import ActionResultStatus
+from duco_connectivity import ActionName, ActionResultStatus
 
-result = await client.async_set_action("SetIdentify")
+result = await client.async_set_action(ActionName("SetIdentify"))
 
 if result.result is ActionResultStatus.SUCCESS:
     ...
@@ -63,6 +72,8 @@ Behavior:
 
 - Calls `GET /action/nodes`
 - Returns a typed `NodeListActionItemList`
+- Types action names as `ActionName`
+- Types enum-backed discovery values as `ActionEnumValue`
 - Preserves the nested API structure of `Nodes`, `Node`, and `Actions`
 - Reuses `ActionItem` for each per-node action definition
 - Falls back to `ActionValueType.UNKNOWN` when the device reports a future
@@ -86,6 +97,8 @@ Behavior:
 
 - Calls `GET /action/nodes/{node}`
 - Returns a typed `NodeActionItemList`
+- Types action names as `ActionName`
+- Types enum-backed discovery values as `ActionEnumValue`
 - Reuses `ActionItem` for each per-node action definition
 - Falls back to `ActionValueType.UNKNOWN` when the device reports a future
   unmapped `ValType`
@@ -105,8 +118,11 @@ print(node_actions.node_id, [item.action for item in node_actions.actions])
 
 Behavior:
 
+- Accepts an `ActionName` or plain string for the `Action` field
 - Sends the `Action` field exactly as requested
 - Sends `Val` only when a value is provided
+- Keeps `Val` open as `str | int | bool` because node action values are only
+  partially specified in the published notes
 - Returns a typed `ActionResult`
 - Preserves `async_set_ventilation_state()` as a convenience wrapper for
   `SetVentilationState`
@@ -116,6 +132,9 @@ for the structures described in `notes/public_api_v2.5.yaml`:
 
 - `Action` for system action request payloads
 - `ActionNode` for node action request payloads
+- `ActionName` and `KnownActionName` for action-name typing with forward-
+  compatible plain-string behavior
+- `ActionEnumValue` for discovered enum-backed action options
 - `ActionItem` and `ActionItemList` for action discovery results
 - `ActionResult` and `ActionResultStatus` for action execution results
 - `NodeActionItemList` and `NodeListActionItemList` for node-scoped action
