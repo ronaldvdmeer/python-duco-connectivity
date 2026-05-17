@@ -26,7 +26,7 @@ config = await client.async_get_config()
 if config.general is not None and config.general.lan is not None:
     mode = config.general.lan.mode
     if isinstance(mode, ConfigValueOptions):
-    print(mode.value, mode.options)
+        print(mode.value, mode.options)
 
 raw_mode = config.sections["General"].entries["Lan"].entries["Mode"]
 ```
