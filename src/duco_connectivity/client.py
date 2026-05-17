@@ -50,6 +50,7 @@ from .models import (
     ConfigZone,
     ConfigZonesOverview,
     ConfigZoneStruct,
+    ConfigZoneWithGroupStruct,
     DeviceGroupConfigSubmoduleSelector,
     DiagComponent,
     DiagStatus,
@@ -77,6 +78,7 @@ from .models import (
     PatchConfigNodeStruct,
     PatchConfigNodeValue,
     PatchConfigValue,
+    PatchConfigZoneStruct,
     VentilationMode,
     VentilationState,
     ZoneModuleSelector,
@@ -936,6 +938,28 @@ class DucoClient:
             msg = f"Expected integer Zone in {path}, got {type(zone_id).__name__}"
             raise DucoError(msg)
 
+        zone_struct = cls._parse_config_zone_with_group_struct(payload, path=path)
+        return ConfigZone(
+            zone_id=zone_id,
+            name=zone_struct.name,
+            groups=zone_struct.groups,
+            raw_payload=cls._preserve_raw_payload(payload),
+        )
+
+    @classmethod
+    def _parse_config_zone_with_group_struct(
+        cls,
+        payload: Any,
+        *,
+        path: str,
+    ) -> ConfigZoneWithGroupStruct:
+        if not isinstance(payload, dict):
+            msg = (
+                f"Expected object for zone config-with-groups struct {path}, got "
+                f"{type(payload).__name__}"
+            )
+            raise DucoError(msg)
+
         zone_struct = cls._parse_config_zone_struct(payload, path=path)
         groups: list[ConfigGroup] = []
         if "Groups" in payload:
@@ -952,8 +976,7 @@ class DucoClient:
                 for index, item in enumerate(raw_groups)
             ]
 
-        return ConfigZone(
-            zone_id=zone_id,
+        return ConfigZoneWithGroupStruct(
             name=zone_struct.name,
             groups=groups,
             raw_payload=cls._preserve_raw_payload(payload),
@@ -1782,7 +1805,7 @@ class DucoClient:
     async def async_set_zone_config(
         self,
         zone_id: int,
-        payload: dict[str, Any],
+        payload: dict[str, Any] | PatchConfigZoneStruct,
         module: ZoneModuleSelector | str | None = None,
         submodule: DeviceGroupConfigSubmoduleSelector | str | None = None,
         parameter: str | None = None,

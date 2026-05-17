@@ -198,24 +198,31 @@ Behavior:
 - Sends `PATCH /config/zones/{zone}`
 - Forwards the zone path parameter directly
 - Forwards optional `module`, `submodule`, and `parameter` query values
-- Accepts sparse payloads built from `PatchConfigValue(...)` leaves or raw
-  API-shaped `{"Val": ...}` leaf objects
+- Accepts `PatchConfigZoneStruct(...)`, sparse payloads built from
+    `PatchConfigValue(...)` leaves, or raw API-shaped `{"Val": ...}` leaf
+    objects
 - Returns a typed `ConfigZone` response
 
 Example:
 
 ```python
-from duco_connectivity import DucoClient, PatchConfigValue
+from duco_connectivity import (
+    DucoClient,
+    PatchConfigValue,
+    PatchConfigZoneDeviceGroupConfig,
+    PatchConfigZoneGeneral,
+    PatchConfigZoneStruct,
+)
 
 result = await client.async_set_zone_config(
     1,
-    {
-        "DeviceGroupConfig": {
-            "General": {
-                "Name": PatchConfigValue(value="Ground floor"),
-            }
-        }
-    },
+    PatchConfigZoneStruct(
+        device_group_config=PatchConfigZoneDeviceGroupConfig(
+            general=PatchConfigZoneGeneral(
+                name=PatchConfigValue(value="Ground floor"),
+            )
+        )
+    ),
     module="DeviceGroupConfig",
     submodule="General",
     parameter="Name",
