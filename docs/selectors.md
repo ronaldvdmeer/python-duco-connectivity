@@ -3,6 +3,10 @@
 `python-duco-connectivity` uses a hybrid selector strategy for endpoint query
 arguments like `module`, `submodule`, and `parameter`.
 
+See [public-api-boundaries.md](public-api-boundaries.md) for the broader public
+API contract that explains how selector escape hatches fit alongside typed
+models, raw payload preservation, and endpoint-specific raw helpers.
+
 The goal is to keep the client close to the Duco public API while still making
 the stable parts of that selector surface easier to discover and type-check.
 
