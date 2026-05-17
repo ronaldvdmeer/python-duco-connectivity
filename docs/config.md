@@ -24,9 +24,9 @@ from duco_connectivity import ConfigValueOptions
 config = await client.async_get_config()
 
 if config.general is not None and config.general.lan is not None:
-        mode = config.general.lan.mode
-        if isinstance(mode, ConfigValueOptions):
-                print(mode.value, mode.options)
+    mode = config.general.lan.mode
+    if isinstance(mode, ConfigValueOptions):
+    print(mode.value, mode.options)
 
 raw_mode = config.sections["General"].entries["Lan"].entries["Mode"]
 ```
@@ -57,14 +57,17 @@ Example:
 ```python
 from duco_connectivity import (
     DucoClient,
+    PatchConfig,
     PatchConfigGeneral,
     PatchConfigLan,
     PatchConfigValue,
 )
 
-payload = PatchConfigGeneral(
-    lan=PatchConfigLan(
-        mode=PatchConfigValue(value=2),
+payload = PatchConfig(
+    general=PatchConfigGeneral(
+        lan=PatchConfigLan(
+            mode=PatchConfigValue(value=2),
+        )
     )
 )
 
@@ -75,7 +78,8 @@ result = await client.async_set_config(
     parameter="Mode",
 )
 
-mode = result.general.lan.mode
+if result.general is not None and result.general.lan is not None:
+    mode = result.general.lan.mode
 ```
 
 When you already have an API-shaped payload, you can also pass the API-shaped
@@ -135,13 +139,13 @@ Example:
 
 ```python
 result = await client.async_set_node_config_raw(
-        7,
-        {"FlowLvlTgt": PatchConfigNodeValue(value=125)},
-        parameter="FlowLvlTgt",
+    7,
+    {"FlowLvlTgt": PatchConfigNodeValue(value=125)},
+    parameter="FlowLvlTgt",
 )
 
 if result is not None:
-        flow_target = result["FlowLvlTgt"]["Val"]
+    flow_target = result["FlowLvlTgt"]["Val"]
 ```
 
 Behavior:

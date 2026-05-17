@@ -2,6 +2,7 @@
 
 import logging
 import re
+from dataclasses import dataclass, field
 from typing import Any, cast
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -80,6 +81,7 @@ from duco_connectivity import (
     PatchConfigHeatRecoveryBypass,
     PatchConfigLan,
     PatchConfigModbus,
+    PatchConfigModel,
     PatchConfigNodeStruct,
     PatchConfigNodeValue,
     PatchConfigTime,
@@ -1233,6 +1235,37 @@ async def test_set_config_rejects_invalid_patch_payloads(
         client = DucoClient(session=session, host="192.0.2.94")
         with pytest.raises(ValueError, match=message):
             await client.async_set_config(payload)
+
+
+async def test_set_config_rejects_non_dataclass_patch_model() -> None:
+    """Public patch model subclasses should fail clearly when they are not dataclasses."""
+
+    class BrokenPatch(PatchConfigModel):
+        pass
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with pytest.raises(
+            ValueError,
+            match="Expected dataclass patch payload for config, got BrokenPatch",
+        ):
+            await client.async_set_config(BrokenPatch())
+
+
+async def test_set_config_rejects_patch_model_without_api_name_metadata() -> None:
+    """Patch model fields without API metadata should fail with a clear error."""
+
+    @dataclass(frozen=True, slots=True)
+    class BrokenPatch(PatchConfigModel):
+        mode: PatchConfigValue | None = field(default=None)
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with pytest.raises(
+            ValueError,
+            match="Patch model field BrokenPatch.mode must declare api_name metadata",
+        ):
+            await client.async_set_config(BrokenPatch(mode=PatchConfigValue(value=2)))
 
 
 async def test_set_config_invalid_response_raises_duco_error() -> None:

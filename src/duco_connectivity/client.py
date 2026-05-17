@@ -3,7 +3,7 @@
 import json
 import logging
 import sys
-from dataclasses import fields
+from dataclasses import fields, is_dataclass
 from types import FrameType
 from typing import Any, Literal, cast
 from urllib.parse import urlsplit
@@ -626,13 +626,24 @@ class DucoClient:
         *,
         path: str,
     ) -> dict[str, Any]:
+        if not is_dataclass(payload):
+            msg = f"Expected dataclass patch payload for {path}, got {type(payload).__name__}"
+            raise ValueError(msg)
+
         normalized: dict[str, Any] = {}
         for model_field in fields(cast(Any, payload)):
             value = getattr(payload, model_field.name)
             if value is None:
                 continue
 
-            api_name = model_field.metadata["api_name"]
+            api_name = model_field.metadata.get("api_name")
+            if not isinstance(api_name, str) or not api_name:
+                msg = (
+                    f"Patch model field {type(payload).__name__}.{model_field.name} "
+                    "must declare api_name metadata"
+                )
+                raise ValueError(msg)
+
             item_path = f"{path}.{api_name}"
 
             if isinstance(value, (PatchConfigValue, PatchConfigNodeValue)):
