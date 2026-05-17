@@ -1,4 +1,35 @@
-# Config writes
+# Config reads and writes
+
+## Generic config reads
+
+The Duco public API exposes `GET /config` as the generic system config read
+endpoint.
+
+`python-duco-connectivity` exposes this through
+`DucoClient.async_get_config(module=None, submodule=None, parameter=None)`.
+
+Behavior:
+
+- Returns a `Config` response with the generic `sections` tree preserved
+- Also exposes stable typed families on `Config.general` and
+    `Config.heat_recovery`
+- Keeps unknown or not-yet-mapped branches available through `sections` and
+    `raw_payload`
+
+Example:
+
+```python
+from duco_connectivity import ConfigValueOptions
+
+config = await client.async_get_config()
+
+if config.general is not None and config.general.lan is not None:
+    mode = config.general.lan.mode
+    if isinstance(mode, ConfigValueOptions):
+        print(mode.value, mode.options)
+
+raw_mode = config.sections["General"].entries["Lan"].entries["Mode"]
+```
 
 ## Generic config writes
 
@@ -17,22 +48,28 @@ Behavior:
 - Sends `PATCH /config`
 - Forwards `module`, `submodule`, and `parameter` query arguments when provided
 - Accepts sparse nested payloads that stay close to the API structure
-- Accepts either `PatchConfigValue(...)` leaves or raw API-shaped `{"Val": ...}`
-  leaf objects
+- Accepts typed `PatchConfig...` model families, `PatchConfigValue(...)` leaves,
+  or raw API-shaped `{"Val": ...}` leaf objects
 - Returns a typed `Config` response
 
 Example:
 
 ```python
-from duco_connectivity import DucoClient, PatchConfigValue
+from duco_connectivity import (
+    DucoClient,
+    PatchConfig,
+    PatchConfigGeneral,
+    PatchConfigLan,
+    PatchConfigValue,
+)
 
-payload = {
-    "General": {
-        "Lan": {
-            "Mode": PatchConfigValue(value=2),
-        }
-    }
-}
+payload = PatchConfig(
+    general=PatchConfigGeneral(
+        lan=PatchConfigLan(
+            mode=PatchConfigValue(value=2),
+        )
+    )
+)
 
 result = await client.async_set_config(
     payload,
@@ -41,7 +78,8 @@ result = await client.async_set_config(
     parameter="Mode",
 )
 
-mode = result.sections["General"].entries["Lan"].entries["Mode"]
+if result.general is not None and result.general.lan is not None:
+    mode = result.general.lan.mode
 ```
 
 When you already have an API-shaped payload, you can also pass the API-shaped
@@ -101,13 +139,13 @@ Example:
 
 ```python
 result = await client.async_set_node_config_raw(
-        7,
-        {"FlowLvlTgt": PatchConfigNodeValue(value=125)},
-        parameter="FlowLvlTgt",
+    7,
+    {"FlowLvlTgt": PatchConfigNodeValue(value=125)},
+    parameter="FlowLvlTgt",
 )
 
 if result is not None:
-        flow_target = result["FlowLvlTgt"]["Val"]
+    flow_target = result["FlowLvlTgt"]["Val"]
 ```
 
 Behavior:
@@ -116,18 +154,19 @@ Behavior:
 - Forwards the node path parameter directly
 - Always sends `parameter=Name` so the endpoint returns a payload that can be
     parsed as a typed `ConfigNode`
-- Accepts sparse payloads built from `PatchConfigNodeValue(...)` leaves or raw
-    API-shaped `{"Val": ...}` leaf objects
+- Accepts `PatchConfigNodeStruct(...)`, sparse payloads built from
+    `PatchConfigNodeValue(...)` leaves, or raw API-shaped `{"Val": ...}` leaf
+    objects
 - Returns a typed `ConfigNode` response
 
 Example:
 
 ```python
-from duco_connectivity import DucoClient, PatchConfigNodeValue
+from duco_connectivity import DucoClient, PatchConfigNodeStruct, PatchConfigNodeValue
 
 result = await client.async_set_node_config(
     7,
-    {"Name": PatchConfigNodeValue(value="Kitchen valve")},
+    PatchConfigNodeStruct(name=PatchConfigNodeValue(value="Kitchen valve")),
     parameter="Name",
 )
 

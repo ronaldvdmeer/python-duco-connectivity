@@ -2,6 +2,7 @@
 
 import logging
 import re
+from dataclasses import dataclass, field
 from typing import Any, cast
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -14,14 +15,21 @@ from duco_connectivity import (
     ActionValueType,
     BoardName,
     Config,
+    ConfigAutoRebootComm,
+    ConfigGeneral,
     ConfigGeneralSubmoduleSelector,
     ConfigGroup,
+    ConfigHeatRecovery,
+    ConfigHeatRecoveryBypass,
     ConfigHeatRecoverySubmoduleSelector,
+    ConfigLan,
+    ConfigModbus,
     ConfigModuleSelector,
     ConfigNode,
     ConfigNodeOverview,
     ConfigNodeStruct,
     ConfigSection,
+    ConfigTime,
     ConfigValue,
     ConfigValueOptions,
     ConfigValueString,
@@ -66,7 +74,17 @@ from duco_connectivity import (
     NodeSubtype,
     NodeTemperature,
     NodeType,
+    PatchConfig,
+    PatchConfigAutoRebootComm,
+    PatchConfigGeneral,
+    PatchConfigHeatRecovery,
+    PatchConfigHeatRecoveryBypass,
+    PatchConfigLan,
+    PatchConfigModbus,
+    PatchConfigModel,
+    PatchConfigNodeStruct,
     PatchConfigNodeValue,
+    PatchConfigTime,
     PatchConfigValue,
     VentilationFlowLevelTarget,
     VentilationMode,
@@ -793,6 +811,36 @@ async def test_get_config_without_query_params_returns_typed_payload(
     static_ip = lan_config.entries["StaticIp"]
     assert isinstance(static_ip, ConfigValueString)
     assert static_ip.value == "192.0.2.94"
+    assert payload.general == ConfigGeneral(
+        time=ConfigTime(
+            time_zone=ConfigValue(value=1, minimum=-12, increment=1, maximum=12),
+            dst=ConfigValue(value=1, minimum=0, increment=1, maximum=1),
+        ),
+        modbus=ConfigModbus(
+            addr=ConfigValue(value=10, minimum=1, increment=1, maximum=247),
+            offset=ConfigValue(value=0, minimum=0, increment=1, maximum=255),
+        ),
+        lan=ConfigLan(
+            mode=ConfigValueOptions(value=1, options=(1, 2, 4)),
+            dhcp=ConfigValue(value=1, minimum=0, increment=1, maximum=1),
+            static_ip=ConfigValueString(value="192.0.2.94"),
+            static_net_mask=ConfigValueString(value="255.255.255.0"),
+            static_default_gateway=ConfigValueString(value="192.0.2.1"),
+            static_dns=ConfigValueString(value="192.0.2.1"),
+            wifi_client_ssid=ConfigValueString(value="duco-test-net"),
+            wifi_client_key=ConfigValueString(value="duco-secret"),
+        ),
+        auto_reboot_comm=ConfigAutoRebootComm(
+            period=ConfigValue(value=7, minimum=0, increment=1, maximum=30),
+            time=ConfigValue(value=120, minimum=0, increment=30, maximum=1440),
+        ),
+    )
+    assert payload.heat_recovery == ConfigHeatRecovery(
+        bypass=ConfigHeatRecoveryBypass(
+            temp_sup_tgt_zone_1=ConfigValue(value=180, minimum=120, increment=5, maximum=220),
+            temp_sup_tgt_zone_2=ConfigValue(value=185, minimum=120, increment=5, maximum=220),
+        )
+    )
     assert payload.raw_payload is config_data
     assert general.raw_payload is config_data["General"]
     assert time_zone.raw_payload is config_data["General"]["Time"]["TimeZone"]
@@ -851,6 +899,35 @@ async def test_get_config_preserves_unmapped_leaf_metadata() -> None:
     mode_value = mode.entries["Mode"]
     assert isinstance(mode_value, ConfigValueOptions)
     assert mode_value.raw_payload["Unit"] == "profile"
+
+
+@pytest.mark.parametrize(
+    ("payload", "message"),
+    [
+        (
+            {"General": {"Lan": {"StaticIp": {"Val": 1}}}},
+            "Expected string config value General.Lan.StaticIp, got ConfigValue",
+        ),
+        (
+            {"General": {"Time": {"TimeZone": {"Val": "1"}}}},
+            "Expected integer config value General.Time.TimeZone, got ConfigValueString",
+        ),
+    ],
+)
+async def test_get_config_rejects_mismatched_stable_typed_branch_payloads(
+    payload: dict[str, object],
+    message: str,
+) -> None:
+    """Stable typed config families should reject payloads that change the documented value type."""
+    mock_response = _response(json_payload=payload)
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with (
+            patch.object(session, "request", _request(mock_response)),
+            pytest.raises(DucoError, match=message),
+        ):
+            await client.async_get_config()
 
 
 @pytest.mark.parametrize(
@@ -1087,6 +1164,47 @@ async def test_set_config_accepts_api_shaped_leaf_payloads(
     assert kwargs["data"] == b'{"General":{"Time":{"TimeZone":{"Val":1}}}}'
 
 
+async def test_set_config_accepts_typed_patch_model_payloads(
+    config_data: dict[str, object],
+) -> None:
+    """Generic config writes should serialize typed patch model families."""
+    mock_response = _response(json_payload=config_data)
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        request = MagicMock(return_value=_request_context(mock_response))
+        with patch.object(session, "request", request):
+            payload = await client.async_set_config(
+                PatchConfig(
+                    general=PatchConfigGeneral(
+                        time=PatchConfigTime(time_zone=PatchConfigValue(value=1)),
+                        modbus=PatchConfigModbus(addr=PatchConfigValue(value=10)),
+                        lan=PatchConfigLan(
+                            mode=PatchConfigValue(value=2),
+                            static_ip=PatchConfigValue(value="192.0.2.94"),
+                        ),
+                        auto_reboot_comm=PatchConfigAutoRebootComm(
+                            period=PatchConfigValue(value=7)
+                        ),
+                    ),
+                    heat_recovery=PatchConfigHeatRecovery(
+                        bypass=PatchConfigHeatRecoveryBypass(
+                            temp_sup_tgt_zone_1=PatchConfigValue(value=180)
+                        )
+                    ),
+                )
+            )
+
+    assert isinstance(payload, Config)
+    _, kwargs = request.call_args
+    assert kwargs["data"] == (
+        b'{"General":{"Time":{"TimeZone":{"Val":1}},"Modbus":{"Addr":{"Val":10}},'
+        b'"Lan":{"Mode":{"Val":2},"StaticIp":{"Val":"192.0.2.94"}},'
+        b'"AutoRebootComm":{"Period":{"Val":7}}},'
+        b'"HeatRecovery":{"Bypass":{"TempSupTgtZone1":{"Val":180}}}}'
+    )
+
+
 @pytest.mark.parametrize(
     ("payload", "message"),
     [
@@ -1117,6 +1235,37 @@ async def test_set_config_rejects_invalid_patch_payloads(
         client = DucoClient(session=session, host="192.0.2.94")
         with pytest.raises(ValueError, match=message):
             await client.async_set_config(payload)
+
+
+async def test_set_config_rejects_non_dataclass_patch_model() -> None:
+    """Public patch model subclasses should fail clearly when they are not dataclasses."""
+
+    class BrokenPatch(PatchConfigModel):
+        pass
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with pytest.raises(
+            ValueError,
+            match="Expected dataclass patch payload for config, got BrokenPatch",
+        ):
+            await client.async_set_config(BrokenPatch())
+
+
+async def test_set_config_rejects_patch_model_without_api_name_metadata() -> None:
+    """Patch model fields without API metadata should fail with a clear error."""
+
+    @dataclass(frozen=True, slots=True)
+    class BrokenPatch(PatchConfigModel):
+        mode: PatchConfigValue | None = field(default=None)
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with pytest.raises(
+            ValueError,
+            match="Patch model field BrokenPatch.mode must declare api_name metadata",
+        ):
+            await client.async_set_config(BrokenPatch(mode=PatchConfigValue(value=2)))
 
 
 async def test_set_config_invalid_response_raises_duco_error() -> None:
@@ -1514,6 +1663,30 @@ async def test_set_node_config_accepts_api_shaped_leaf_payloads(
     assert request.call_args.args[:2] == (
         "PATCH",
         "http://192.0.2.94/config/nodes/7",
+    )
+    _, kwargs = request.call_args
+    assert kwargs["params"] == {"parameter": "Name"}
+    assert kwargs["data"] == b'{"Name":{"Val":"Kitchen valve"}}'
+
+
+async def test_set_node_config_accepts_typed_patch_node_struct(
+    node_config_data: dict[str, object],
+) -> None:
+    """Typed node patch models should serialize to the stable Name payload shape."""
+    mock_response = _response(json_payload=node_config_data)
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        request = MagicMock(return_value=_request_context(mock_response))
+        with patch.object(session, "request", request):
+            payload = await client.async_set_node_config(
+                7,
+                PatchConfigNodeStruct(name=PatchConfigNodeValue(value="Kitchen valve")),
+            )
+
+    assert payload == ConfigNode(
+        node_id=7,
+        name=ConfigValueString(value="Kitchen valve"),
     )
     _, kwargs = request.call_args
     assert kwargs["params"] == {"parameter": "Name"}

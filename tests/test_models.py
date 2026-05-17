@@ -15,11 +15,24 @@ from duco_connectivity import (
     ApiInfo,
     BoardInfo,
     BoardName,
+    Config,
+    ConfigAutoRebootComm,
+    ConfigGeneral,
     ConfigGeneralSubmoduleSelector,
     ConfigGroup,
     ConfigGroupStruct,
+    ConfigHeatRecovery,
+    ConfigHeatRecoveryBypass,
     ConfigHeatRecoverySubmoduleSelector,
+    ConfigLan,
+    ConfigModbus,
     ConfigModuleSelector,
+    ConfigNode,
+    ConfigNodeOverview,
+    ConfigNodeStruct,
+    ConfigTime,
+    ConfigValue,
+    ConfigValueOptions,
     ConfigValueString,
     ConfigZone,
     ConfigZonesOverview,
@@ -64,6 +77,18 @@ from duco_connectivity import (
     NodeTemperature,
     NodeType,
     NodeVentilationInfo,
+    PatchConfig,
+    PatchConfigAutoRebootComm,
+    PatchConfigGeneral,
+    PatchConfigHeatRecovery,
+    PatchConfigHeatRecoveryBypass,
+    PatchConfigLan,
+    PatchConfigModbus,
+    PatchConfigModel,
+    PatchConfigNodeStruct,
+    PatchConfigNodeValue,
+    PatchConfigTime,
+    PatchConfigValue,
     VentilationFlowLevelTarget,
     VentilationMode,
     VentilationState,
@@ -504,6 +529,79 @@ def test_info_zones_overview_defaults() -> None:
     overview = InfoZonesOverview()
     assert overview.zones == []
     assert overview.raw_payload == {}
+
+
+def test_config_models_expose_stable_typed_families() -> None:
+    """Config should expose the stable typed config families alongside the generic tree."""
+    time_zone = ConfigValue(value=1, minimum=-12, increment=1, maximum=12)
+    lan_mode = ConfigValueOptions(value=1, options=(1, 2, 4))
+    name = ConfigValueString(value="Kitchen valve")
+    general = ConfigGeneral(
+        time=ConfigTime(time_zone=time_zone),
+        modbus=ConfigModbus(addr=ConfigValue(value=10), offset=ConfigValue(value=0)),
+        lan=ConfigLan(
+            mode=lan_mode,
+            static_ip=ConfigValueString(value="192.0.2.94"),
+            wifi_client_ssid=ConfigValueString(value="duco-test-net"),
+            wifi_client_key=ConfigValueString(value="duco-secret"),
+        ),
+        auto_reboot_comm=ConfigAutoRebootComm(period=ConfigValue(value=7)),
+    )
+    heat_recovery = ConfigHeatRecovery(
+        bypass=ConfigHeatRecoveryBypass(temp_sup_tgt_zone_1=ConfigValue(value=180))
+    )
+    node_struct = ConfigNodeStruct(name=name)
+    node = ConfigNode(node_id=7, name=name)
+    overview = ConfigNodeOverview(nodes=[node])
+    config = Config(general=general, heat_recovery=heat_recovery)
+
+    assert config.sections == {}
+    assert config.general is general
+    assert config.heat_recovery is heat_recovery
+    assert config.general is not None
+    assert config.general.time is not None
+    assert config.general.time.time_zone is time_zone
+    assert config.general.lan is not None
+    assert config.general.lan.mode is lan_mode
+    assert config.general.lan.static_ip == ConfigValueString(value="192.0.2.94")
+    assert config.heat_recovery is not None
+    assert config.heat_recovery.bypass is not None
+    assert config.heat_recovery.bypass.temp_sup_tgt_zone_1 == ConfigValue(value=180)
+    assert node_struct.name is name
+    assert node.name is name
+    assert overview.nodes == [node]
+
+
+def test_patch_config_models_build_typed_write_families() -> None:
+    """Typed patch models should stay nested and explicit for config writes."""
+    patch = PatchConfig(
+        general=PatchConfigGeneral(
+            time=PatchConfigTime(time_zone=PatchConfigValue(value=1)),
+            modbus=PatchConfigModbus(addr=PatchConfigValue(value=10)),
+            lan=PatchConfigLan(
+                mode=PatchConfigValue(value=2),
+                static_ip=PatchConfigValue(value="192.0.2.94"),
+            ),
+            auto_reboot_comm=PatchConfigAutoRebootComm(period=PatchConfigValue(value=7)),
+        ),
+        heat_recovery=PatchConfigHeatRecovery(
+            bypass=PatchConfigHeatRecoveryBypass(temp_sup_tgt_zone_1=PatchConfigValue(value=180))
+        ),
+    )
+    node_patch = PatchConfigNodeStruct(name=PatchConfigNodeValue(value="Kitchen valve"))
+
+    assert isinstance(patch, PatchConfigModel)
+    assert patch.general is not None
+    assert patch.general.time == PatchConfigTime(time_zone=PatchConfigValue(value=1))
+    assert patch.general.modbus == PatchConfigModbus(addr=PatchConfigValue(value=10))
+    assert patch.general.lan == PatchConfigLan(
+        mode=PatchConfigValue(value=2),
+        static_ip=PatchConfigValue(value="192.0.2.94"),
+    )
+    assert patch.heat_recovery == PatchConfigHeatRecovery(
+        bypass=PatchConfigHeatRecoveryBypass(temp_sup_tgt_zone_1=PatchConfigValue(value=180))
+    )
+    assert node_patch.name == PatchConfigNodeValue(value="Kitchen valve")
 
 
 def test_config_group_struct_defaults() -> None:

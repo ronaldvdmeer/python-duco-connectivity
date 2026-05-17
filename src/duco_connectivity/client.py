@@ -3,8 +3,9 @@
 import json
 import logging
 import sys
+from dataclasses import fields, is_dataclass
 from types import FrameType
-from typing import Any, Literal
+from typing import Any, Literal, cast
 from urllib.parse import urlsplit
 
 import aiohttp
@@ -25,16 +26,23 @@ from .models import (
     ApiInfo,
     BoardInfo,
     Config,
+    ConfigAutoRebootComm,
+    ConfigGeneral,
     ConfigGeneralSubmoduleSelector,
     ConfigGroup,
     ConfigGroupStruct,
+    ConfigHeatRecovery,
+    ConfigHeatRecoveryBypass,
     ConfigHeatRecoverySubmoduleSelector,
     ConfigItem,
+    ConfigLan,
+    ConfigModbus,
     ConfigModuleSelector,
     ConfigNode,
     ConfigNodeOverview,
     ConfigNodeStruct,
     ConfigSection,
+    ConfigTime,
     ConfigValue,
     ConfigValueOptions,
     ConfigValueString,
@@ -64,11 +72,14 @@ from .models import (
     NodeSensorInfo,
     NodeType,
     NodeVentilationInfo,
+    PatchConfigModel,
+    PatchConfigNodeStruct,
     PatchConfigNodeValue,
     PatchConfigValue,
     VentilationMode,
     VentilationState,
     ZoneModuleSelector,
+    _PatchPayloadModel,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -289,10 +300,17 @@ class DucoClient:
             msg = f"Expected object payload from /config, got {type(payload).__name__}"
             raise DucoError(msg)
 
+        sections = {
+            key: cls._parse_config_section(value, path=key) for key, value in payload.items()
+        }
+
         return Config(
-            sections={
-                key: cls._parse_config_section(value, path=key) for key, value in payload.items()
-            },
+            sections=sections,
+            general=cls._build_config_general(sections.get("General"), path="General"),
+            heat_recovery=cls._build_config_heat_recovery(
+                sections.get("HeatRecovery"),
+                path="HeatRecovery",
+            ),
             raw_payload=cls._preserve_raw_payload(payload),
         )
 
@@ -368,6 +386,229 @@ class DucoClient:
         )
 
     @staticmethod
+    def _read_optional_config_section(
+        section: ConfigSection,
+        key: str,
+        *,
+        path: str,
+    ) -> ConfigSection | None:
+        value = section.entries.get(key)
+        if value is None:
+            return None
+        if not isinstance(value, ConfigSection):
+            msg = f"Expected config section {path}.{key}, got {type(value).__name__}"
+            raise DucoError(msg)
+        return value
+
+    @staticmethod
+    def _read_optional_config_value(
+        section: ConfigSection,
+        key: str,
+        *,
+        path: str,
+    ) -> ConfigValue | None:
+        value = section.entries.get(key)
+        if value is None:
+            return None
+        if not isinstance(value, ConfigValue):
+            msg = f"Expected integer config value {path}.{key}, got {type(value).__name__}"
+            raise DucoError(msg)
+        return value
+
+    @staticmethod
+    def _read_optional_config_string_value(
+        section: ConfigSection,
+        key: str,
+        *,
+        path: str,
+    ) -> ConfigValueString | None:
+        value = section.entries.get(key)
+        if value is None:
+            return None
+        if not isinstance(value, ConfigValueString):
+            msg = f"Expected string config value {path}.{key}, got {type(value).__name__}"
+            raise DucoError(msg)
+        return value
+
+    @classmethod
+    def _build_config_time(cls, section: ConfigSection | None, *, path: str) -> ConfigTime | None:
+        if section is None:
+            return None
+
+        return ConfigTime(
+            time_zone=cls._read_optional_config_value(section, "TimeZone", path=path),
+            dst=cls._read_optional_config_value(section, "Dst", path=path),
+            raw_payload=cls._preserve_raw_payload(section.raw_payload),
+        )
+
+    @classmethod
+    def _build_config_modbus(
+        cls,
+        section: ConfigSection | None,
+        *,
+        path: str,
+    ) -> ConfigModbus | None:
+        if section is None:
+            return None
+
+        return ConfigModbus(
+            addr=cls._read_optional_config_value(section, "Addr", path=path),
+            offset=cls._read_optional_config_value(section, "Offset", path=path),
+            raw_payload=cls._preserve_raw_payload(section.raw_payload),
+        )
+
+    @classmethod
+    def _build_config_lan(cls, section: ConfigSection | None, *, path: str) -> ConfigLan | None:
+        if section is None:
+            return None
+
+        return ConfigLan(
+            mode=cls._read_optional_config_value(section, "Mode", path=path),
+            dhcp=cls._read_optional_config_value(section, "Dhcp", path=path),
+            static_ip=cls._read_optional_config_string_value(section, "StaticIp", path=path),
+            static_net_mask=cls._read_optional_config_string_value(
+                section,
+                "StaticNetMask",
+                path=path,
+            ),
+            static_default_gateway=cls._read_optional_config_string_value(
+                section,
+                "StaticDefaultGateway",
+                path=path,
+            ),
+            static_dns=cls._read_optional_config_string_value(section, "StaticDns", path=path),
+            wifi_client_ssid=cls._read_optional_config_string_value(
+                section,
+                "WifiClientSsid",
+                path=path,
+            ),
+            wifi_client_key=cls._read_optional_config_string_value(
+                section,
+                "WifiClientKey",
+                path=path,
+            ),
+            raw_payload=cls._preserve_raw_payload(section.raw_payload),
+        )
+
+    @classmethod
+    def _build_config_auto_reboot_comm(
+        cls,
+        section: ConfigSection | None,
+        *,
+        path: str,
+    ) -> ConfigAutoRebootComm | None:
+        if section is None:
+            return None
+
+        return ConfigAutoRebootComm(
+            period=cls._read_optional_config_value(section, "Period", path=path),
+            time=cls._read_optional_config_value(section, "Time", path=path),
+            raw_payload=cls._preserve_raw_payload(section.raw_payload),
+        )
+
+    @classmethod
+    def _build_config_general(
+        cls,
+        section: ConfigSection | None,
+        *,
+        path: str,
+    ) -> ConfigGeneral | None:
+        if section is None:
+            return None
+
+        return ConfigGeneral(
+            time=cls._build_config_time(
+                cls._read_optional_config_section(section, "Time", path=path),
+                path=f"{path}.Time",
+            ),
+            modbus=cls._build_config_modbus(
+                cls._read_optional_config_section(section, "Modbus", path=path),
+                path=f"{path}.Modbus",
+            ),
+            lan=cls._build_config_lan(
+                cls._read_optional_config_section(section, "Lan", path=path),
+                path=f"{path}.Lan",
+            ),
+            auto_reboot_comm=cls._build_config_auto_reboot_comm(
+                cls._read_optional_config_section(section, "AutoRebootComm", path=path),
+                path=f"{path}.AutoRebootComm",
+            ),
+            raw_payload=cls._preserve_raw_payload(section.raw_payload),
+        )
+
+    @classmethod
+    def _build_config_heat_recovery_bypass(
+        cls,
+        section: ConfigSection | None,
+        *,
+        path: str,
+    ) -> ConfigHeatRecoveryBypass | None:
+        if section is None:
+            return None
+
+        return ConfigHeatRecoveryBypass(
+            temp_sup_tgt_zone_1=cls._read_optional_config_value(
+                section,
+                "TempSupTgtZone1",
+                path=path,
+            ),
+            temp_sup_tgt_zone_2=cls._read_optional_config_value(
+                section,
+                "TempSupTgtZone2",
+                path=path,
+            ),
+            temp_sup_tgt_zone_3=cls._read_optional_config_value(
+                section,
+                "TempSupTgtZone3",
+                path=path,
+            ),
+            temp_sup_tgt_zone_4=cls._read_optional_config_value(
+                section,
+                "TempSupTgtZone4",
+                path=path,
+            ),
+            temp_sup_tgt_zone_5=cls._read_optional_config_value(
+                section,
+                "TempSupTgtZone5",
+                path=path,
+            ),
+            temp_sup_tgt_zone_6=cls._read_optional_config_value(
+                section,
+                "TempSupTgtZone6",
+                path=path,
+            ),
+            temp_sup_tgt_zone_7=cls._read_optional_config_value(
+                section,
+                "TempSupTgtZone7",
+                path=path,
+            ),
+            temp_sup_tgt_zone_8=cls._read_optional_config_value(
+                section,
+                "TempSupTgtZone8",
+                path=path,
+            ),
+            raw_payload=cls._preserve_raw_payload(section.raw_payload),
+        )
+
+    @classmethod
+    def _build_config_heat_recovery(
+        cls,
+        section: ConfigSection | None,
+        *,
+        path: str,
+    ) -> ConfigHeatRecovery | None:
+        if section is None:
+            return None
+
+        return ConfigHeatRecovery(
+            bypass=cls._build_config_heat_recovery_bypass(
+                cls._read_optional_config_section(section, "Bypass", path=path),
+                path=f"{path}.Bypass",
+            ),
+            raw_payload=cls._preserve_raw_payload(section.raw_payload),
+        )
+
+    @staticmethod
     def _normalize_patch_config_scalar(raw_value: Any, *, path: str) -> int | str:
         if isinstance(raw_value, str):
             return raw_value
@@ -379,7 +620,52 @@ class DucoClient:
         raise ValueError(msg)
 
     @classmethod
+    def _normalize_patch_model_payload(
+        cls,
+        payload: _PatchPayloadModel,
+        *,
+        path: str,
+    ) -> dict[str, Any]:
+        if not is_dataclass(payload):
+            msg = f"Expected dataclass patch payload for {path}, got {type(payload).__name__}"
+            raise ValueError(msg)
+
+        normalized: dict[str, Any] = {}
+        for model_field in fields(cast(Any, payload)):
+            value = getattr(payload, model_field.name)
+            if value is None:
+                continue
+
+            api_name = model_field.metadata.get("api_name")
+            if not isinstance(api_name, str) or not api_name:
+                msg = (
+                    f"Patch model field {type(payload).__name__}.{model_field.name} "
+                    "must declare api_name metadata"
+                )
+                raise ValueError(msg)
+
+            item_path = f"{path}.{api_name}"
+
+            if isinstance(value, (PatchConfigValue, PatchConfigNodeValue)):
+                normalized[api_name] = {
+                    "Val": cls._normalize_patch_config_scalar(value.value, path=item_path)
+                }
+                continue
+
+            if isinstance(value, _PatchPayloadModel):
+                normalized[api_name] = cls._normalize_patch_model_payload(value, path=item_path)
+                continue
+
+            msg = f"Unsupported patch config payload type {type(value).__name__} for {item_path}"
+            raise ValueError(msg)
+
+        return normalized
+
+    @classmethod
     def _normalize_patch_config_payload(cls, payload: Any, *, path: str) -> dict[str, Any]:
+        if isinstance(payload, _PatchPayloadModel):
+            return cls._normalize_patch_model_payload(payload, path=path)
+
         if not isinstance(payload, dict):
             msg = f"Expected object payload for {path}, got {type(payload).__name__}"
             raise ValueError(msg)
@@ -1292,7 +1578,7 @@ class DucoClient:
 
     async def async_set_config(
         self,
-        payload: dict[str, Any],
+        payload: dict[str, Any] | PatchConfigModel,
         module: ConfigModuleSelector | str | None = None,
         submodule: ConfigGeneralSubmoduleSelector
         | ConfigHeatRecoverySubmoduleSelector
@@ -1534,7 +1820,7 @@ class DucoClient:
     async def async_set_node_config(
         self,
         node_id: int,
-        payload: dict[str, Any],
+        payload: dict[str, Any] | PatchConfigNodeStruct,
         parameter: Literal["Name"] = "Name",
     ) -> ConfigNode:
         """Patch node-level configuration values through `/config/nodes/{node}`.

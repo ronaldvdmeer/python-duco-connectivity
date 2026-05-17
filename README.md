@@ -30,6 +30,7 @@ in the development examples below.
 
 - HTTP only
 - asynchronous communication via `aiohttp`
+- typed stable config families for the documented `/config` branches
 - typed models that stay close to the API response shape
 - preserved `raw_payload` data on typed response models for forward compatibility
 

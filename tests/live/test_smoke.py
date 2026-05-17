@@ -6,6 +6,8 @@ import pytest
 
 from duco_connectivity import (
     BoardName,
+    ConfigValue,
+    ConfigValueString,
     DiagStatus,
     DucoClient,
     DucoSerialNumber,
@@ -70,6 +72,51 @@ async def test_live_reads_core_device_info(
     assert isinstance(lan_info.host_name, HostName)
     assert lan_info.host_name
     assert remaining_writes >= 0
+
+
+async def test_live_reads_typed_config_families(
+    live_client: DucoClient,
+    live_report: Callable[[str], None],
+) -> None:
+    """Read the stable typed config families from a live Duco device."""
+    config = await live_client.async_get_config()
+    general_present = config.general is not None
+    heat_recovery_present = config.heat_recovery is not None
+
+    live_report(
+        f"config_general={general_present} config_heat_recovery={heat_recovery_present} "
+        f"top_sections={','.join(sorted(config.sections))}"
+    )
+
+    assert config.sections
+
+    if general_present:
+        general = config.general
+        assert general is not None
+        if general.time is not None and general.time.time_zone is not None:
+            assert isinstance(general.time.time_zone, ConfigValue)
+        if general.lan is not None:
+            if general.lan.mode is not None:
+                assert isinstance(general.lan.mode, ConfigValue)
+            if general.lan.static_ip is not None:
+                assert isinstance(general.lan.static_ip, ConfigValueString)
+
+    if heat_recovery_present:
+        heat_recovery = config.heat_recovery
+        assert heat_recovery is not None
+        if heat_recovery.bypass is not None:
+            for value in (
+                heat_recovery.bypass.temp_sup_tgt_zone_1,
+                heat_recovery.bypass.temp_sup_tgt_zone_2,
+                heat_recovery.bypass.temp_sup_tgt_zone_3,
+                heat_recovery.bypass.temp_sup_tgt_zone_4,
+                heat_recovery.bypass.temp_sup_tgt_zone_5,
+                heat_recovery.bypass.temp_sup_tgt_zone_6,
+                heat_recovery.bypass.temp_sup_tgt_zone_7,
+                heat_recovery.bypass.temp_sup_tgt_zone_8,
+            ):
+                if value is not None:
+                    assert isinstance(value, ConfigValue)
 
 
 async def test_live_reads_diagnostics_and_nodes(
