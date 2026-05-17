@@ -1,5 +1,6 @@
 """Tests for the public data models."""
 
+import inspect
 import logging
 
 import pytest
@@ -355,6 +356,15 @@ def test_board_info_preserves_unknown_board_and_malformed_versions() -> None:
     assert isinstance(board.software_version, DucoVersion)
     assert board.software_version == "mainline"
     assert board.software_version.components is None
+
+
+def test_board_info_constructor_signature_accepts_compatibility_types() -> None:
+    """BoardInfo should advertise compatibility-friendly constructor annotations."""
+    signature = inspect.signature(BoardInfo)
+
+    assert signature.parameters["box_name"].annotation == BoardName | str
+    assert signature.parameters["public_api_version"].annotation == DucoVersion | str | None
+    assert signature.parameters["software_version"].annotation == DucoVersion | str | None
 
 
 def test_info_group_struct_defaults() -> None:

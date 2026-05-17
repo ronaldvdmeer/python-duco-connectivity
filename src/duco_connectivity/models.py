@@ -393,7 +393,7 @@ class ApiInfo:
 ApiEndpointInfo = ApiEndpoint
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True, slots=True, init=False)
 class BoardInfo:
     """Identity and version fields for the main Duco unit."""
 
@@ -408,21 +408,38 @@ class BoardInfo:
     software_version: DucoVersion | None = None
     raw_payload: dict[str, Any] = field(default_factory=dict, repr=False, compare=False)
 
-    def __post_init__(self) -> None:
-        """Normalize board and version fields to the typed public primitives."""
-        object.__setattr__(self, "box_name", _coerce_board_name(self.box_name))
-        if self.public_api_version is not None:
-            object.__setattr__(
-                self,
-                "public_api_version",
-                _coerce_duco_version(self.public_api_version),
-            )
-        if self.software_version is not None:
-            object.__setattr__(
-                self,
-                "software_version",
-                _coerce_duco_version(self.software_version),
-            )
+    def __init__(
+        self,
+        box_name: BoardName | str,
+        box_sub_type_name: str,
+        serial_board_box: str,
+        serial_board_comm: str,
+        serial_duco_box: str,
+        serial_duco_comm: str,
+        time: int,
+        public_api_version: DucoVersion | str | None = None,
+        software_version: DucoVersion | str | None = None,
+        raw_payload: dict[str, Any] | None = None,
+    ) -> None:
+        """Initialize board info with compatibility-friendly constructor types."""
+        object.__setattr__(self, "box_name", _coerce_board_name(box_name))
+        object.__setattr__(self, "box_sub_type_name", box_sub_type_name)
+        object.__setattr__(self, "serial_board_box", serial_board_box)
+        object.__setattr__(self, "serial_board_comm", serial_board_comm)
+        object.__setattr__(self, "serial_duco_box", serial_duco_box)
+        object.__setattr__(self, "serial_duco_comm", serial_duco_comm)
+        object.__setattr__(self, "time", time)
+        object.__setattr__(
+            self,
+            "public_api_version",
+            None if public_api_version is None else _coerce_duco_version(public_api_version),
+        )
+        object.__setattr__(
+            self,
+            "software_version",
+            None if software_version is None else _coerce_duco_version(software_version),
+        )
+        object.__setattr__(self, "raw_payload", {} if raw_payload is None else raw_payload)
 
 
 @dataclass(frozen=True, slots=True)
