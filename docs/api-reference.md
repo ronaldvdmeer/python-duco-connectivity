@@ -246,14 +246,29 @@ The package exports the following public symbols through `duco_connectivity.__al
 - `MacAddress`
 - `Node`
 - `NodeActionItemList`
+- `NodeAirQualityIndex`
+- `NodeAssociationId`
+- `NodeCo2Ppm`
 - `NodeGeneralInfo`
+- `NodeIdentify`
 - `NodeListActionItemList`
+- `NodeMotorDeviceType`
+- `NodeMotorPosition`
+- `NodeMotorRequest`
 - `NodeMotorStateInfo`
+- `NodeName`
 - `NodeOverview`
+- `NodeParentId`
+- `NodeRelativeHumidity`
 - `NodeSensorInfo`
+- `NodeSubtype`
+- `NodeTemperature`
 - `NodeVentilationInfo`
 - `PatchConfigNodeValue`
 - `PatchConfigValue`
+- `VentilationFlowLevelTarget`
+- `VentilationTimeEnd`
+- `VentilationTimeRemaining`
 
 ### Enums
 
@@ -296,7 +311,7 @@ The package exports the following public symbols through `duco_connectivity.__al
 - `DucoRateLimitError` is a backward-compatible alias of `DucoWriteLimitError`.
 - `ApiEndpointInfo` is a backward-compatible alias of `ApiEndpoint`.
 - `ApiInfo(api_version=...)` and `ApiInfo.api_version` remain available for migration compatibility while the public field name is `public_api_version`.
-- `BoardName`, `DucoVersion`, `DucoSerialNumber`, `LanMode`, `IpAddress`, `MacAddress`, and `HostName` are string-compatible typed primitives, so existing string comparisons and JSON serialization continue to work while making the public metadata contract more explicit.
+- `BoardName`, `DucoVersion`, `DucoSerialNumber`, `LanMode`, `IpAddress`, `MacAddress`, `HostName`, and the node scalar families like `NodeName`, `NodeSubtype`, `VentilationTimeRemaining`, and `NodeCo2Ppm` use string- or number-compatible typed primitives, so existing comparisons and JSON serialization continue to work while making the public metadata contract more explicit.
 
 ## See also
 

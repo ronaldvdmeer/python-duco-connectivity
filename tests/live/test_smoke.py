@@ -15,6 +15,19 @@ from duco_connectivity import (
     KnownLanMode,
     LanMode,
     MacAddress,
+    NetworkType,
+    NodeAirQualityIndex,
+    NodeCo2Ppm,
+    NodeMotorDeviceType,
+    NodeMotorPosition,
+    NodeMotorRequest,
+    NodeName,
+    NodeRelativeHumidity,
+    NodeTemperature,
+    NodeType,
+    VentilationFlowLevelTarget,
+    VentilationMode,
+    VentilationState,
 )
 
 pytestmark = pytest.mark.live
@@ -82,7 +95,36 @@ async def test_live_reads_diagnostics_and_nodes(
     assert all(isinstance(component.status, DiagStatus) for component in diagnostics)
     assert nodes
     assert all(node.node_id > 0 for node in nodes)
-    assert all(isinstance(node.general.name, str) for node in nodes)
+    assert all(isinstance(node.general.node_type, NodeType) for node in nodes)
+    assert all(isinstance(node.general.network_type, NetworkType) for node in nodes)
+    assert all(isinstance(node.general.name, NodeName) for node in nodes)
+
+    for node in nodes:
+        if node.ventilation is not None:
+            assert isinstance(node.ventilation.state, VentilationState)
+            assert isinstance(node.ventilation.mode, VentilationMode)
+            if node.ventilation.flow_lvl_tgt is not None:
+                assert isinstance(node.ventilation.flow_lvl_tgt, VentilationFlowLevelTarget)
+        if node.sensor is not None:
+            if node.sensor.co2 is not None:
+                assert isinstance(node.sensor.co2, NodeCo2Ppm)
+            if node.sensor.iaq_co2 is not None:
+                assert isinstance(node.sensor.iaq_co2, NodeAirQualityIndex)
+            if node.sensor.rh is not None:
+                assert isinstance(node.sensor.rh, NodeRelativeHumidity)
+            if node.sensor.iaq_rh is not None:
+                assert isinstance(node.sensor.iaq_rh, NodeAirQualityIndex)
+            if node.sensor.temp is not None:
+                assert isinstance(node.sensor.temp, NodeTemperature)
+        if node.motor_state is not None:
+            if node.motor_state.device_type is not None:
+                assert isinstance(node.motor_state.device_type, NodeMotorDeviceType)
+            if node.motor_state.req is not None:
+                assert isinstance(node.motor_state.req, NodeMotorRequest)
+            if node.motor_state.pos_req is not None:
+                assert isinstance(node.motor_state.pos_req, NodeMotorPosition)
+            if node.motor_state.pos is not None:
+                assert isinstance(node.motor_state.pos, NodeMotorPosition)
 
 
 async def test_live_reads_actions_and_zones(

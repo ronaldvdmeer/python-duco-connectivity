@@ -22,15 +22,46 @@ accepting raw strings for newly observed firmware values. See
   `raw_payload` so newly observed fields remain inspectable before the typed
   model layer is expanded.
 
+## General metadata
+
+`NodeGeneralInfo` keeps the Duco field layout but now exposes the stable scalar
+fields as compatibility-friendly typed primitives:
+
+- `sub_type` uses `NodeSubtype`
+- `parent` uses `NodeParentId`
+- `asso` uses `NodeAssociationId`
+- `name` uses `NodeName`
+- `identify` uses `NodeIdentify`
+
+These primitives stay string- or integer-compatible, so existing comparisons,
+logging, and JSON serialization continue to work while the public model makes
+the field meaning more explicit.
+
+## Ventilation and sensor values
+
+`Node.ventilation` keeps `VentilationState` and `VentilationMode` for the
+closed enum families, and uses typed scalar wrappers for the remaining stable
+fields:
+
+- `time_state_remain` uses `VentilationTimeRemaining`
+- `time_state_end` uses `VentilationTimeEnd`
+- `flow_lvl_tgt` uses `VentilationFlowLevelTarget`
+
+`Node.sensor` follows the same pattern for stable measured values:
+
+- `co2` uses `NodeCo2Ppm`
+- `iaq_co2` and `iaq_rh` use `NodeAirQualityIndex`
+- `rh` uses `NodeRelativeHumidity`
+- `temp` uses `NodeTemperature`
+
 ## Motor state
 
 `Node.motor_state` uses `NodeMotorStateInfo`, which mirrors the documented
-integer fields from the public `MotorStateCtrl` payload:
+`MotorStateCtrl` payload while making the stable scalar fields explicit:
 
-- `device_type`
-- `req`
-- `pos_req`
-- `pos`
+- `device_type` uses `NodeMotorDeviceType`
+- `req` uses `NodeMotorRequest`
+- `pos_req` and `pos` use `NodeMotorPosition`
 
 Each field remains optional so the parser can preserve compatibility with
 payloads that omit the motor section entirely or only expose part of it.
