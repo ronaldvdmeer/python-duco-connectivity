@@ -1005,6 +1005,8 @@ def test_generic_config_models_cover_node_and_patch_shapes() -> None:
     assert patch_zone_struct.device_group_config.general.name == PatchConfigValue(
         value="Ground floor"
     )
+    assert not isinstance(patch_zone_struct.device_group_config.general, PatchConfigModel)
+    assert not isinstance(patch_zone_struct.device_group_config, PatchConfigModel)
 
 
 async def test_get_config_with_module_forwards_query_params(

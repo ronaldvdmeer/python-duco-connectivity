@@ -1224,14 +1224,14 @@ class PatchConfig(PatchConfigModel):
 
 
 @dataclass(frozen=True, slots=True)
-class PatchConfigZoneGeneral(PatchConfigModel):
+class PatchConfigZoneGeneral(_PatchPayloadModel):
     """Typed `General` patch payload under `DeviceGroupConfig` for a zone."""
 
     name: PatchConfigValue | None = _patch_field("Name")
 
 
 @dataclass(frozen=True, slots=True)
-class PatchConfigZoneDeviceGroupConfig(PatchConfigModel):
+class PatchConfigZoneDeviceGroupConfig(_PatchPayloadModel):
     """Typed `DeviceGroupConfig` patch payload for `/config/zones/{zone}`."""
 
     general: PatchConfigZoneGeneral | None = _patch_field("General")
