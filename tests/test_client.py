@@ -1284,7 +1284,7 @@ async def test_set_config_rejects_patch_model_without_api_name_metadata() -> Non
         client = DucoClient(session=session, host="192.0.2.94")
         with pytest.raises(
             ValueError,
-            match="Patch model field BrokenPatch.mode must declare api_name metadata",
+            match=re.escape("Patch model field BrokenPatch.mode must declare api_name metadata"),
         ):
             await client.async_set_config(BrokenPatch(mode=PatchConfigValue(value=2)))
 
@@ -1299,7 +1299,7 @@ async def test_set_config_invalid_response_raises_duco_error() -> None:
             patch.object(session, "request", _request(mock_response)),
             pytest.raises(
                 DucoError,
-                match="Unsupported config value type bool for General.Lan.Mode",
+                match=re.escape("Unsupported config value type bool for General.Lan.Mode"),
             ),
         ):
             await client.async_set_config({"General": {"Lan": {"Mode": PatchConfigValue(value=2)}}})
@@ -1829,7 +1829,9 @@ async def test_set_node_config_invalid_response_raises_duco_error() -> None:
             patch.object(session, "request", _request(mock_response)),
             pytest.raises(
                 DucoError,
-                match="Expected string Val for node config value /config/nodes/7.Name, got int",
+                match=re.escape(
+                    "Expected string Val for node config value /config/nodes/7.Name, got int"
+                ),
             ),
         ):
             await client.async_set_node_config(
@@ -2880,7 +2882,7 @@ async def test_set_zone_config_invalid_response_raises_duco_error() -> None:
             patch.object(session, "request", _request(mock_response)),
             pytest.raises(
                 DucoError,
-                match=(
+                match=re.escape(
                     "Expected string Val for zone config value "
                     "/config/zones/1.DeviceGroupConfig.General.Name, got int"
                 ),

@@ -198,7 +198,7 @@ def live_report(
         report_lines = getattr(request.config, "_duco_live_report_lines", None)
         if report_lines is None:
             report_lines = []
-            setattr(request.config, "_duco_live_report_lines", report_lines)
+            request.config._duco_live_report_lines = report_lines
 
         cast(list[str], report_lines).append(f"[duco-live {target}] {message}")
 
