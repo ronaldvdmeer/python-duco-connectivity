@@ -174,6 +174,10 @@ python tools/api_reference.py write
   - Endpoint: `GET /info?module=General&submodule=Lan`
   - Surface: typed
   - Summary: Return LAN settings reported by the box.
+- `async_get_diagnostics_info() -> DiagInfo`
+  - Endpoint: `GET /info?module=Diag`
+  - Surface: typed
+  - Summary: Return diagnostic subsystem details reported by the box.
 - `async_get_diagnostics() -> list[DiagComponent]`
   - Endpoint: `GET /info?module=Diag`
   - Surface: typed
@@ -241,6 +245,7 @@ The package exports the following public symbols through `duco_connectivity.__al
 - `ConfigZoneWithGroupStruct`
 - `ConfigZonesOverview`
 - `DiagComponent`
+- `DiagInfo`
 - `DucoSerialNumber`
 - `DucoVersion`
 - `HostName`
@@ -301,7 +306,6 @@ The package exports the following public symbols through `duco_connectivity.__al
 - `ConfigHeatRecoverySubmoduleSelector`
 - `ConfigModuleSelector`
 - `DeviceGroupConfigSubmoduleSelector`
-- `DiagStatus`
 - `InfoGeneralSubmoduleSelector`
 - `InfoModuleSelector`
 - `KnownActionName`

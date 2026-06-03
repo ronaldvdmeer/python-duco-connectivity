@@ -1549,7 +1549,15 @@ class DiagComponent:
     """Health state for a diagnostic subsystem."""
 
     component: str
-    status: DiagStatus
+    status: str
+    raw_payload: dict[str, Any] = field(default_factory=dict, repr=False, compare=False)
+
+
+@dataclass(frozen=True, slots=True)
+class DiagInfo:
+    """Diagnostic subsystem payload returned by the local Duco API."""
+
+    diagnostic_subsystems: tuple[DiagComponent, ...] = ()
     raw_payload: dict[str, Any] = field(default_factory=dict, repr=False, compare=False)
 
 

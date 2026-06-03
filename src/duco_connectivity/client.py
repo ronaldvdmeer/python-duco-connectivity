@@ -53,7 +53,7 @@ from .models import (
     ConfigZoneWithGroupStruct,
     DeviceGroupConfigSubmoduleSelector,
     DiagComponent,
-    DiagStatus,
+    DiagInfo,
     InfoGeneralSubmoduleSelector,
     InfoGroup,
     InfoGroupStruct,
@@ -1241,17 +1241,6 @@ class DucoClient:
             return NetworkType.UNKNOWN
 
     @staticmethod
-    def _to_diag_status(raw_value: str) -> DiagStatus:
-        try:
-            return DiagStatus(raw_value)
-        except ValueError:
-            _LOGGER.debug(
-                "Unknown diagnostic status %r received from Duco API; falling back to UNKNOWN",
-                raw_value,
-            )
-            return DiagStatus.UNKNOWN
-
-    @staticmethod
     def _to_action_result_status(raw_value: str) -> ActionResultStatus:
         try:
             return ActionResultStatus(raw_value)
@@ -1919,17 +1908,76 @@ class DucoClient:
             raw_payload=self._preserve_raw_payload(lan),
         )
 
+    @classmethod
+    def _parse_diag_component(cls, payload: Any, *, path: str) -> DiagComponent | None:
+        if not isinstance(payload, dict):
+            _LOGGER.debug(
+                "Skipping diagnostic subsystem at %s: expected object, got %s",
+                path,
+                type(payload).__name__,
+            )
+            return None
+
+        component = payload.get("Component")
+        status = payload.get("Status")
+        if not isinstance(component, str) or not component:
+            _LOGGER.debug(
+                "Skipping diagnostic subsystem at %s: missing non-empty string Component",
+                path,
+            )
+            return None
+        if not isinstance(status, str) or not status:
+            _LOGGER.debug(
+                "Skipping diagnostic subsystem at %s: missing non-empty string Status",
+                path,
+            )
+            return None
+
+        return DiagComponent(
+            component=component,
+            status=status,
+            raw_payload=cls._preserve_raw_payload(payload),
+        )
+
+    @classmethod
+    def _parse_diag_info(cls, payload: Any) -> DiagInfo:
+        if not isinstance(payload, dict):
+            msg = f"Expected object payload from /info?module=Diag, got {type(payload).__name__}"
+            raise DucoError(msg)
+
+        diag_payload = payload.get("Diag")
+        if diag_payload is None:
+            return DiagInfo()
+        if not isinstance(diag_payload, dict):
+            msg = f"Expected object for Diag, got {type(diag_payload).__name__}"
+            raise DucoError(msg)
+
+        raw_subsystems = diag_payload.get("SubSystems")
+        if raw_subsystems is None:
+            return DiagInfo(raw_payload=cls._preserve_raw_payload(diag_payload))
+        if not isinstance(raw_subsystems, list):
+            msg = f"Expected list for Diag.SubSystems, got {type(raw_subsystems).__name__}"
+            raise DucoError(msg)
+
+        diagnostic_subsystems: list[DiagComponent] = []
+        for index, item in enumerate(raw_subsystems):
+            subsystem = cls._parse_diag_component(item, path=f"Diag.SubSystems[{index}]")
+            if subsystem is not None:
+                diagnostic_subsystems.append(subsystem)
+
+        return DiagInfo(
+            diagnostic_subsystems=tuple(diagnostic_subsystems),
+            raw_payload=cls._preserve_raw_payload(diag_payload),
+        )
+
+    async def async_get_diagnostics_info(self) -> DiagInfo:
+        """Return diagnostic subsystem details reported by the box."""
+        payload = await self.async_get_info(module="Diag")
+        return self._parse_diag_info(payload)
+
     async def async_get_diagnostics(self) -> list[DiagComponent]:
         """Return health states for diagnostic subsystems."""
-        payload = await self.async_get_info(module="Diag")
-        return [
-            DiagComponent(
-                component=item["Component"],
-                status=self._to_diag_status(item["Status"]),
-                raw_payload=self._preserve_raw_payload(item),
-            )
-            for item in payload["Diag"]["SubSystems"]
-        ]
+        return list((await self.async_get_diagnostics_info()).diagnostic_subsystems)
 
     async def async_get_nodes(self) -> list[Node]:
         """Return nodes reported by the local API."""
