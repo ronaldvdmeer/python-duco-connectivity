@@ -34,6 +34,10 @@ in the development examples below.
 - typed models that stay close to the API response shape
 - preserved `raw_payload` data on typed response models for forward compatibility
 
+Diagnostic subsystem reads now keep raw component and status strings from
+`Diag.SubSystems`, so future subsystem names or status values remain available
+to downstream consumers without parse fallbacks or product-specific filtering.
+
 ## Getting started
 
 ```python

@@ -3,7 +3,7 @@
 import logging
 import re
 from dataclasses import dataclass, field
-from typing import Any, cast
+from typing import Any, assert_type, cast
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import aiohttp
@@ -39,7 +39,8 @@ from duco_connectivity import (
     ConfigZonesOverview,
     ConfigZoneWithGroupStruct,
     DeviceGroupConfigSubmoduleSelector,
-    DiagStatus,
+    DiagComponent,
+    DiagInfo,
     DucoClient,
     DucoConnectionError,
     DucoError,
@@ -2062,12 +2063,40 @@ async def test_get_diagnostics(diag_data: dict[str, object]) -> None:
 
     assert len(diags) == 3
     assert diags[0].component == "Ventilation"
-    assert diags[0].status == DiagStatus.OK
+    assert diags[0].status == "Ok"
     assert diags[0].raw_payload is diag_data["Diag"]["SubSystems"][0]
 
 
-async def test_get_diagnostics_unknown_status_falls_back_to_unknown() -> None:
-    """Unknown diagnostic statuses should not break parsing."""
+async def test_get_diagnostics_info_exposes_typed_subsystems(
+    diag_data: dict[str, object],
+) -> None:
+    """Typed diagnostics info should expose an immutable subsystem collection."""
+    mock_response = _response(json_payload=diag_data)
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with patch.object(session, "request", _request(mock_response)):
+            diag_info = await client.async_get_diagnostics_info()
+
+    assert isinstance(diag_info, DiagInfo)
+    assert_type(diag_info, DiagInfo)
+    assert_type(diag_info.diagnostic_subsystems, tuple[DiagComponent, ...])
+    assert_type(diag_info.diagnostic_subsystems[0].component, str)
+    assert_type(diag_info.diagnostic_subsystems[0].status, str)
+    assert tuple(item.component for item in diag_info.diagnostic_subsystems) == (
+        "Ventilation",
+        "VentCool",
+        "SunCtrl",
+    )
+    assert tuple(item.status for item in diag_info.diagnostic_subsystems) == (
+        "Ok",
+        "Ok",
+        "Ok",
+    )
+
+
+async def test_get_diagnostics_preserves_unknown_status() -> None:
+    """Unknown diagnostic statuses should be preserved as raw strings."""
     payload: dict[str, object] = {
         "Diag": {
             "SubSystems": [
@@ -2083,7 +2112,104 @@ async def test_get_diagnostics_unknown_status_falls_back_to_unknown() -> None:
             diags = await client.async_get_diagnostics()
 
     assert len(diags) == 1
-    assert diags[0].status == DiagStatus.UNKNOWN
+    assert diags[0].status == "FutureState"
+
+
+async def test_get_diagnostics_preserves_unknown_component_name() -> None:
+    """Unknown diagnostic subsystem names should remain available to consumers."""
+    payload: dict[str, object] = {
+        "Diag": {
+            "SubSystems": [
+                {"Component": "FutureSubsystem", "Status": "Ok"},
+            ]
+        }
+    }
+    mock_response = _response(json_payload=payload)
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with patch.object(session, "request", _request(mock_response)):
+            diag_info = await client.async_get_diagnostics_info()
+
+    assert tuple(item.component for item in diag_info.diagnostic_subsystems) == ("FutureSubsystem",)
+
+
+@pytest.mark.parametrize(
+    ("payload", "expected_raw_payload"),
+    [
+        pytest.param({}, {}, id="diag-missing"),
+        pytest.param({"Diag": {}}, {}, id="subsystems-missing"),
+        pytest.param({"Diag": {"SubSystems": []}}, {"SubSystems": []}, id="subsystems-empty"),
+    ],
+)
+async def test_get_diagnostics_info_missing_data_returns_empty_collection(
+    payload: dict[str, object],
+    expected_raw_payload: dict[str, object],
+) -> None:
+    """Missing diagnostic data should produce an empty typed subsystem collection."""
+    mock_response = _response(json_payload=payload)
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with patch.object(session, "request", _request(mock_response)):
+            diag_info = await client.async_get_diagnostics_info()
+
+    assert diag_info.diagnostic_subsystems == ()
+    assert diag_info.raw_payload == expected_raw_payload
+
+
+async def test_get_diagnostics_info_skips_partial_entries() -> None:
+    """Incomplete diagnostic entries should be ignored instead of failing parsing."""
+    payload: dict[str, object] = {
+        "Diag": {
+            "SubSystems": [
+                {"Component": "Ventilation", "Status": "Ok"},
+                {"Component": "VentCool"},
+                {"Status": "Error"},
+                {},
+                "not-a-dict",
+                {"Component": "SunCtrl", "Status": "FutureState"},
+            ]
+        }
+    }
+    mock_response = _response(json_payload=payload)
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with patch.object(session, "request", _request(mock_response)):
+            diag_info = await client.async_get_diagnostics_info()
+
+    assert tuple((item.component, item.status) for item in diag_info.diagnostic_subsystems) == (
+        ("Ventilation", "Ok"),
+        ("SunCtrl", "FutureState"),
+    )
+
+
+async def test_get_diagnostics_info_does_not_filter_product_specific_subsystems() -> None:
+    """Subsystems should be passed through without product-specific filtering."""
+    payload: dict[str, object] = {
+        "Diag": {
+            "SubSystems": [
+                {"Component": "Ventilation", "Status": "Error"},
+                {"Component": "VentCool", "Status": "Ok"},
+                {"Component": "SunCtrl", "Status": "Ok"},
+                {"Component": "FutureSubsystem", "Status": "Disable"},
+            ]
+        }
+    }
+    mock_response = _response(json_payload=payload)
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with patch.object(session, "request", _request(mock_response)):
+            diag_info = await client.async_get_diagnostics_info()
+
+    assert tuple(item.component for item in diag_info.diagnostic_subsystems) == (
+        "Ventilation",
+        "VentCool",
+        "SunCtrl",
+        "FutureSubsystem",
+    )
 
 
 async def test_get_nodes_parses_full_payload(nodes_data: dict[str, object]) -> None:

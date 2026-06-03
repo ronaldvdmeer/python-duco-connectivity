@@ -77,6 +77,9 @@ METHOD_SPECS: dict[str, MethodSpec] = {
     ),
     "async_get_board_info": MethodSpec(description="Return board identity details."),
     "async_get_lan_info": MethodSpec(description="Return LAN settings."),
+    "async_get_diagnostics_info": MethodSpec(
+        description="Return the typed diagnostics response from /info?module=Diag."
+    ),
     "async_get_diagnostics": MethodSpec(description="Return diagnostic subsystem states."),
     "async_get_nodes": MethodSpec(description="Return full node information."),
     "async_get_zones_info": MethodSpec(description="Return zone information."),

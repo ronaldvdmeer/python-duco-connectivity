@@ -216,6 +216,11 @@ METHOD_METADATA: dict[str, MethodMetadata] = {
         endpoint="GET /info?module=General&submodule=Lan",
         surface="typed",
     ),
+    "async_get_diagnostics_info": MethodMetadata(
+        category="Node and system information",
+        endpoint="GET /info?module=Diag",
+        surface="typed",
+    ),
     "async_get_diagnostics": MethodMetadata(
         category="Node and system information",
         endpoint="GET /info?module=Diag",
