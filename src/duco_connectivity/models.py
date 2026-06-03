@@ -1128,11 +1128,6 @@ class _PatchPayloadModel:
     __slots__ = ()
 
 
-def _patch_field(api_name: str) -> Any:
-    """Return a dataclass field that stores the API key mapping."""
-    return field(default=None, metadata={"api_name": api_name})
-
-
 class PatchConfigModel(_PatchPayloadModel):
     """Base class for typed `/config` patch payload models."""
 
@@ -1150,98 +1145,152 @@ class PatchConfigValue:
 class PatchConfigTime(PatchConfigModel):
     """Typed time-related patch payload for `/config`."""
 
-    time_zone: PatchConfigValue | None = _patch_field("TimeZone")
-    dst: PatchConfigValue | None = _patch_field("Dst")
+    time_zone: PatchConfigValue | None = field(
+        default=None,
+        metadata={"api_name": "TimeZone"},
+    )
+    dst: PatchConfigValue | None = field(default=None, metadata={"api_name": "Dst"})
 
 
 @dataclass(frozen=True, slots=True)
 class PatchConfigModbus(PatchConfigModel):
     """Typed Modbus patch payload for `/config`."""
 
-    addr: PatchConfigValue | None = _patch_field("Addr")
-    offset: PatchConfigValue | None = _patch_field("Offset")
+    addr: PatchConfigValue | None = field(default=None, metadata={"api_name": "Addr"})
+    offset: PatchConfigValue | None = field(default=None, metadata={"api_name": "Offset"})
 
 
 @dataclass(frozen=True, slots=True)
 class PatchConfigLan(PatchConfigModel):
     """Typed LAN patch payload for `/config`."""
 
-    mode: PatchConfigValue | None = _patch_field("Mode")
-    dhcp: PatchConfigValue | None = _patch_field("Dhcp")
-    static_ip: PatchConfigValue | None = _patch_field("StaticIp")
-    static_net_mask: PatchConfigValue | None = _patch_field("StaticNetMask")
-    static_default_gateway: PatchConfigValue | None = _patch_field("StaticDefaultGateway")
-    static_dns: PatchConfigValue | None = _patch_field("StaticDns")
-    wifi_client_ssid: PatchConfigValue | None = _patch_field("WifiClientSsid")
-    wifi_client_key: PatchConfigValue | None = _patch_field("WifiClientKey")
+    mode: PatchConfigValue | None = field(default=None, metadata={"api_name": "Mode"})
+    dhcp: PatchConfigValue | None = field(default=None, metadata={"api_name": "Dhcp"})
+    static_ip: PatchConfigValue | None = field(default=None, metadata={"api_name": "StaticIp"})
+    static_net_mask: PatchConfigValue | None = field(
+        default=None,
+        metadata={"api_name": "StaticNetMask"},
+    )
+    static_default_gateway: PatchConfigValue | None = field(
+        default=None,
+        metadata={"api_name": "StaticDefaultGateway"},
+    )
+    static_dns: PatchConfigValue | None = field(default=None, metadata={"api_name": "StaticDns"})
+    wifi_client_ssid: PatchConfigValue | None = field(
+        default=None,
+        metadata={"api_name": "WifiClientSsid"},
+    )
+    wifi_client_key: PatchConfigValue | None = field(
+        default=None,
+        metadata={"api_name": "WifiClientKey"},
+    )
 
 
 @dataclass(frozen=True, slots=True)
 class PatchConfigAutoRebootComm(PatchConfigModel):
     """Typed auto-reboot communication patch payload for `/config`."""
 
-    period: PatchConfigValue | None = _patch_field("Period")
-    time: PatchConfigValue | None = _patch_field("Time")
+    period: PatchConfigValue | None = field(default=None, metadata={"api_name": "Period"})
+    time: PatchConfigValue | None = field(default=None, metadata={"api_name": "Time"})
 
 
 @dataclass(frozen=True, slots=True)
 class PatchConfigGeneral(PatchConfigModel):
     """Typed `General` patch payload for `/config`."""
 
-    time: PatchConfigTime | None = _patch_field("Time")
-    modbus: PatchConfigModbus | None = _patch_field("Modbus")
-    lan: PatchConfigLan | None = _patch_field("Lan")
-    auto_reboot_comm: PatchConfigAutoRebootComm | None = _patch_field("AutoRebootComm")
+    time: PatchConfigTime | None = field(default=None, metadata={"api_name": "Time"})
+    modbus: PatchConfigModbus | None = field(default=None, metadata={"api_name": "Modbus"})
+    lan: PatchConfigLan | None = field(default=None, metadata={"api_name": "Lan"})
+    auto_reboot_comm: PatchConfigAutoRebootComm | None = field(
+        default=None,
+        metadata={"api_name": "AutoRebootComm"},
+    )
 
 
 @dataclass(frozen=True, slots=True)
 class PatchConfigHeatRecoveryBypass(PatchConfigModel):
     """Typed bypass patch payload for `/config`."""
 
-    temp_sup_tgt_zone_1: PatchConfigValue | None = _patch_field("TempSupTgtZone1")
-    temp_sup_tgt_zone_2: PatchConfigValue | None = _patch_field("TempSupTgtZone2")
-    temp_sup_tgt_zone_3: PatchConfigValue | None = _patch_field("TempSupTgtZone3")
-    temp_sup_tgt_zone_4: PatchConfigValue | None = _patch_field("TempSupTgtZone4")
-    temp_sup_tgt_zone_5: PatchConfigValue | None = _patch_field("TempSupTgtZone5")
-    temp_sup_tgt_zone_6: PatchConfigValue | None = _patch_field("TempSupTgtZone6")
-    temp_sup_tgt_zone_7: PatchConfigValue | None = _patch_field("TempSupTgtZone7")
-    temp_sup_tgt_zone_8: PatchConfigValue | None = _patch_field("TempSupTgtZone8")
+    temp_sup_tgt_zone_1: PatchConfigValue | None = field(
+        default=None,
+        metadata={"api_name": "TempSupTgtZone1"},
+    )
+    temp_sup_tgt_zone_2: PatchConfigValue | None = field(
+        default=None,
+        metadata={"api_name": "TempSupTgtZone2"},
+    )
+    temp_sup_tgt_zone_3: PatchConfigValue | None = field(
+        default=None,
+        metadata={"api_name": "TempSupTgtZone3"},
+    )
+    temp_sup_tgt_zone_4: PatchConfigValue | None = field(
+        default=None,
+        metadata={"api_name": "TempSupTgtZone4"},
+    )
+    temp_sup_tgt_zone_5: PatchConfigValue | None = field(
+        default=None,
+        metadata={"api_name": "TempSupTgtZone5"},
+    )
+    temp_sup_tgt_zone_6: PatchConfigValue | None = field(
+        default=None,
+        metadata={"api_name": "TempSupTgtZone6"},
+    )
+    temp_sup_tgt_zone_7: PatchConfigValue | None = field(
+        default=None,
+        metadata={"api_name": "TempSupTgtZone7"},
+    )
+    temp_sup_tgt_zone_8: PatchConfigValue | None = field(
+        default=None,
+        metadata={"api_name": "TempSupTgtZone8"},
+    )
 
 
 @dataclass(frozen=True, slots=True)
 class PatchConfigHeatRecovery(PatchConfigModel):
     """Typed `HeatRecovery` patch payload for `/config`."""
 
-    bypass: PatchConfigHeatRecoveryBypass | None = _patch_field("Bypass")
+    bypass: PatchConfigHeatRecoveryBypass | None = field(
+        default=None,
+        metadata={"api_name": "Bypass"},
+    )
 
 
 @dataclass(frozen=True, slots=True)
 class PatchConfig(PatchConfigModel):
     """Typed top-level patch payload for `/config`."""
 
-    general: PatchConfigGeneral | None = _patch_field("General")
-    heat_recovery: PatchConfigHeatRecovery | None = _patch_field("HeatRecovery")
+    general: PatchConfigGeneral | None = field(default=None, metadata={"api_name": "General"})
+    heat_recovery: PatchConfigHeatRecovery | None = field(
+        default=None,
+        metadata={"api_name": "HeatRecovery"},
+    )
 
 
 @dataclass(frozen=True, slots=True)
 class PatchConfigZoneGeneral(_PatchPayloadModel):
     """Typed `General` patch payload under `DeviceGroupConfig` for a zone."""
 
-    name: PatchConfigValue | None = _patch_field("Name")
+    name: PatchConfigValue | None = field(default=None, metadata={"api_name": "Name"})
 
 
 @dataclass(frozen=True, slots=True)
 class PatchConfigZoneDeviceGroupConfig(_PatchPayloadModel):
     """Typed `DeviceGroupConfig` patch payload for `/config/zones/{zone}`."""
 
-    general: PatchConfigZoneGeneral | None = _patch_field("General")
+    general: PatchConfigZoneGeneral | None = field(
+        default=None,
+        metadata={"api_name": "General"},
+    )
 
 
 @dataclass(frozen=True, slots=True)
 class PatchConfigZoneStruct(_PatchPayloadModel):
     """Typed zone config patch payload for stable writable zone fields."""
 
-    device_group_config: PatchConfigZoneDeviceGroupConfig | None = _patch_field("DeviceGroupConfig")
+    device_group_config: PatchConfigZoneDeviceGroupConfig | None = field(
+        default=None,
+        metadata={"api_name": "DeviceGroupConfig"},
+    )
 
 
 @dataclass(frozen=True, slots=True)
@@ -1309,7 +1358,7 @@ class PatchConfigNodeValue:
 class PatchConfigNodeStruct(_PatchPayloadModel):
     """Typed node config patch payload for stable writable node fields."""
 
-    name: PatchConfigNodeValue | None = _patch_field("Name")
+    name: PatchConfigNodeValue | None = field(default=None, metadata={"api_name": "Name"})
 
 
 @dataclass(frozen=True, slots=True, init=False)
