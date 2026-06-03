@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-06-03
+
+### Changed
+
+- **Diagnostics subsystem contract**: Add a typed `DiagInfo` wrapper for
+  `GET /info?module=Diag`, preserve raw subsystem component and status strings
+  for forward compatibility, and keep `async_get_diagnostics()` as a
+  convenience wrapper over the richer typed response
+  ([#110](https://github.com/ronaldvdmeer/python-duco-connectivity/pull/110))
+
+### Enhanced
+
+- **Diagnostics parsing resilience**: Return empty typed collections when
+  `Diag` or `SubSystems` are absent, skip incomplete subsystem entries instead
+  of failing parsing, and expand regression coverage for missing, partial, and
+  future diagnostic values
+  ([#110](https://github.com/ronaldvdmeer/python-duco-connectivity/pull/110))
+- **Ruff alignment**: Align the local Ruff configuration and related cleanup
+  with the Home Assistant core rule set
+  ([#109](https://github.com/ronaldvdmeer/python-duco-connectivity/pull/109))
+
 ## [0.5.0] - 2026-05-17
 
 ### Added
@@ -131,7 +152,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CI validation with pytest, Ruff, mypy, Bandit, and pip-audit.
 - PyPI Trusted Publishing workflow for tagged releases.
 
-[Unreleased]: https://github.com/ronaldvdmeer/python-duco-connectivity/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/ronaldvdmeer/python-duco-connectivity/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/ronaldvdmeer/python-duco-connectivity/releases/tag/v0.6.0
 [0.5.0]: https://github.com/ronaldvdmeer/python-duco-connectivity/releases/tag/v0.5.0
 [0.4.0]: https://github.com/ronaldvdmeer/python-duco-connectivity/releases/tag/v0.4.0
 [0.3.0]: https://github.com/ronaldvdmeer/python-duco-connectivity/releases/tag/v0.3.0
