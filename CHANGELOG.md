@@ -7,11 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.1] - 2026-06-19
+
 ### Fixed
 
 - Treat unsupported `HeatRecovery` info requests as an absent optional
   capability in `async_get_time_filter_remaining()` instead of surfacing the
-  box's generic `400 {"Code":3,"Result":"FAILED"}` response to callers.
+  box's generic `400 {"Code":3,"Result":"FAILED"}` response to callers
+  ([#114](https://github.com/ronaldvdmeer/python-duco-connectivity/pull/114)).
 
 ## [0.7.0] - 2026-06-19
 
@@ -166,7 +169,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CI validation with pytest, Ruff, mypy, Bandit, and pip-audit.
 - PyPI Trusted Publishing workflow for tagged releases.
 
-[Unreleased]: https://github.com/ronaldvdmeer/python-duco-connectivity/compare/v0.7.0...HEAD
+[Unreleased]: https://github.com/ronaldvdmeer/python-duco-connectivity/compare/v0.7.1...HEAD
+[0.7.1]: https://github.com/ronaldvdmeer/python-duco-connectivity/releases/tag/v0.7.1
 [0.7.0]: https://github.com/ronaldvdmeer/python-duco-connectivity/releases/tag/v0.7.0
 [0.6.0]: https://github.com/ronaldvdmeer/python-duco-connectivity/releases/tag/v0.6.0
 [0.5.0]: https://github.com/ronaldvdmeer/python-duco-connectivity/releases/tag/v0.5.0
