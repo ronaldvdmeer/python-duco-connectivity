@@ -3716,6 +3716,11 @@ async def test_get_time_filter_remaining_returns_none_when_not_reported() -> Non
             id="leaf_not_object",
         ),
         pytest.param(
+            {"HeatRecovery": {"General": {"TimeFilterRemain": None}}},
+            "Expected wrapped Val object for HeatRecovery.General.TimeFilterRemain, got NoneType",
+            id="leaf_null",
+        ),
+        pytest.param(
             {"HeatRecovery": {"General": {"TimeFilterRemain": {}}}},
             "Expected wrapped Val object for HeatRecovery.General.TimeFilterRemain",
             id="leaf_missing_val",

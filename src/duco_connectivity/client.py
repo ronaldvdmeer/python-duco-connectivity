@@ -289,9 +289,9 @@ class DucoClient:
         path: str,
     ) -> int | None:
         """Read an optional wrapped integer from a typed-stable API branch."""
-        raw_entry = payload.get(key)
-        if raw_entry is None:
+        if key not in payload:
             return None
+        raw_entry = payload[key]
         if not isinstance(raw_entry, dict):
             msg = f"Expected wrapped Val object for {path}.{key}, got {type(raw_entry).__name__}"
             raise DucoError(msg)
