@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add a typed `async_get_time_filter_remaining()` helper for
+  `GET /info?module=HeatRecovery` so callers can consume the optional
+  `TimeFilterRemain` field without dropping to the generic raw `/info` reader.
+
 ## [0.6.0] - 2026-06-03
 
 ### Changed

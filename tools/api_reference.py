@@ -226,6 +226,11 @@ METHOD_METADATA: dict[str, MethodMetadata] = {
         endpoint="GET /info?module=Diag",
         surface="typed",
     ),
+    "async_get_time_filter_remaining": MethodMetadata(
+        category="Node and system information",
+        endpoint="GET /info?module=HeatRecovery",
+        surface="typed",
+    ),
     "async_get_nodes": MethodMetadata(
         category="Node and system information",
         endpoint="GET /info/nodes",

@@ -282,6 +282,31 @@ class DucoClient:
         return payload[key]["Val"]
 
     @staticmethod
+    def _read_optional_wrapped_int(
+        payload: dict[str, Any],
+        key: str,
+        *,
+        path: str,
+    ) -> int | None:
+        """Read an optional wrapped integer from a typed-stable API branch."""
+        if key not in payload:
+            return None
+        raw_entry = payload[key]
+        if not isinstance(raw_entry, dict):
+            msg = f"Expected wrapped Val object for {path}.{key}, got {type(raw_entry).__name__}"
+            raise DucoError(msg)
+        if "Val" not in raw_entry:
+            msg = f"Expected wrapped Val object for {path}.{key}"
+            raise DucoError(msg)
+
+        raw_value = raw_entry["Val"]
+        if type(raw_value) is not int:
+            msg = f"Expected integer value for {path}.{key}, got {type(raw_value).__name__}"
+            raise DucoError(msg)
+
+        return raw_value
+
+    @staticmethod
     def _read_scalar_value(payload: dict[str, Any], key: str) -> Any:
         raw_value = payload[key]
         if not isinstance(raw_value, dict):
@@ -2084,6 +2109,39 @@ class DucoClient:
             submodule="PublicApi",
         )
         return int(self._read_wrapped_value(payload["General"]["PublicApi"], "WriteReqCntRemain"))
+
+    async def async_get_time_filter_remaining(self) -> int | None:
+        """Return the remaining heat recovery filter time when the box reports it."""
+        payload = await self.async_get_info(module=InfoModuleSelector.HEAT_RECOVERY)
+        if not isinstance(payload, dict):
+            msg = (
+                "Expected object payload from /info?module=HeatRecovery, got "
+                f"{type(payload).__name__}"
+            )
+            raise DucoError(msg)
+
+        heat_recovery = payload.get("HeatRecovery")
+        if heat_recovery is None:
+            return None
+        if not isinstance(heat_recovery, dict):
+            msg = "Expected object payload at HeatRecovery in /info?module=HeatRecovery response"
+            raise DucoError(msg)
+
+        general = heat_recovery.get("General")
+        if general is None:
+            return None
+        if not isinstance(general, dict):
+            msg = (
+                "Expected object payload at HeatRecovery.General in "
+                "/info?module=HeatRecovery response"
+            )
+            raise DucoError(msg)
+
+        return self._read_optional_wrapped_int(
+            general,
+            "TimeFilterRemain",
+            path="HeatRecovery.General",
+        )
 
     async def async_get_write_req_remaining(self) -> int:
         """Backward-compatible alias for the old write budget method name."""

@@ -31,6 +31,7 @@ in the development examples below.
 - HTTP only
 - asynchronous communication via `aiohttp`
 - typed stable config families for the documented `/config` branches
+- typed helpers for stable `/info` fields such as heat recovery filter time
 - typed models that stay close to the API response shape
 - preserved `raw_payload` data on typed response models for forward compatibility
 
@@ -160,6 +161,7 @@ development pass, covering:
 - `PATCH /config` with a no-op `TimeZone` write against the current value
 - `GET /info?module=General&submodule=Board`
 - `GET /info?module=General&submodule=Lan`
+- `GET /info?module=HeatRecovery`
 - `GET /info/nodes`
 - `GET /info?module=General&submodule=PublicApi`
 - `POST /action/nodes/{node}` with a no-op `SetVentilationState`
