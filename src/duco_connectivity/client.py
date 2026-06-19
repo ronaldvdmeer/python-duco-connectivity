@@ -2099,10 +2099,7 @@ class DucoClient:
         if heat_recovery is None:
             return None
         if not isinstance(heat_recovery, dict):
-            msg = (
-                "Expected object payload at HeatRecovery in "
-                "/info?module=HeatRecovery response"
-            )
+            msg = "Expected object payload at HeatRecovery in /info?module=HeatRecovery response"
             raise DucoError(msg)
 
         general = heat_recovery.get("General")
