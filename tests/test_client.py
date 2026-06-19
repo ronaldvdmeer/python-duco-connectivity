@@ -3666,6 +3666,68 @@ async def test_get_write_requests_remaining_is_parsed() -> None:
     assert remaining == 197
 
 
+async def test_get_time_filter_remaining_is_parsed() -> None:
+    """Heat recovery filter time should be parsed when the box reports it."""
+    payload: dict[str, object] = {"HeatRecovery": {"General": {"TimeFilterRemain": {"Val": 180}}}}
+    mock_response = _response(json_payload=payload)
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with patch.object(session, "request", _request(mock_response)):
+            remaining = await client.async_get_time_filter_remaining()
+
+    assert remaining == 180
+
+
+async def test_get_time_filter_remaining_returns_none_when_not_reported() -> None:
+    """Heat recovery filter time should stay optional for boxes that omit it."""
+    payload: dict[str, object] = {"HeatRecovery": {"General": {}}}
+    mock_response = _response(json_payload=payload)
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with patch.object(session, "request", _request(mock_response)):
+            remaining = await client.async_get_time_filter_remaining()
+
+    assert remaining is None
+
+
+@pytest.mark.parametrize(
+    ("payload", "message"),
+    [
+        pytest.param(
+            [],
+            "Expected object payload from /info?module=HeatRecovery, got list",
+            id="root_not_object",
+        ),
+        pytest.param(
+            {"HeatRecovery": []},
+            "Expected object payload at HeatRecovery in /info?module=HeatRecovery response",
+            id="heat_recovery_not_object",
+        ),
+        pytest.param(
+            {"HeatRecovery": {"General": []}},
+            "Expected object payload at HeatRecovery.General in /info?module=HeatRecovery response",
+            id="general_not_object",
+        ),
+    ],
+)
+async def test_get_time_filter_remaining_rejects_malformed_payloads(
+    payload: object,
+    message: str,
+) -> None:
+    """Malformed heat recovery payloads should raise DucoError."""
+    mock_response = _response(json_payload=payload)
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with (
+            patch.object(session, "request", _request(mock_response)),
+            pytest.raises(DucoError, match=re.escape(message)),
+        ):
+            await client.async_get_time_filter_remaining()
+
+
 async def test_get_write_req_remaining_alias_is_parsed() -> None:
     """The old write budget method name should remain available."""
     payload: dict[str, object] = {"General": {"PublicApi": {"WriteReqCntRemain": {"Val": 197}}}}

@@ -182,6 +182,10 @@ python tools/api_reference.py write
   - Endpoint: `GET /info?module=Diag`
   - Surface: typed
   - Summary: Return health states for diagnostic subsystems.
+- `async_get_time_filter_remaining() -> int | None`
+  - Endpoint: `GET /info?module=HeatRecovery`
+  - Surface: typed
+  - Summary: Return the remaining heat recovery filter time when the box reports it.
 - `async_get_nodes() -> list[Node]`
   - Endpoint: `GET /info/nodes`
   - Surface: typed
@@ -306,6 +310,7 @@ The package exports the following public symbols through `duco_connectivity.__al
 - `ConfigHeatRecoverySubmoduleSelector`
 - `ConfigModuleSelector`
 - `DeviceGroupConfigSubmoduleSelector`
+- `DiagStatus`
 - `InfoGeneralSubmoduleSelector`
 - `InfoModuleSelector`
 - `KnownActionName`

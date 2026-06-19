@@ -2085,6 +2085,41 @@ class DucoClient:
         )
         return int(self._read_wrapped_value(payload["General"]["PublicApi"], "WriteReqCntRemain"))
 
+    async def async_get_time_filter_remaining(self) -> int | None:
+        """Return the remaining heat recovery filter time when the box reports it."""
+        payload = await self.async_get_info(module=InfoModuleSelector.HEAT_RECOVERY)
+        if not isinstance(payload, dict):
+            msg = (
+                "Expected object payload from /info?module=HeatRecovery, got "
+                f"{type(payload).__name__}"
+            )
+            raise DucoError(msg)
+
+        heat_recovery = payload.get("HeatRecovery")
+        if heat_recovery is None:
+            return None
+        if not isinstance(heat_recovery, dict):
+            msg = (
+                "Expected object payload at HeatRecovery in "
+                "/info?module=HeatRecovery response"
+            )
+            raise DucoError(msg)
+
+        general = heat_recovery.get("General")
+        if general is None:
+            return None
+        if not isinstance(general, dict):
+            msg = (
+                "Expected object payload at HeatRecovery.General in "
+                "/info?module=HeatRecovery response"
+            )
+            raise DucoError(msg)
+
+        if "TimeFilterRemain" not in general:
+            return None
+
+        return int(self._read_wrapped_value(general, "TimeFilterRemain"))
+
     async def async_get_write_req_remaining(self) -> int:
         """Backward-compatible alias for the old write budget method name."""
         caller = _compat_caller()
