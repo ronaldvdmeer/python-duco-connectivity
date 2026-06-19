@@ -3710,6 +3710,21 @@ async def test_get_time_filter_remaining_returns_none_when_not_reported() -> Non
             "Expected object payload at HeatRecovery.General in /info?module=HeatRecovery response",
             id="general_not_object",
         ),
+        pytest.param(
+            {"HeatRecovery": {"General": {"TimeFilterRemain": 180}}},
+            "Expected wrapped Val object for HeatRecovery.General.TimeFilterRemain, got int",
+            id="leaf_not_object",
+        ),
+        pytest.param(
+            {"HeatRecovery": {"General": {"TimeFilterRemain": {}}}},
+            "Expected wrapped Val object for HeatRecovery.General.TimeFilterRemain",
+            id="leaf_missing_val",
+        ),
+        pytest.param(
+            {"HeatRecovery": {"General": {"TimeFilterRemain": {"Val": "180"}}}},
+            "Expected integer value for HeatRecovery.General.TimeFilterRemain, got str",
+            id="leaf_non_int_val",
+        ),
     ],
 )
 async def test_get_time_filter_remaining_rejects_malformed_payloads(

@@ -282,6 +282,31 @@ class DucoClient:
         return payload[key]["Val"]
 
     @staticmethod
+    def _read_optional_wrapped_int(
+        payload: dict[str, Any],
+        key: str,
+        *,
+        path: str,
+    ) -> int | None:
+        """Read an optional wrapped integer from a typed-stable API branch."""
+        raw_entry = payload.get(key)
+        if raw_entry is None:
+            return None
+        if not isinstance(raw_entry, dict):
+            msg = f"Expected wrapped Val object for {path}.{key}, got {type(raw_entry).__name__}"
+            raise DucoError(msg)
+        if "Val" not in raw_entry:
+            msg = f"Expected wrapped Val object for {path}.{key}"
+            raise DucoError(msg)
+
+        raw_value = raw_entry["Val"]
+        if type(raw_value) is not int:
+            msg = f"Expected integer value for {path}.{key}, got {type(raw_value).__name__}"
+            raise DucoError(msg)
+
+        return raw_value
+
+    @staticmethod
     def _read_scalar_value(payload: dict[str, Any], key: str) -> Any:
         raw_value = payload[key]
         if not isinstance(raw_value, dict):
@@ -2112,10 +2137,11 @@ class DucoClient:
             )
             raise DucoError(msg)
 
-        if "TimeFilterRemain" not in general:
-            return None
-
-        return int(self._read_wrapped_value(general, "TimeFilterRemain"))
+        return self._read_optional_wrapped_int(
+            general,
+            "TimeFilterRemain",
+            path="HeatRecovery.General",
+        )
 
     async def async_get_write_req_remaining(self) -> int:
         """Backward-compatible alias for the old write budget method name."""

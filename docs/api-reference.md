@@ -310,7 +310,6 @@ The package exports the following public symbols through `duco_connectivity.__al
 - `ConfigHeatRecoverySubmoduleSelector`
 - `ConfigModuleSelector`
 - `DeviceGroupConfigSubmoduleSelector`
-- `DiagStatus`
 - `InfoGeneralSubmoduleSelector`
 - `InfoModuleSelector`
 - `KnownActionName`
