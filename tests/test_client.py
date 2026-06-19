@@ -3692,6 +3692,21 @@ async def test_get_time_filter_remaining_returns_none_when_not_reported() -> Non
     assert remaining is None
 
 
+async def test_get_time_filter_remaining_returns_none_when_module_unsupported() -> None:
+    """Heat recovery filter time should stay optional for boxes without that module."""
+    mock_response = _response(
+        status=400,
+        text_payload='{"Code":3,"Result":"FAILED"}',
+    )
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with patch.object(session, "request", _request(mock_response)):
+            remaining = await client.async_get_time_filter_remaining()
+
+    assert remaining is None
+
+
 @pytest.mark.parametrize(
     ("payload", "message"),
     [

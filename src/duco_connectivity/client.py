@@ -2112,7 +2112,23 @@ class DucoClient:
 
     async def async_get_time_filter_remaining(self) -> int | None:
         """Return the remaining heat recovery filter time when the box reports it."""
-        payload = await self.async_get_info(module=InfoModuleSelector.HEAT_RECOVERY)
+        try:
+            payload = await self.async_get_info(module=InfoModuleSelector.HEAT_RECOVERY)
+        except DucoResponseError as err:
+            if err.status == 400 and err.path == "/info":
+                try:
+                    error_payload = json.loads(err.body)
+                except json.JSONDecodeError:
+                    pass
+                else:
+                    if (
+                        isinstance(error_payload, dict)
+                        and error_payload.get("Code") == 3
+                        and error_payload.get("Result") == "FAILED"
+                    ):
+                        return None
+            raise
+
         if not isinstance(payload, dict):
             msg = (
                 "Expected object payload from /info?module=HeatRecovery, got "
