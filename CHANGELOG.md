@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Treat unsupported `HeatRecovery` info requests as an absent optional
+  capability in `async_get_time_filter_remaining()` instead of surfacing the
+  box's generic `400 {"Code":3,"Result":"FAILED"}` response to callers.
+
 ## [0.7.0] - 2026-06-19
 
 ### Added
