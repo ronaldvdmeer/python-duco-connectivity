@@ -5,6 +5,7 @@ from collections.abc import Callable
 import pytest
 
 from duco_connectivity import (
+    BypassSupplyTemperatureTarget,
     ConfigSection,
     ConfigValue,
     ConfigValueString,
@@ -103,6 +104,41 @@ async def test_live_noop_zone_name_write_round_trip(
     after_remaining = await live_client.async_get_write_requests_remaining()
     live_report(
         f"zone_name_round_trip zone={zone.zone_id} value={zone.name.value!r} "
+        f"writes_before={before_remaining} writes_after={after_remaining}"
+    )
+    assert 0 <= after_remaining <= before_remaining
+
+
+async def test_live_noop_bypass_supply_temperature_target_round_trip(
+    live_client: DucoClient,
+    live_report: Callable[[str], None],
+) -> None:
+    """Round-trip the current bypass target through the Celsius convenience helper."""
+    before_remaining = await live_client.async_get_write_requests_remaining()
+    if before_remaining < 1:
+        pytest.skip("No Duco write requests remain for a live bypass write test")
+
+    target = None
+    for zone_id in range(1, 9):
+        target = await live_client.async_get_bypass_supply_temperature_target(zone_id)
+        if target is not None:
+            break
+
+    if target is None:
+        pytest.skip("No bypass supply temperature target available for a safe live write test")
+
+    result = await live_client.async_set_bypass_supply_temperature_target(
+        target.zone_id,
+        target.value,
+    )
+
+    assert isinstance(result, BypassSupplyTemperatureTarget)
+    assert result.zone_id == target.zone_id
+    assert result.value == target.value
+
+    after_remaining = await live_client.async_get_write_requests_remaining()
+    live_report(
+        f"bypass_target_round_trip zone={target.zone_id} value={target.value} "
         f"writes_before={before_remaining} writes_after={after_remaining}"
     )
     assert 0 <= after_remaining <= before_remaining

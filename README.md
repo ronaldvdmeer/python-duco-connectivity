@@ -138,6 +138,8 @@ For local function probes without activating the environment first:
 ```bash
 .venv/bin/python -m duco_connectivity --host 192.168.1.10 call async_get_board_info
 .venv/bin/duco-probe --host 192.168.1.10 call async_get_board_info
+.venv/bin/duco-probe --host 192.168.1.10 call async_get_ventilation_temperature_info
+.venv/bin/duco-probe --host 192.168.1.10 call async_get_bypass_supply_temperature_target --kwargs '{"zone_id": 1}'
 ```
 
 For local real-device validation against your own Duco box, use the opt-in
@@ -161,9 +163,12 @@ development pass, covering:
 - `PATCH /config` with a no-op `TimeZone` write against the current value
 - `GET /info?module=General&submodule=Board`
 - `GET /info?module=General&submodule=Lan`
+- `GET /info?module=Ventilation`
 - `GET /info?module=HeatRecovery`
 - `GET /info/nodes`
 - `GET /info?module=General&submodule=PublicApi`
+- `GET /config?module=HeatRecovery&submodule=Bypass&parameter=TempSupTgtZone1`
+- `PATCH /config?module=HeatRecovery&submodule=Bypass&parameter=TempSupTgtZone1` with a no-op write against the current value
 - `POST /action/nodes/{node}` with a no-op `SetVentilationState`
 
 The repository now also includes opt-in local live tests so the same read and
