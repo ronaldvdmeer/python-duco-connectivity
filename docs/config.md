@@ -119,7 +119,7 @@ Example:
 target = await client.async_get_bypass_supply_temperature_target(1)
 
 if target is not None:
-        print(target.value, target.minimum, target.increment, target.maximum)
+    print(target.value, target.minimum, target.increment, target.maximum)
 
 updated = await client.async_set_bypass_supply_temperature_target(1, 18.5)
 assert updated.value == 18.5

@@ -201,11 +201,9 @@ risk:
 - `GET /action/nodes`
 - `GET /info?module=General&submodule=PublicApi`
 - `GET /info?module=Ventilation` through the Celsius convenience helper
-- `GET /config?module=HeatRecovery&submodule=Bypass&parameter=TempSupTgtZoneX`
-	through the Celsius convenience helper
+- `GET /config?module=HeatRecovery&submodule=Bypass&parameter=TempSupTgtZoneX` through the Celsius convenience helper
 - `PATCH /config` as a no-op `TimeZone` write to the current value
-- `PATCH /config?module=HeatRecovery&submodule=Bypass&parameter=TempSupTgtZoneX`
-	as a no-op Celsius convenience write to the current value
+- `PATCH /config?module=HeatRecovery&submodule=Bypass&parameter=TempSupTgtZoneX` as a no-op Celsius convenience write to the current value
 - `POST /action/nodes/{node}` round-trip writes for `SetVentilationState`
 
 ## Manual validation checklist
