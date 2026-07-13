@@ -196,6 +196,21 @@ def config_data() -> dict[str, object]:
 
 
 @pytest.fixture
+def ventilation_info_data() -> dict[str, object]:
+    """Mock response for GET /info?module=Ventilation."""
+    return {
+        "Ventilation": {
+            "Sensor": {
+                "TempOda": {"Val": 175},
+                "TempSup": {"Val": 180},
+                "TempEta": {"Val": 215},
+                "TempEha": {"Val": 225},
+            }
+        }
+    }
+
+
+@pytest.fixture
 def node_configs_data() -> dict[str, object]:
     """Mock response for GET /config/nodes."""
     return {

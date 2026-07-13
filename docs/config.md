@@ -15,6 +15,8 @@ Behavior:
     `Config.heat_recovery`
 - Keeps unknown or not-yet-mapped branches available through `sections` and
     `raw_payload`
+- Keeps generic config values in the raw API scale published by Duco, such as
+    decicelsius-backed bypass targets under `HeatRecovery.Bypass`
 
 Example:
 
@@ -90,6 +92,37 @@ await client.async_set_config(
     {"General": {"Time": {"TimeZone": {"Val": 1}}}},
 )
 
+```
+
+## Temperature convenience helpers
+
+The generic `Config` models stay close to the raw Duco API payload. That means
+typed `ConfigValue` leaves such as `HeatRecovery.Bypass.TempSupTgtZone1` keep
+their integer API scale instead of converting automatically to Celsius.
+
+For callers that want a narrower typed surface with the Celsius conversion kept
+inside the library, `DucoClient` also exposes these convenience helpers:
+
+- `async_get_bypass_supply_temperature_target(zone_id)`
+- `async_set_bypass_supply_temperature_target(zone_id, temperature)`
+
+Behavior:
+
+- Reads and writes the same `HeatRecovery.Bypass.TempSupTgtZoneX` fields
+- Accepts and returns Celsius values in `0.1°C` increments
+- Preserves the generic `async_get_config()` and `async_set_config()` behavior
+    unchanged for callers that still want the original API-shaped payloads
+
+Example:
+
+```python
+target = await client.async_get_bypass_supply_temperature_target(1)
+
+if target is not None:
+    print(target.value, target.minimum, target.increment, target.maximum)
+
+updated = await client.async_set_bypass_supply_temperature_target(1, 18.5)
+assert updated.value == 18.5
 ```
 
 ## Node config access

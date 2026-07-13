@@ -2,8 +2,10 @@
 
 import json
 import logging
+import math
 import sys
 from dataclasses import fields, is_dataclass
+from decimal import Decimal, InvalidOperation
 from types import FrameType
 from typing import Any, Literal, cast
 from urllib.parse import urlsplit
@@ -26,6 +28,7 @@ from .models import (
     ApiEndpoint,
     ApiInfo,
     BoardInfo,
+    BypassSupplyTemperatureTarget,
     Config,
     ConfigAutoRebootComm,
     ConfigGeneral,
@@ -81,6 +84,7 @@ from .models import (
     PatchConfigZoneStruct,
     VentilationMode,
     VentilationState,
+    VentilationTemperatureInfo,
     ZoneModuleSelector,
     _PatchPayloadModel,
 )
@@ -305,6 +309,78 @@ class DucoClient:
             raise DucoError(msg)
 
         return raw_value
+
+    @staticmethod
+    def _validate_bypass_zone_id(zone_id: int) -> str:
+        """Return the API parameter name for a supported bypass target zone."""
+        if type(zone_id) is not int or not 1 <= zone_id <= 8:
+            msg = "zone_id must be an integer between 1 and 8"
+            raise ValueError(msg)
+        return f"TempSupTgtZone{zone_id}"
+
+    @staticmethod
+    def _decicelsius_to_celsius(value: int) -> float:
+        """Convert Duco decicelsius values to Celsius floats."""
+        return value / 10.0
+
+    @classmethod
+    def _celsius_to_decicelsius(cls, value: float, *, path: str) -> int:
+        """Convert a Celsius float to the Duco decicelsius integer representation."""
+        if type(value) not in (int, float):
+            msg = f"{path} must be an int or float, got {type(value).__name__}"
+            raise ValueError(msg)
+
+        numeric_value = float(value)
+        if not math.isfinite(numeric_value):
+            msg = f"{path} must be a finite temperature value"
+            raise ValueError(msg)
+
+        try:
+            scaled = Decimal(str(value)) * 10
+        except InvalidOperation as err:
+            msg = f"{path} must be representable as a decimal temperature"
+            raise ValueError(msg) from err
+
+        if scaled != scaled.to_integral_value():
+            msg = f"{path} must be representable in 0.1°C increments"
+            raise ValueError(msg)
+
+        return int(scaled)
+
+    @classmethod
+    def _build_bypass_supply_temperature_target(
+        cls,
+        zone_id: int,
+        value: ConfigValue,
+    ) -> BypassSupplyTemperatureTarget:
+        """Convert a raw config value into a Celsius convenience model."""
+        return BypassSupplyTemperatureTarget(
+            zone_id=zone_id,
+            value=cls._decicelsius_to_celsius(value.value),
+            minimum=None if value.minimum is None else cls._decicelsius_to_celsius(value.minimum),
+            increment=None
+            if value.increment is None
+            else cls._decicelsius_to_celsius(value.increment),
+            maximum=None if value.maximum is None else cls._decicelsius_to_celsius(value.maximum),
+            raw_payload=cls._preserve_raw_payload(value.raw_payload),
+        )
+
+    @classmethod
+    def _extract_bypass_supply_temperature_target(
+        cls,
+        config: Config,
+        zone_id: int,
+    ) -> BypassSupplyTemperatureTarget | None:
+        """Read a single bypass supply target from a typed config response."""
+        heat_recovery = config.heat_recovery
+        if heat_recovery is None or heat_recovery.bypass is None:
+            return None
+
+        raw_value = getattr(heat_recovery.bypass, f"temp_sup_tgt_zone_{zone_id}")
+        if raw_value is None:
+            return None
+
+        return cls._build_bypass_supply_temperature_target(zone_id, raw_value)
 
     @staticmethod
     def _read_scalar_value(payload: dict[str, Any], key: str) -> Any:
@@ -2158,6 +2234,82 @@ class DucoClient:
             "TimeFilterRemain",
             path="HeatRecovery.General",
         )
+
+    async def async_get_ventilation_temperature_info(self) -> VentilationTemperatureInfo:
+        """Return ventilation temperatures from `/info?module=Ventilation` in Celsius."""
+        payload = await self.async_get_info(module=InfoModuleSelector.VENTILATION)
+
+        if not isinstance(payload, dict):
+            msg = (
+                "Expected object payload from /info?module=Ventilation, got "
+                f"{type(payload).__name__}"
+            )
+            raise DucoError(msg)
+
+        ventilation = payload.get("Ventilation")
+        if ventilation is None:
+            return VentilationTemperatureInfo()
+        if not isinstance(ventilation, dict):
+            msg = "Expected object payload at Ventilation in /info?module=Ventilation response"
+            raise DucoError(msg)
+
+        sensor = ventilation.get("Sensor")
+        if sensor is None:
+            return VentilationTemperatureInfo(raw_payload=self._preserve_raw_payload(ventilation))
+        if not isinstance(sensor, dict):
+            msg = (
+                "Expected object payload at Ventilation.Sensor in /info?module=Ventilation response"
+            )
+            raise DucoError(msg)
+
+        temp_oda = self._read_optional_wrapped_int(sensor, "TempOda", path="Ventilation.Sensor")
+        temp_sup = self._read_optional_wrapped_int(sensor, "TempSup", path="Ventilation.Sensor")
+        temp_eta = self._read_optional_wrapped_int(sensor, "TempEta", path="Ventilation.Sensor")
+        temp_eha = self._read_optional_wrapped_int(sensor, "TempEha", path="Ventilation.Sensor")
+
+        return VentilationTemperatureInfo(
+            temp_oda=None if temp_oda is None else self._decicelsius_to_celsius(temp_oda),
+            temp_sup=None if temp_sup is None else self._decicelsius_to_celsius(temp_sup),
+            temp_eta=None if temp_eta is None else self._decicelsius_to_celsius(temp_eta),
+            temp_eha=None if temp_eha is None else self._decicelsius_to_celsius(temp_eha),
+            raw_payload=self._preserve_raw_payload(sensor),
+        )
+
+    async def async_get_bypass_supply_temperature_target(
+        self,
+        zone_id: int,
+    ) -> BypassSupplyTemperatureTarget | None:
+        """Return a bypass supply target from `/config` in Celsius."""
+        parameter = self._validate_bypass_zone_id(zone_id)
+        config = await self.async_get_config(
+            module=ConfigModuleSelector.HEAT_RECOVERY,
+            submodule=ConfigHeatRecoverySubmoduleSelector.BYPASS,
+            parameter=parameter,
+        )
+        return self._extract_bypass_supply_temperature_target(config, zone_id)
+
+    async def async_set_bypass_supply_temperature_target(
+        self,
+        zone_id: int,
+        temperature: float,
+    ) -> BypassSupplyTemperatureTarget:
+        """Set a bypass supply target through `/config` using Celsius input."""
+        parameter = self._validate_bypass_zone_id(zone_id)
+        raw_value = self._celsius_to_decicelsius(
+            temperature,
+            path=f"bypass_supply_temperature_target[{zone_id}]",
+        )
+        response = await self.async_set_config(
+            {"HeatRecovery": {"Bypass": {parameter: PatchConfigValue(value=raw_value)}}},
+            module=ConfigModuleSelector.HEAT_RECOVERY,
+            submodule=ConfigHeatRecoverySubmoduleSelector.BYPASS,
+            parameter=parameter,
+        )
+        target = self._extract_bypass_supply_temperature_target(response, zone_id)
+        if target is None:
+            msg = f"Expected {parameter} in /config response after bypass target write"
+            raise DucoError(msg)
+        return target
 
     async def async_get_write_req_remaining(self) -> int:
         """Backward-compatible alias for the old write budget method name."""

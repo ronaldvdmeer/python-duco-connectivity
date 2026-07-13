@@ -17,6 +17,7 @@ from duco_connectivity import (
     ApiInfo,
     BoardInfo,
     BoardName,
+    BypassSupplyTemperatureTarget,
     Config,
     ConfigAutoRebootComm,
     ConfigGeneral,
@@ -95,6 +96,7 @@ from duco_connectivity import (
     VentilationFlowLevelTarget,
     VentilationMode,
     VentilationState,
+    VentilationTemperatureInfo,
     VentilationTimeEnd,
     VentilationTimeRemaining,
     ZoneModuleSelector,
@@ -657,6 +659,33 @@ def test_patch_config_models_build_typed_write_families() -> None:
         bypass=PatchConfigHeatRecoveryBypass(temp_sup_tgt_zone_1=PatchConfigValue(value=180))
     )
     assert node_patch.name == PatchConfigNodeValue(value="Kitchen valve")
+
+
+def test_temperature_convenience_models_default_and_preserve_values() -> None:
+    """Temperature convenience models should keep converted Celsius values explicit."""
+    ventilation = VentilationTemperatureInfo(
+        temp_oda=17.5,
+        temp_sup=18.0,
+        temp_eta=21.5,
+        temp_eha=22.5,
+    )
+    target = BypassSupplyTemperatureTarget(
+        zone_id=2,
+        value=18.5,
+        minimum=12.0,
+        increment=0.5,
+        maximum=22.0,
+    )
+
+    assert ventilation.temp_oda == 17.5
+    assert ventilation.temp_sup == 18.0
+    assert ventilation.temp_eta == 21.5
+    assert ventilation.temp_eha == 22.5
+    assert target.zone_id == 2
+    assert target.value == 18.5
+    assert target.minimum == 12.0
+    assert target.increment == 0.5
+    assert target.maximum == 22.0
 
 
 def test_config_group_struct_defaults() -> None:

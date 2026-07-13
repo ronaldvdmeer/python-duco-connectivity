@@ -231,6 +231,14 @@ METHOD_METADATA: dict[str, MethodMetadata] = {
         endpoint="GET /info?module=HeatRecovery",
         surface="typed",
     ),
+    "async_get_ventilation_temperature_info": MethodMetadata(
+        category="Node and system information",
+        endpoint="GET /info?module=Ventilation",
+        surface="wrapper",
+        notes=(
+            "Converts the raw Duco decicelsius ventilation sensor values to Celsius.",
+        ),
+    ),
     "async_get_nodes": MethodMetadata(
         category="Node and system information",
         endpoint="GET /info/nodes",
@@ -253,6 +261,24 @@ METHOD_METADATA: dict[str, MethodMetadata] = {
         category="Node and system information",
         endpoint="GET /info?module=General&submodule=PublicApi",
         surface="typed",
+    ),
+    "async_get_bypass_supply_temperature_target": MethodMetadata(
+        category="Node and system information",
+        endpoint="GET /config?module=HeatRecovery&submodule=Bypass&parameter=TempSupTgtZone{zone}",
+        surface="wrapper",
+        details_path="config.md",
+        notes=(
+            "Returns a Celsius convenience model while leaving the generic ConfigValue surface unchanged.",
+        ),
+    ),
+    "async_set_bypass_supply_temperature_target": MethodMetadata(
+        category="Node and system information",
+        endpoint="PATCH /config?module=HeatRecovery&submodule=Bypass&parameter=TempSupTgtZone{zone}",
+        surface="wrapper",
+        details_path="config.md",
+        notes=(
+            "Accepts Celsius input in 0.1°C increments and serializes it back to the raw Duco decicelsius payload.",
+        ),
     ),
 }
 

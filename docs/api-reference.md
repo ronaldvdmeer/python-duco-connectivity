@@ -186,6 +186,11 @@ python tools/api_reference.py write
   - Endpoint: `GET /info?module=HeatRecovery`
   - Surface: typed
   - Summary: Return the remaining heat recovery filter time when the box reports it.
+- `async_get_ventilation_temperature_info() -> VentilationTemperatureInfo`
+  - Endpoint: `GET /info?module=Ventilation`
+  - Surface: wrapper
+  - Summary: Return ventilation temperatures from `/info?module=Ventilation` in Celsius.
+  - Note: Converts the raw Duco decicelsius ventilation sensor values to Celsius.
 - `async_get_nodes() -> list[Node]`
   - Endpoint: `GET /info/nodes`
   - Surface: typed
@@ -205,6 +210,18 @@ python tools/api_reference.py write
   - Endpoint: `GET /info?module=General&submodule=PublicApi`
   - Surface: typed
   - Summary: Return the remaining write budget reported by the box.
+- `async_get_bypass_supply_temperature_target(zone_id: int) -> BypassSupplyTemperatureTarget | None`
+  - Endpoint: `GET /config?module=HeatRecovery&submodule=Bypass&parameter=TempSupTgtZone{zone}`
+  - Surface: wrapper
+  - Summary: Return a bypass supply target from `/config` in Celsius.
+  - Details: [config.md](config.md)
+  - Note: Returns a Celsius convenience model while leaving the generic ConfigValue surface unchanged.
+- `async_set_bypass_supply_temperature_target(zone_id: int, temperature: float) -> BypassSupplyTemperatureTarget`
+  - Endpoint: `PATCH /config?module=HeatRecovery&submodule=Bypass&parameter=TempSupTgtZone{zone}`
+  - Surface: wrapper
+  - Summary: Set a bypass supply target through `/config` using Celsius input.
+  - Details: [config.md](config.md)
+  - Note: Accepts Celsius input in 0.1°C increments and serializes it back to the raw Duco decicelsius payload.
 
 ## Public exports
 
@@ -227,6 +244,7 @@ The package exports the following public symbols through `duco_connectivity.__al
 - `ApiInfo`
 - `BoardInfo`
 - `BoardName`
+- `BypassSupplyTemperatureTarget`
 - `Config`
 - `ConfigAutoRebootComm`
 - `ConfigGeneral`
@@ -299,6 +317,7 @@ The package exports the following public symbols through `duco_connectivity.__al
 - `PatchConfigZoneGeneral`
 - `PatchConfigZoneStruct`
 - `VentilationFlowLevelTarget`
+- `VentilationTemperatureInfo`
 - `VentilationTimeEnd`
 - `VentilationTimeRemaining`
 

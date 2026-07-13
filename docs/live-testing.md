@@ -78,6 +78,20 @@ export DUCO_TEST_HOST=192.168.1.10
 .venv/bin/pytest tests/live/test_safe_writes.py --live --live-writes
 ```
 
+Temperature convenience helper read test:
+
+```bash
+export DUCO_TEST_HOST=192.168.1.10
+.venv/bin/pytest tests/live/test_smoke.py -k temperature_convenience --live
+```
+
+Temperature convenience helper no-op write test:
+
+```bash
+export DUCO_TEST_HOST=192.168.1.10
+.venv/bin/pytest tests/live/test_safe_writes.py -k bypass_supply_temperature --live --live-writes
+```
+
 Ventilation state round-trip test:
 
 ```bash
@@ -130,6 +144,18 @@ Run the safe write test as a separate step:
 .venv/bin/pytest tests/live/test_safe_writes.py --live --live-writes
 ```
 
+Run only the temperature convenience helper read test:
+
+```bash
+.venv/bin/pytest tests/live/test_smoke.py -k temperature_convenience --live
+```
+
+Run only the temperature convenience helper no-op write test:
+
+```bash
+.venv/bin/pytest tests/live/test_safe_writes.py -k bypass_supply_temperature --live --live-writes
+```
+
 Run the ventilation state round-trip test:
 
 ```bash
@@ -174,7 +200,10 @@ risk:
 - `GET /action`
 - `GET /action/nodes`
 - `GET /info?module=General&submodule=PublicApi`
+- `GET /info?module=Ventilation` through the Celsius convenience helper
+- `GET /config?module=HeatRecovery&submodule=Bypass&parameter=TempSupTgtZoneX` through the Celsius convenience helper
 - `PATCH /config` as a no-op `TimeZone` write to the current value
+- `PATCH /config?module=HeatRecovery&submodule=Bypass&parameter=TempSupTgtZoneX` as a no-op Celsius convenience write to the current value
 - `POST /action/nodes/{node}` round-trip writes for `SetVentilationState`
 
 ## Manual validation checklist

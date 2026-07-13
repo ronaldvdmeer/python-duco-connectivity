@@ -924,6 +924,29 @@ class LanInfo:
 
 
 @dataclass(frozen=True, slots=True)
+class VentilationTemperatureInfo:
+    """Ventilation temperature values reported by `/info?module=Ventilation`."""
+
+    temp_oda: float | None = None
+    temp_sup: float | None = None
+    temp_eta: float | None = None
+    temp_eha: float | None = None
+    raw_payload: dict[str, Any] = field(default_factory=dict, repr=False, compare=False)
+
+
+@dataclass(frozen=True, slots=True)
+class BypassSupplyTemperatureTarget:
+    """Bypass supply temperature target values exposed through `/config`."""
+
+    zone_id: int
+    value: float
+    minimum: float | None = None
+    increment: float | None = None
+    maximum: float | None = None
+    raw_payload: dict[str, Any] = field(default_factory=dict, repr=False, compare=False)
+
+
+@dataclass(frozen=True, slots=True)
 class ConfigValue:
     """Integer config value reported by the local Duco API."""
 

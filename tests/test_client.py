@@ -16,6 +16,7 @@ from duco_connectivity import (
     ActionResultStatus,
     ActionValueType,
     BoardName,
+    BypassSupplyTemperatureTarget,
     Config,
     ConfigAutoRebootComm,
     ConfigGeneral,
@@ -96,6 +97,7 @@ from duco_connectivity import (
     VentilationFlowLevelTarget,
     VentilationMode,
     VentilationState,
+    VentilationTemperatureInfo,
     VentilationTimeEnd,
     VentilationTimeRemaining,
     ZoneModuleSelector,
@@ -3651,6 +3653,183 @@ async def test_get_nodes_known_spec_node_types_are_parsed(node_type: str) -> Non
 
     assert len(nodes) == 1
     assert nodes[0].general.node_type == NodeType(node_type)
+
+
+async def test_get_ventilation_temperature_info_is_parsed(
+    ventilation_info_data: dict[str, object],
+) -> None:
+    """Ventilation temperatures should be converted from decicelsius to Celsius."""
+    mock_response = _response(json_payload=ventilation_info_data)
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with patch.object(session, "request", _request(mock_response)):
+            payload = await client.async_get_ventilation_temperature_info()
+
+    assert payload == VentilationTemperatureInfo(
+        temp_oda=17.5,
+        temp_sup=18.0,
+        temp_eta=21.5,
+        temp_eha=22.5,
+    )
+    assert payload.raw_payload is ventilation_info_data["Ventilation"]["Sensor"]
+
+
+async def test_get_ventilation_temperature_info_returns_empty_model_when_sensor_missing() -> None:
+    """Missing ventilation sensors should return an empty typed model."""
+    mock_response = _response(json_payload={"Ventilation": {}})
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with patch.object(session, "request", _request(mock_response)):
+            payload = await client.async_get_ventilation_temperature_info()
+
+    assert payload == VentilationTemperatureInfo()
+    assert payload.raw_payload == {}
+
+
+@pytest.mark.parametrize(
+    ("payload", "message"),
+    [
+        pytest.param(
+            [],
+            "Expected object payload from /info?module=Ventilation, got list",
+            id="root_not_object",
+        ),
+        pytest.param(
+            {"Ventilation": []},
+            "Expected object payload at Ventilation in /info?module=Ventilation response",
+            id="ventilation_not_object",
+        ),
+        pytest.param(
+            {"Ventilation": {"Sensor": []}},
+            "Expected object payload at Ventilation.Sensor in /info?module=Ventilation response",
+            id="sensor_not_object",
+        ),
+        pytest.param(
+            {"Ventilation": {"Sensor": {"TempOda": 175}}},
+            "Expected wrapped Val object for Ventilation.Sensor.TempOda, got int",
+            id="leaf_not_object",
+        ),
+        pytest.param(
+            {"Ventilation": {"Sensor": {"TempOda": {"Val": "175"}}}},
+            "Expected integer value for Ventilation.Sensor.TempOda, got str",
+            id="leaf_non_int_val",
+        ),
+    ],
+)
+async def test_get_ventilation_temperature_info_rejects_malformed_payloads(
+    payload: object,
+    message: str,
+) -> None:
+    """Malformed ventilation temperature payloads should raise DucoError."""
+    mock_response = _response(json_payload=payload)
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with (
+            patch.object(session, "request", _request(mock_response)),
+            pytest.raises(DucoError, match=re.escape(message)),
+        ):
+            await client.async_get_ventilation_temperature_info()
+
+
+async def test_get_bypass_supply_temperature_target_returns_converted_values(
+    config_data: dict[str, object],
+) -> None:
+    """Bypass target helpers should convert raw config metadata to Celsius."""
+    mock_response = _response(json_payload=config_data)
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        request_mock = _request(mock_response)
+        with patch.object(session, "request", request_mock):
+            payload = await client.async_get_bypass_supply_temperature_target(1)
+
+    assert payload == BypassSupplyTemperatureTarget(
+        zone_id=1,
+        value=18.0,
+        minimum=12.0,
+        increment=0.5,
+        maximum=22.0,
+    )
+    assert request_mock.call_args.kwargs["params"] == {
+        "module": "HeatRecovery",
+        "submodule": "Bypass",
+        "parameter": "TempSupTgtZone1",
+    }
+
+
+async def test_get_bypass_supply_temperature_target_returns_none_when_not_reported() -> None:
+    """Missing bypass targets should return None instead of failing."""
+    mock_response = _response(json_payload={"HeatRecovery": {"Bypass": {}}})
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with patch.object(session, "request", _request(mock_response)):
+            payload = await client.async_get_bypass_supply_temperature_target(1)
+
+    assert payload is None
+
+
+@pytest.mark.parametrize("zone_id", [0, 9, "1"])
+async def test_bypass_supply_temperature_helpers_reject_invalid_zone_ids(zone_id: object) -> None:
+    """Bypass target helpers should validate the supported zone range."""
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with pytest.raises(ValueError, match="zone_id must be an integer between 1 and 8"):
+            await client.async_get_bypass_supply_temperature_target(cast(Any, zone_id))
+
+        with pytest.raises(ValueError, match="zone_id must be an integer between 1 and 8"):
+            await client.async_set_bypass_supply_temperature_target(cast(Any, zone_id), 18.0)
+
+
+async def test_set_bypass_supply_temperature_target_serializes_decicelsius(
+    config_data: dict[str, object],
+) -> None:
+    """Bypass target helpers should serialize Celsius writes as raw decicelsius values."""
+    mock_response = _response(json_payload=config_data)
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        request = MagicMock(return_value=_request_context(mock_response))
+        with patch.object(session, "request", request):
+            payload = await client.async_set_bypass_supply_temperature_target(2, 18.5)
+
+    assert payload == BypassSupplyTemperatureTarget(
+        zone_id=2,
+        value=18.5,
+        minimum=12.0,
+        increment=0.5,
+        maximum=22.0,
+    )
+    _, kwargs = request.call_args
+    assert kwargs["params"] == {
+        "module": "HeatRecovery",
+        "submodule": "Bypass",
+        "parameter": "TempSupTgtZone2",
+    }
+    assert kwargs["data"] == b'{"HeatRecovery":{"Bypass":{"TempSupTgtZone2":{"Val":185}}}}'
+    assert kwargs["headers"] == {"Content-Type": "application/json"}
+
+
+@pytest.mark.parametrize(
+    ("value", "message"),
+    [
+        pytest.param(18.34, "must be representable in 0.1°C increments", id="not_decicelsius"),
+        pytest.param(float("inf"), "must be a finite temperature value", id="not_finite"),
+        pytest.param(True, "must be an int or float, got bool", id="bool"),
+    ],
+)
+async def test_set_bypass_supply_temperature_target_rejects_invalid_temperatures(
+    value: object,
+    message: str,
+) -> None:
+    """Invalid convenience write values should fail before a request is sent."""
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with pytest.raises(ValueError, match=re.escape(message)):
+            await client.async_set_bypass_supply_temperature_target(1, cast(Any, value))
 
 
 async def test_get_write_requests_remaining_is_parsed() -> None:
