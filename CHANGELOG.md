@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-07-13
+
+### Added
+
+- **Temperature convenience helpers**: Add a typed
+  `async_get_ventilation_temperature_info()` reader for
+  `GET /info?module=Ventilation`, plus typed
+  `async_get_bypass_supply_temperature_target()` and
+  `async_set_bypass_supply_temperature_target()` helpers for
+  `HeatRecovery.Bypass.TempSupTgtZoneX` so callers can work in Celsius without
+  dropping to the raw decicelsius config surface
+  ([#116](https://github.com/ronaldvdmeer/python-duco-connectivity/pull/116)).
+
+### Enhanced
+
+- **Documentation and validation**: Expand the generated API reference, config
+  docs, README examples, and local live-testing coverage for the new
+  temperature helper surfaces
+  ([#116](https://github.com/ronaldvdmeer/python-duco-connectivity/pull/116)).
+
 ## [0.7.1] - 2026-06-19
 
 ### Fixed
@@ -169,7 +189,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CI validation with pytest, Ruff, mypy, Bandit, and pip-audit.
 - PyPI Trusted Publishing workflow for tagged releases.
 
-[Unreleased]: https://github.com/ronaldvdmeer/python-duco-connectivity/compare/v0.7.1...HEAD
+[Unreleased]: https://github.com/ronaldvdmeer/python-duco-connectivity/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/ronaldvdmeer/python-duco-connectivity/releases/tag/v0.8.0
 [0.7.1]: https://github.com/ronaldvdmeer/python-duco-connectivity/releases/tag/v0.7.1
 [0.7.0]: https://github.com/ronaldvdmeer/python-duco-connectivity/releases/tag/v0.7.0
 [0.6.0]: https://github.com/ronaldvdmeer/python-duco-connectivity/releases/tag/v0.6.0
