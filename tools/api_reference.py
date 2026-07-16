@@ -237,6 +237,7 @@ METHOD_METADATA: dict[str, MethodMetadata] = {
         surface="wrapper",
         notes=(
             "Converts the raw Duco decicelsius ventilation sensor values to Celsius.",
+            "Returns `None` when the box reports the optional endpoint as unavailable.",
         ),
     ),
     "async_get_nodes": MethodMetadata(
@@ -269,6 +270,7 @@ METHOD_METADATA: dict[str, MethodMetadata] = {
         details_path="config.md",
         notes=(
             "Returns a Celsius convenience model while leaving the generic ConfigValue surface unchanged.",
+            "Returns `None` when the box reports the requested optional target as unavailable.",
         ),
     ),
     "async_set_bypass_supply_temperature_target": MethodMetadata(
