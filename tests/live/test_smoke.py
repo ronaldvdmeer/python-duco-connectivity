@@ -130,22 +130,27 @@ async def test_live_reads_temperature_convenience_helpers(
     ventilation = await live_client.async_get_ventilation_temperature_info()
     bypass = await live_client.async_get_bypass_supply_temperature_target(1)
 
+    if ventilation is None:
+        ventilation_summary = "unavailable"
+    else:
+        ventilation_summary = (
+            f"oda={ventilation.temp_oda} sup={ventilation.temp_sup} "
+            f"eta={ventilation.temp_eta} eha={ventilation.temp_eha}"
+        )
+        assert isinstance(ventilation, VentilationTemperatureInfo)
+        for value in (
+            ventilation.temp_oda,
+            ventilation.temp_sup,
+            ventilation.temp_eta,
+            ventilation.temp_eha,
+        ):
+            if value is not None:
+                assert isinstance(value, float)
+
     live_report(
-        "ventilation_temps="
-        f"oda={ventilation.temp_oda} sup={ventilation.temp_sup} "
-        f"eta={ventilation.temp_eta} eha={ventilation.temp_eha} "
+        f"ventilation_temps={ventilation_summary} "
         f"bypass_zone1={None if bypass is None else bypass.value}"
     )
-
-    assert isinstance(ventilation, VentilationTemperatureInfo)
-    for value in (
-        ventilation.temp_oda,
-        ventilation.temp_sup,
-        ventilation.temp_eta,
-        ventilation.temp_eha,
-    ):
-        if value is not None:
-            assert isinstance(value, float)
 
     if bypass is not None:
         assert isinstance(bypass, BypassSupplyTemperatureTarget)

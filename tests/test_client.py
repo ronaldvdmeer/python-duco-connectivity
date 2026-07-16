@@ -3688,6 +3688,34 @@ async def test_get_ventilation_temperature_info_returns_empty_model_when_sensor_
     assert payload.raw_payload == {}
 
 
+async def test_get_ventilation_temperature_info_returns_none_when_module_unsupported() -> None:
+    """Unsupported ventilation modules should be treated as an absent optional capability."""
+    mock_response = _response(
+        status=400,
+        text_payload='{"Code":3,"Result":"FAILED"}',
+    )
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with patch.object(session, "request", _request(mock_response)):
+            payload = await client.async_get_ventilation_temperature_info()
+
+    assert payload is None
+
+
+async def test_get_ventilation_temperature_info_reraises_other_client_errors() -> None:
+    """Unexpected ventilation endpoint failures should remain visible to callers."""
+    mock_response = _response(status=400, text_payload='{"Code":4,"Result":"FAILED"}')
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with (
+            patch.object(session, "request", _request(mock_response)),
+            pytest.raises(DucoResponseError),
+        ):
+            await client.async_get_ventilation_temperature_info()
+
+
 @pytest.mark.parametrize(
     ("payload", "message"),
     [
@@ -3770,6 +3798,34 @@ async def test_get_bypass_supply_temperature_target_returns_none_when_not_report
             payload = await client.async_get_bypass_supply_temperature_target(1)
 
     assert payload is None
+
+
+async def test_get_bypass_supply_temperature_target_returns_none_when_unsupported() -> None:
+    """Unsupported bypass targets should be treated as an absent optional capability."""
+    mock_response = _response(
+        status=400,
+        text_payload='{"Code":3,"Result":"FAILED"}',
+    )
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with patch.object(session, "request", _request(mock_response)):
+            payload = await client.async_get_bypass_supply_temperature_target(1)
+
+    assert payload is None
+
+
+async def test_get_bypass_supply_temperature_target_reraises_other_client_errors() -> None:
+    """Unexpected bypass target failures should remain visible to callers."""
+    mock_response = _response(status=400, text_payload='{"Code":4,"Result":"FAILED"}')
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with (
+            patch.object(session, "request", _request(mock_response)),
+            pytest.raises(DucoResponseError),
+        ):
+            await client.async_get_bypass_supply_temperature_target(1)
 
 
 @pytest.mark.parametrize("zone_id", [0, 9, "1"])

@@ -32,6 +32,8 @@ in the development examples below.
 - asynchronous communication via `aiohttp`
 - typed stable config families for the documented `/config` branches
 - typed helpers for stable `/info` fields such as heat recovery filter time
+- optional temperature helpers that return `None` when the box reports their
+  endpoint as unavailable
 - typed models that stay close to the API response shape
 - preserved `raw_payload` data on typed response models for forward compatibility
 

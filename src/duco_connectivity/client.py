@@ -105,6 +105,23 @@ def _compat_caller() -> str | None:
     return None
 
 
+def _is_unsupported_optional_endpoint_error(error: DucoResponseError, path: str) -> bool:
+    """Return whether a Duco response reports an unavailable optional endpoint."""
+    if error.status != 400 or error.path != path:
+        return False
+
+    try:
+        error_payload = cast(object, json.loads(error.body))
+    except json.JSONDecodeError:
+        return False
+
+    if not isinstance(error_payload, dict):
+        return False
+
+    response = cast(dict[str, object], error_payload)
+    return response.get("Code") == 3 and response.get("Result") == "FAILED"
+
+
 class DucoClient:
     """Client for a Duco box that exposes the local HTTP API."""
 
@@ -2191,18 +2208,8 @@ class DucoClient:
         try:
             payload = await self.async_get_info(module=InfoModuleSelector.HEAT_RECOVERY)
         except DucoResponseError as err:
-            if err.status == 400 and err.path == "/info":
-                try:
-                    error_payload = json.loads(err.body)
-                except json.JSONDecodeError:
-                    pass
-                else:
-                    if (
-                        isinstance(error_payload, dict)
-                        and error_payload.get("Code") == 3
-                        and error_payload.get("Result") == "FAILED"
-                    ):
-                        return None
+            if _is_unsupported_optional_endpoint_error(err, "/info"):
+                return None
             raise
 
         if not isinstance(payload, dict):
@@ -2235,9 +2242,14 @@ class DucoClient:
             path="HeatRecovery.General",
         )
 
-    async def async_get_ventilation_temperature_info(self) -> VentilationTemperatureInfo:
-        """Return ventilation temperatures from `/info?module=Ventilation` in Celsius."""
-        payload = await self.async_get_info(module=InfoModuleSelector.VENTILATION)
+    async def async_get_ventilation_temperature_info(self) -> VentilationTemperatureInfo | None:
+        """Return ventilation temperatures when the box exposes them, in Celsius."""
+        try:
+            payload = await self.async_get_info(module=InfoModuleSelector.VENTILATION)
+        except DucoResponseError as err:
+            if _is_unsupported_optional_endpoint_error(err, "/info"):
+                return None
+            raise
 
         if not isinstance(payload, dict):
             msg = (
@@ -2281,11 +2293,16 @@ class DucoClient:
     ) -> BypassSupplyTemperatureTarget | None:
         """Return a bypass supply target from `/config` in Celsius."""
         parameter = self._validate_bypass_zone_id(zone_id)
-        config = await self.async_get_config(
-            module=ConfigModuleSelector.HEAT_RECOVERY,
-            submodule=ConfigHeatRecoverySubmoduleSelector.BYPASS,
-            parameter=parameter,
-        )
+        try:
+            config = await self.async_get_config(
+                module=ConfigModuleSelector.HEAT_RECOVERY,
+                submodule=ConfigHeatRecoverySubmoduleSelector.BYPASS,
+                parameter=parameter,
+            )
+        except DucoResponseError as err:
+            if _is_unsupported_optional_endpoint_error(err, "/config"):
+                return None
+            raise
         return self._extract_bypass_supply_temperature_target(config, zone_id)
 
     async def async_set_bypass_supply_temperature_target(
