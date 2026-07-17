@@ -276,7 +276,7 @@ METHOD_METADATA: dict[str, MethodMetadata] = {
             "ConfigValue surface unchanged.",
             "Returns `None` when the requested target is omitted from an otherwise valid response.",
             "Raises `DucoUnsupportedCapabilityError` when the requested "
-            "optional target endpoint is unavailable.",
+            "optional target endpoint is unsupported.",
         ),
     ),
     "async_set_bypass_supply_temperature_target": MethodMetadata(

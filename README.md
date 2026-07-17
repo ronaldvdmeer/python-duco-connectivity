@@ -41,8 +41,11 @@ in the development examples below.
 When a Duco box explicitly reports that the optional ventilation-temperature or
 bypass-target endpoint is unsupported, the relevant helper raises
 `DucoUnsupportedCapabilityError`. This exception is a `DucoResponseError`
-subclass and preserves the HTTP status, path, and response body. For a valid
-endpoint response, `None` still indicates an omitted optional field.
+subclass and preserves the HTTP status, path, and response body. A valid
+ventilation-temperature response always returns a `VentilationTemperatureInfo`
+model, whose individual temperature fields can be `None` when omitted. The
+bypass-target helper returns `None` when its target is omitted from a valid
+response.
 
 Diagnostic subsystem reads now keep raw component and status strings from
 `Diag.SubSystems`, so future subsystem names or status values remain available
