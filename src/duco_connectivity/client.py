@@ -2210,11 +2210,7 @@ class DucoClient:
             payload = await self.async_get_info(module=InfoModuleSelector.HEAT_RECOVERY)
         except DucoResponseError as err:
             if _is_unsupported_optional_endpoint_error(err, "/info"):
-                raise DucoUnsupportedCapabilityError(
-                    err.status,
-                    err.path,
-                    err.body,
-                ) from err
+                return None
             raise
 
         if not isinstance(payload, dict):

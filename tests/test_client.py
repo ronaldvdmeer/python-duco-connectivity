@@ -3937,8 +3937,8 @@ async def test_get_time_filter_remaining_returns_none_when_not_reported() -> Non
     assert remaining is None
 
 
-async def test_get_time_filter_remaining_raises_for_unsupported_module() -> None:
-    """Unsupported heat recovery modules should raise a typed capability error."""
+async def test_get_time_filter_remaining_returns_none_for_unsupported_module() -> None:
+    """Unsupported heat recovery modules should remain an optional value."""
     mock_response = _response(
         status=400,
         text_payload='{"Code":3,"Result":"FAILED"}',
@@ -3946,14 +3946,10 @@ async def test_get_time_filter_remaining_raises_for_unsupported_module() -> None
 
     async with aiohttp.ClientSession() as session:
         client = DucoClient(session=session, host="192.0.2.94")
-        with (
-            patch.object(session, "request", _request(mock_response)),
-            pytest.raises(DucoUnsupportedCapabilityError) as err_info,
-        ):
-            await client.async_get_time_filter_remaining()
+        with patch.object(session, "request", _request(mock_response)):
+            remaining = await client.async_get_time_filter_remaining()
 
-    assert err_info.value.status == 400
-    assert err_info.value.path == "/info"
+    assert remaining is None
 
 
 @pytest.mark.parametrize(
