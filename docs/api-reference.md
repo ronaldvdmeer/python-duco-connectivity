@@ -186,7 +186,7 @@ python tools/api_reference.py write
   - Endpoint: `GET /info?module=HeatRecovery`
   - Surface: typed
   - Summary: Return the remaining heat recovery filter time when the box reports it.
-- `async_get_ventilation_temperature_info() -> VentilationTemperatureInfo | None`
+- `async_get_ventilation_temperature_info() -> VentilationTemperatureInfo`
   - Endpoint: `GET /info?module=Ventilation`
   - Surface: wrapper
   - Summary: Return ventilation temperatures when the box exposes them, in Celsius.
@@ -348,6 +348,7 @@ The package exports the following public symbols through `duco_connectivity.__al
 - `DucoConnectionError`
 - `DucoError`
 - `DucoResponseError`
+- `DucoUnsupportedCapabilityError`
 - `DucoWriteLimitError`
 
 ### Compatibility exports

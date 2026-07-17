@@ -8,6 +8,7 @@ from .exceptions import (
     DucoError,
     DucoRateLimitError,
     DucoResponseError,
+    DucoUnsupportedCapabilityError,
     DucoWriteLimitError,
 )
 from .models import (
@@ -172,6 +173,7 @@ __all__ = [
     "DucoRateLimitError",
     "DucoResponseError",
     "DucoSerialNumber",
+    "DucoUnsupportedCapabilityError",
     "DucoVersion",
     "DucoWriteLimitError",
     "HostName",

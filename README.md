@@ -32,10 +32,17 @@ in the development examples below.
 - asynchronous communication via `aiohttp`
 - typed stable config families for the documented `/config` branches
 - typed helpers for stable `/info` fields such as heat recovery filter time
-- optional temperature helpers that return `None` when the box reports their
-  endpoint as unavailable
+- optional endpoint helpers with explicit unsupported-capability errors
 - typed models that stay close to the API response shape
 - preserved `raw_payload` data on typed response models for forward compatibility
+
+## Error handling
+
+When a Duco box explicitly reports that an optional endpoint is unsupported,
+the relevant helper raises `DucoUnsupportedCapabilityError`. This exception is
+a `DucoResponseError` subclass and preserves the HTTP status, path, and response
+body. A `None` result is reserved for an optional field that is omitted from an
+otherwise valid endpoint response.
 
 Diagnostic subsystem reads now keep raw component and status strings from
 `Diag.SubSystems`, so future subsystem names or status values remain available
