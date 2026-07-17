@@ -49,6 +49,13 @@ def test_unsupported_capability_error_preserves_response_context() -> None:
     assert err.status == 400
     assert err.path == "/info"
     assert err.body == "unsupported"
+    assert str(err) == "Unsupported capability for /info: unsupported"
+
+
+def test_unsupported_capability_error_omits_empty_body_from_message() -> None:
+    """DucoUnsupportedCapabilityError should omit an empty body from its message."""
+    err = DucoUnsupportedCapabilityError(400, "/info", "   ")
+    assert str(err) == "Unsupported capability for /info"
 
 
 def test_write_limit_error_stores_remaining_count() -> None:
