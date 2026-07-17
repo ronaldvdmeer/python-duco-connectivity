@@ -274,6 +274,7 @@ METHOD_METADATA: dict[str, MethodMetadata] = {
         notes=(
             "Returns a Celsius convenience model while leaving the generic "
             "ConfigValue surface unchanged.",
+            "Returns `None` when the requested target is omitted from an otherwise valid response.",
             "Raises `DucoUnsupportedCapabilityError` when the requested "
             "optional target endpoint is unavailable.",
         ),
