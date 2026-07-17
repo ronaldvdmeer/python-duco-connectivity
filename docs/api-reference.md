@@ -191,7 +191,7 @@ python tools/api_reference.py write
   - Surface: wrapper
   - Summary: Return ventilation temperatures when the box exposes them, in Celsius.
   - Note: Converts the raw Duco decicelsius ventilation sensor values to Celsius.
-  - Note: Returns `None` when the box reports the optional endpoint as unavailable.
+  - Note: Raises `DucoUnsupportedCapabilityError` when the box reports the optional endpoint as unavailable.
 - `async_get_nodes() -> list[Node]`
   - Endpoint: `GET /info/nodes`
   - Surface: typed
@@ -217,7 +217,7 @@ python tools/api_reference.py write
   - Summary: Return a bypass supply target from `/config` in Celsius.
   - Details: [config.md](config.md)
   - Note: Returns a Celsius convenience model while leaving the generic ConfigValue surface unchanged.
-  - Note: Returns `None` when the box reports the requested optional target as unavailable.
+  - Note: Raises `DucoUnsupportedCapabilityError` when the requested optional target endpoint is unavailable.
 - `async_set_bypass_supply_temperature_target(zone_id: int, temperature: float) -> BypassSupplyTemperatureTarget`
   - Endpoint: `PATCH /config?module=HeatRecovery&submodule=Bypass&parameter=TempSupTgtZone{zone}`
   - Surface: wrapper

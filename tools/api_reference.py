@@ -237,7 +237,8 @@ METHOD_METADATA: dict[str, MethodMetadata] = {
         surface="wrapper",
         notes=(
             "Converts the raw Duco decicelsius ventilation sensor values to Celsius.",
-            "Returns `None` when the box reports the optional endpoint as unavailable.",
+            "Raises `DucoUnsupportedCapabilityError` when the box reports the "
+            "optional endpoint as unavailable.",
         ),
     ),
     "async_get_nodes": MethodMetadata(
@@ -265,21 +266,28 @@ METHOD_METADATA: dict[str, MethodMetadata] = {
     ),
     "async_get_bypass_supply_temperature_target": MethodMetadata(
         category="Node and system information",
-        endpoint="GET /config?module=HeatRecovery&submodule=Bypass&parameter=TempSupTgtZone{zone}",
+        endpoint=(
+            "GET /config?module=HeatRecovery&submodule=Bypass&parameter=TempSupTgtZone{zone}"
+        ),
         surface="wrapper",
         details_path="config.md",
         notes=(
-            "Returns a Celsius convenience model while leaving the generic ConfigValue surface unchanged.",
-            "Returns `None` when the box reports the requested optional target as unavailable.",
+            "Returns a Celsius convenience model while leaving the generic "
+            "ConfigValue surface unchanged.",
+            "Raises `DucoUnsupportedCapabilityError` when the requested "
+            "optional target endpoint is unavailable.",
         ),
     ),
     "async_set_bypass_supply_temperature_target": MethodMetadata(
         category="Node and system information",
-        endpoint="PATCH /config?module=HeatRecovery&submodule=Bypass&parameter=TempSupTgtZone{zone}",
+        endpoint=(
+            "PATCH /config?module=HeatRecovery&submodule=Bypass&parameter=TempSupTgtZone{zone}"
+        ),
         surface="wrapper",
         details_path="config.md",
         notes=(
-            "Accepts Celsius input in 0.1°C increments and serializes it back to the raw Duco decicelsius payload.",
+            "Accepts Celsius input in 0.1°C increments and serializes it "
+            "back to the raw Duco decicelsius payload.",
         ),
     ),
 }
