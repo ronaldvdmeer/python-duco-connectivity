@@ -7,6 +7,7 @@ from duco_connectivity import (
     DucoError,
     DucoRateLimitError,
     DucoResponseError,
+    DucoUnsupportedCapabilityError,
     DucoWriteLimitError,
 )
 
@@ -39,6 +40,22 @@ def test_response_error_omits_empty_body_from_default_message(body: str) -> None
     err = DucoResponseError(404, "/info", body)
 
     assert str(err) == "Unexpected response 404 for /info"
+
+
+def test_unsupported_capability_error_preserves_response_context() -> None:
+    """DucoUnsupportedCapabilityError should retain HTTP response context."""
+    err = DucoUnsupportedCapabilityError(400, "/info", "unsupported")
+    assert isinstance(err, DucoResponseError)
+    assert err.status == 400
+    assert err.path == "/info"
+    assert err.body == "unsupported"
+    assert str(err) == "Unsupported capability for /info: unsupported"
+
+
+def test_unsupported_capability_error_omits_empty_body_from_message() -> None:
+    """DucoUnsupportedCapabilityError should omit an empty body from its message."""
+    err = DucoUnsupportedCapabilityError(400, "/info", "   ")
+    assert str(err) == "Unsupported capability for /info"
 
 
 def test_write_limit_error_stores_remaining_count() -> None:

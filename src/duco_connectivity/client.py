@@ -16,6 +16,7 @@ from .exceptions import (
     DucoConnectionError,
     DucoError,
     DucoResponseError,
+    DucoUnsupportedCapabilityError,
     DucoWriteLimitError,
 )
 from .models import (
@@ -2242,13 +2243,17 @@ class DucoClient:
             path="HeatRecovery.General",
         )
 
-    async def async_get_ventilation_temperature_info(self) -> VentilationTemperatureInfo | None:
+    async def async_get_ventilation_temperature_info(self) -> VentilationTemperatureInfo:
         """Return ventilation temperatures when the box exposes them, in Celsius."""
         try:
             payload = await self.async_get_info(module=InfoModuleSelector.VENTILATION)
         except DucoResponseError as err:
             if _is_unsupported_optional_endpoint_error(err, "/info"):
-                return None
+                raise DucoUnsupportedCapabilityError(
+                    err.status,
+                    err.path,
+                    err.body,
+                ) from err
             raise
 
         if not isinstance(payload, dict):
@@ -2301,7 +2306,11 @@ class DucoClient:
             )
         except DucoResponseError as err:
             if _is_unsupported_optional_endpoint_error(err, "/config"):
-                return None
+                raise DucoUnsupportedCapabilityError(
+                    err.status,
+                    err.path,
+                    err.body,
+                ) from err
             raise
         return self._extract_bypass_supply_temperature_target(config, zone_id)
 

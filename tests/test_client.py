@@ -47,6 +47,7 @@ from duco_connectivity import (
     DucoError,
     DucoResponseError,
     DucoSerialNumber,
+    DucoUnsupportedCapabilityError,
     DucoVersion,
     DucoWriteLimitError,
     HostName,
@@ -3666,6 +3667,7 @@ async def test_get_ventilation_temperature_info_is_parsed(
         with patch.object(session, "request", _request(mock_response)):
             payload = await client.async_get_ventilation_temperature_info()
 
+    assert_type(payload, VentilationTemperatureInfo)
     assert payload == VentilationTemperatureInfo(
         temp_oda=17.5,
         temp_sup=18.0,
@@ -3688,8 +3690,8 @@ async def test_get_ventilation_temperature_info_returns_empty_model_when_sensor_
     assert payload.raw_payload == {}
 
 
-async def test_get_ventilation_temperature_info_returns_none_when_module_unsupported() -> None:
-    """Unsupported ventilation modules should be treated as an absent optional capability."""
+async def test_get_ventilation_temperature_info_raises_for_unsupported_module() -> None:
+    """Unsupported ventilation modules should raise a typed capability error."""
     mock_response = _response(
         status=400,
         text_payload='{"Code":3,"Result":"FAILED"}',
@@ -3697,10 +3699,14 @@ async def test_get_ventilation_temperature_info_returns_none_when_module_unsuppo
 
     async with aiohttp.ClientSession() as session:
         client = DucoClient(session=session, host="192.0.2.94")
-        with patch.object(session, "request", _request(mock_response)):
-            payload = await client.async_get_ventilation_temperature_info()
+        with (
+            patch.object(session, "request", _request(mock_response)),
+            pytest.raises(DucoUnsupportedCapabilityError) as err_info,
+        ):
+            await client.async_get_ventilation_temperature_info()
 
-    assert payload is None
+    assert err_info.value.status == 400
+    assert err_info.value.path == "/info"
 
 
 async def test_get_ventilation_temperature_info_reraises_other_client_errors() -> None:
@@ -3800,8 +3806,8 @@ async def test_get_bypass_supply_temperature_target_returns_none_when_not_report
     assert payload is None
 
 
-async def test_get_bypass_supply_temperature_target_returns_none_when_unsupported() -> None:
-    """Unsupported bypass targets should be treated as an absent optional capability."""
+async def test_get_bypass_supply_temperature_target_raises_when_unsupported() -> None:
+    """Unsupported bypass targets should raise a typed capability error."""
     mock_response = _response(
         status=400,
         text_payload='{"Code":3,"Result":"FAILED"}',
@@ -3809,10 +3815,14 @@ async def test_get_bypass_supply_temperature_target_returns_none_when_unsupporte
 
     async with aiohttp.ClientSession() as session:
         client = DucoClient(session=session, host="192.0.2.94")
-        with patch.object(session, "request", _request(mock_response)):
-            payload = await client.async_get_bypass_supply_temperature_target(1)
+        with (
+            patch.object(session, "request", _request(mock_response)),
+            pytest.raises(DucoUnsupportedCapabilityError) as err_info,
+        ):
+            await client.async_get_bypass_supply_temperature_target(1)
 
-    assert payload is None
+    assert err_info.value.status == 400
+    assert err_info.value.path == "/config"
 
 
 async def test_get_bypass_supply_temperature_target_reraises_other_client_errors() -> None:
@@ -3927,8 +3937,8 @@ async def test_get_time_filter_remaining_returns_none_when_not_reported() -> Non
     assert remaining is None
 
 
-async def test_get_time_filter_remaining_returns_none_when_module_unsupported() -> None:
-    """Heat recovery filter time should stay optional for boxes without that module."""
+async def test_get_time_filter_remaining_returns_none_for_unsupported_module() -> None:
+    """Unsupported heat recovery modules should remain an optional value."""
     mock_response = _response(
         status=400,
         text_payload='{"Code":3,"Result":"FAILED"}',

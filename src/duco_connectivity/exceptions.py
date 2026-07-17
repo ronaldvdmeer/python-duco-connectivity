@@ -32,6 +32,16 @@ class DucoResponseError(DucoError):
         super().__init__(detail)
 
 
+class DucoUnsupportedCapabilityError(DucoResponseError):
+    """Raised when the box does not support an optional capability."""
+
+    def __init__(self, status: int, path: str, body: str = "") -> None:
+        detail = f"Unsupported capability for {path}"
+        if body.strip():
+            detail = f"{detail}: {body}"
+        super().__init__(status, path, body, message=detail)
+
+
 class DucoWriteLimitError(DucoResponseError):
     """Raised when the box rejects writes because its budget is exhausted."""
 
