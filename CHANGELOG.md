@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-07-17
+
+### Changed
+
+- **Unsupported optional capabilities**: Raise `DucoUnsupportedCapabilityError` for explicit `400 {"Code":3,"Result":"FAILED"}` responses from the ventilation-temperature and bypass-target endpoints, separating unsupported endpoints from omitted optional data in valid responses ([#120](https://github.com/ronaldvdmeer/python-duco-connectivity/pull/120)).
+
 ## [0.9.0] - 2026-07-16
 
 ### Fixed
@@ -198,7 +204,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CI validation with pytest, Ruff, mypy, Bandit, and pip-audit.
 - PyPI Trusted Publishing workflow for tagged releases.
 
-[Unreleased]: https://github.com/ronaldvdmeer/python-duco-connectivity/compare/v0.9.0...HEAD
+[Unreleased]: https://github.com/ronaldvdmeer/python-duco-connectivity/compare/v0.10.0...HEAD
+[0.10.0]: https://github.com/ronaldvdmeer/python-duco-connectivity/releases/tag/v0.10.0
 [0.9.0]: https://github.com/ronaldvdmeer/python-duco-connectivity/releases/tag/v0.9.0
 [0.8.0]: https://github.com/ronaldvdmeer/python-duco-connectivity/releases/tag/v0.8.0
 [0.7.1]: https://github.com/ronaldvdmeer/python-duco-connectivity/releases/tag/v0.7.1
