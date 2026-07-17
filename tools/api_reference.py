@@ -238,7 +238,7 @@ METHOD_METADATA: dict[str, MethodMetadata] = {
         notes=(
             "Converts the raw Duco decicelsius ventilation sensor values to Celsius.",
             "Raises `DucoUnsupportedCapabilityError` when the box reports the "
-            "optional endpoint as unavailable.",
+            "optional endpoint as unsupported.",
         ),
     ),
     "async_get_nodes": MethodMetadata(

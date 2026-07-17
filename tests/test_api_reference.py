@@ -85,6 +85,15 @@ def test_api_reference_contains_expected_sections() -> None:
     assert "selectors.md" in content
 
 
+def test_api_reference_documents_optional_capability_contracts() -> None:
+    """Optional endpoint return and exception contracts should stay explicit."""
+    content = render_api_reference()
+
+    assert "optional endpoint as unsupported" in content
+    assert "target is omitted from an otherwise valid response" in content
+    assert "optional target endpoint is unsupported" in content
+
+
 def test_api_reference_hides_compatibility_only_method_aliases() -> None:
     """Compatibility-only client aliases should not be published as documented methods."""
     content = render_api_reference()

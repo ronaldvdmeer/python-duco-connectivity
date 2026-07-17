@@ -10,6 +10,7 @@ from duco_connectivity import (
     ConfigValue,
     ConfigValueString,
     DucoClient,
+    DucoUnsupportedCapabilityError,
     PatchConfigValue,
     PatchConfigZoneDeviceGroupConfig,
     PatchConfigZoneGeneral,
@@ -120,7 +121,10 @@ async def test_live_noop_bypass_supply_temperature_target_round_trip(
 
     target = None
     for zone_id in range(1, 9):
-        target = await live_client.async_get_bypass_supply_temperature_target(zone_id)
+        try:
+            target = await live_client.async_get_bypass_supply_temperature_target(zone_id)
+        except DucoUnsupportedCapabilityError:
+            pytest.skip("Bypass supply temperature target is unsupported by this live device")
         if target is not None:
             break
 

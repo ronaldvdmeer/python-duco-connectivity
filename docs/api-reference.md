@@ -191,7 +191,7 @@ python tools/api_reference.py write
   - Surface: wrapper
   - Summary: Return ventilation temperatures when the box exposes them, in Celsius.
   - Note: Converts the raw Duco decicelsius ventilation sensor values to Celsius.
-  - Note: Raises `DucoUnsupportedCapabilityError` when the box reports the optional endpoint as unavailable.
+  - Note: Raises `DucoUnsupportedCapabilityError` when the box reports the optional endpoint as unsupported.
 - `async_get_nodes() -> list[Node]`
   - Endpoint: `GET /info/nodes`
   - Surface: typed

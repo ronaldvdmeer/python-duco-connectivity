@@ -110,7 +110,8 @@ Behavior:
 
 - Reads and writes the same `HeatRecovery.Bypass.TempSupTgtZoneX` fields
 - Accepts and returns Celsius values in `0.1°C` increments
-- Returns `None` when the box does not expose the requested optional target
+- Returns `None` when the requested target is omitted from an otherwise valid response
+- Raises `DucoUnsupportedCapabilityError` when the box explicitly reports that the optional target endpoint is unsupported
 - Preserves the generic `async_get_config()` and `async_set_config()` behavior
     unchanged for callers that still want the original API-shaped payloads
 

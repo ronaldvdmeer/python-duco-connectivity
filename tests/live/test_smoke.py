@@ -13,6 +13,7 @@ from duco_connectivity import (
     ConfigValueString,
     DucoClient,
     DucoSerialNumber,
+    DucoUnsupportedCapabilityError,
     DucoVersion,
     HostName,
     IpAddress,
@@ -127,11 +128,10 @@ async def test_live_reads_temperature_convenience_helpers(
     live_report: Callable[[str], None],
 ) -> None:
     """Read the temperature convenience helper surfaces from a live Duco device."""
-    ventilation = await live_client.async_get_ventilation_temperature_info()
-    bypass = await live_client.async_get_bypass_supply_temperature_target(1)
-
-    if ventilation is None:
-        ventilation_summary = "unavailable"
+    try:
+        ventilation = await live_client.async_get_ventilation_temperature_info()
+    except DucoUnsupportedCapabilityError:
+        ventilation_summary = "unsupported"
     else:
         ventilation_summary = (
             f"oda={ventilation.temp_oda} sup={ventilation.temp_sup} "
@@ -147,10 +147,15 @@ async def test_live_reads_temperature_convenience_helpers(
             if value is not None:
                 assert isinstance(value, float)
 
-    live_report(
-        f"ventilation_temps={ventilation_summary} "
-        f"bypass_zone1={None if bypass is None else bypass.value}"
-    )
+    try:
+        bypass = await live_client.async_get_bypass_supply_temperature_target(1)
+    except DucoUnsupportedCapabilityError:
+        bypass = None
+        bypass_summary = "unsupported"
+    else:
+        bypass_summary = None if bypass is None else bypass.value
+
+    live_report(f"ventilation_temps={ventilation_summary} bypass_zone1={bypass_summary}")
 
     if bypass is not None:
         assert isinstance(bypass, BypassSupplyTemperatureTarget)
