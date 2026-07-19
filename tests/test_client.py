@@ -3794,16 +3794,20 @@ async def test_get_bypass_supply_temperature_target_returns_converted_values(
     }
 
 
-async def test_get_bypass_supply_temperature_target_returns_none_when_not_reported() -> None:
-    """Missing bypass targets should return None instead of failing."""
+async def test_get_bypass_supply_temperature_target_raises_when_not_reported() -> None:
+    """Missing bypass targets should fail for parameter-specific helper reads."""
     mock_response = _response(json_payload={"HeatRecovery": {"Bypass": {}}})
 
     async with aiohttp.ClientSession() as session:
         client = DucoClient(session=session, host="192.0.2.94")
-        with patch.object(session, "request", _request(mock_response)):
-            payload = await client.async_get_bypass_supply_temperature_target(1)
-
-    assert payload is None
+        with (
+            patch.object(session, "request", _request(mock_response)),
+            pytest.raises(
+                DucoError,
+                match=re.escape("Expected TempSupTgtZone1 in /config response"),
+            ),
+        ):
+            await client.async_get_bypass_supply_temperature_target(1)
 
 
 async def test_get_bypass_supply_temperature_target_raises_when_unsupported() -> None:

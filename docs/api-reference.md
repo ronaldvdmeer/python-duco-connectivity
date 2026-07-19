@@ -211,14 +211,14 @@ python tools/api_reference.py write
   - Endpoint: `GET /info?module=General&submodule=PublicApi`
   - Surface: typed
   - Summary: Return the remaining write budget reported by the box.
-- `async_get_bypass_supply_temperature_target(zone_id: int) -> BypassSupplyTemperatureTarget | None`
+- `async_get_bypass_supply_temperature_target(zone_id: int) -> BypassSupplyTemperatureTarget`
   - Endpoint: `GET /config?module=HeatRecovery&submodule=Bypass&parameter=TempSupTgtZone{zone}`
   - Surface: wrapper
   - Summary: Return a bypass supply target from `/config` in Celsius.
   - Details: [config.md](config.md)
   - Note: Returns a Celsius convenience model while leaving the generic ConfigValue surface unchanged.
-  - Note: Returns `None` when the requested target is omitted from an otherwise valid response.
   - Note: Raises `DucoUnsupportedCapabilityError` when the requested optional target endpoint is unsupported.
+  - Note: Raises `DucoError` when a parameter-specific read succeeds without the requested target field in the response.
 - `async_set_bypass_supply_temperature_target(zone_id: int, temperature: float) -> BypassSupplyTemperatureTarget`
   - Endpoint: `PATCH /config?module=HeatRecovery&submodule=Bypass&parameter=TempSupTgtZone{zone}`
   - Surface: wrapper
