@@ -44,8 +44,9 @@ bypass-target endpoint is unsupported, the relevant helper raises
 subclass and preserves the HTTP status, path, and response body. A valid
 ventilation-temperature response always returns a `VentilationTemperatureInfo`
 model, whose individual temperature fields can be `None` when omitted. The
-bypass-target helper returns `None` when its target is omitted from a valid
-response.
+bypass-target helper returns a typed target model for successful parameter-
+specific reads and raises `DucoError` if the requested target field is missing
+from an otherwise valid `/config` response.
 
 Diagnostic subsystem reads now keep raw component and status strings from
 `Diag.SubSystems`, so future subsystem names or status values remain available

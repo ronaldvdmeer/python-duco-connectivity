@@ -110,8 +110,8 @@ Behavior:
 
 - Reads and writes the same `HeatRecovery.Bypass.TempSupTgtZoneX` fields
 - Accepts and returns Celsius values in `0.1°C` increments
-- Returns `None` when the requested target is omitted from an otherwise valid response
 - Raises `DucoUnsupportedCapabilityError` when the box explicitly reports that the optional target endpoint is unsupported
+- Raises `DucoError` when a parameter-specific read returns a valid `/config` response without the requested target field
 - Preserves the generic `async_get_config()` and `async_set_config()` behavior
     unchanged for callers that still want the original API-shaped payloads
 
@@ -119,9 +119,7 @@ Example:
 
 ```python
 target = await client.async_get_bypass_supply_temperature_target(1)
-
-if target is not None:
-    print(target.value, target.minimum, target.increment, target.maximum)
+print(target.value, target.minimum, target.increment, target.maximum)
 
 updated = await client.async_set_bypass_supply_temperature_target(1, 18.5)
 assert updated.value == 18.5

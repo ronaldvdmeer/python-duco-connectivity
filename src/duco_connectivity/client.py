@@ -2295,7 +2295,7 @@ class DucoClient:
     async def async_get_bypass_supply_temperature_target(
         self,
         zone_id: int,
-    ) -> BypassSupplyTemperatureTarget | None:
+    ) -> BypassSupplyTemperatureTarget:
         """Return a bypass supply target from `/config` in Celsius."""
         parameter = self._validate_bypass_zone_id(zone_id)
         try:
@@ -2312,7 +2312,11 @@ class DucoClient:
                     err.body,
                 ) from err
             raise
-        return self._extract_bypass_supply_temperature_target(config, zone_id)
+        target = self._extract_bypass_supply_temperature_target(config, zone_id)
+        if target is None:
+            msg = f"Expected {parameter} in /config response"
+            raise DucoError(msg)
+        return target
 
     async def async_set_bypass_supply_temperature_target(
         self,

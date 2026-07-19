@@ -90,7 +90,7 @@ def test_api_reference_documents_optional_capability_contracts() -> None:
     content = render_api_reference()
 
     assert "optional endpoint as unsupported" in content
-    assert "target is omitted from an otherwise valid response" in content
+    assert "without the requested target field in the response" in content
     assert "optional target endpoint is unsupported" in content
 
 

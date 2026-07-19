@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Bypass target helper contract**: Require `async_get_bypass_supply_temperature_target()` to return a typed target for successful parameter-specific reads, and raise `DucoError` when the requested field is missing from an otherwise valid `/config` response.
+
 ## [0.10.0] - 2026-07-17
 
 ### Changed
