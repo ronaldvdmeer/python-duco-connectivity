@@ -7,9 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-07-19
+
 ### Changed
 
-- **Bypass target helper contract**: Require `async_get_bypass_supply_temperature_target()` to return a typed target for successful parameter-specific reads, and raise `DucoError` when the requested field is missing from an otherwise valid `/config` response.
+- **Bypass target helper contract**: Require `async_get_bypass_supply_temperature_target()` to return a typed target for successful parameter-specific reads, and raise `DucoError` when the requested field is missing from an otherwise valid `/config` response ([#123](https://github.com/ronaldvdmeer/python-duco-connectivity/pull/123)).
 
 ## [0.10.0] - 2026-07-17
 
@@ -208,7 +210,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CI validation with pytest, Ruff, mypy, Bandit, and pip-audit.
 - PyPI Trusted Publishing workflow for tagged releases.
 
-[Unreleased]: https://github.com/ronaldvdmeer/python-duco-connectivity/compare/v0.10.0...HEAD
+[Unreleased]: https://github.com/ronaldvdmeer/python-duco-connectivity/compare/v0.11.0...HEAD
+[0.11.0]: https://github.com/ronaldvdmeer/python-duco-connectivity/releases/tag/v0.11.0
 [0.10.0]: https://github.com/ronaldvdmeer/python-duco-connectivity/releases/tag/v0.10.0
 [0.9.0]: https://github.com/ronaldvdmeer/python-duco-connectivity/releases/tag/v0.9.0
 [0.8.0]: https://github.com/ronaldvdmeer/python-duco-connectivity/releases/tag/v0.8.0
