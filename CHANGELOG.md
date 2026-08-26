@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-08-26
+
+### Added
+
+- **Bulk bypass supply target reads**: Add
+  `async_get_bypass_supply_temperature_targets()` to retrieve every available
+  zone target with one `/config` request, keyed by zone ID while omitting
+  targets absent from successful responses
+  ([#125](https://github.com/ronaldvdmeer/python-duco-connectivity/pull/125)).
+
 ## [0.11.0] - 2026-07-19
 
 ### Changed
@@ -210,7 +220,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CI validation with pytest, Ruff, mypy, Bandit, and pip-audit.
 - PyPI Trusted Publishing workflow for tagged releases.
 
-[Unreleased]: https://github.com/ronaldvdmeer/python-duco-connectivity/compare/v0.11.0...HEAD
+[Unreleased]: https://github.com/ronaldvdmeer/python-duco-connectivity/compare/v0.12.0...HEAD
+[0.12.0]: https://github.com/ronaldvdmeer/python-duco-connectivity/releases/tag/v0.12.0
 [0.11.0]: https://github.com/ronaldvdmeer/python-duco-connectivity/releases/tag/v0.11.0
 [0.10.0]: https://github.com/ronaldvdmeer/python-duco-connectivity/releases/tag/v0.10.0
 [0.9.0]: https://github.com/ronaldvdmeer/python-duco-connectivity/releases/tag/v0.9.0
