@@ -3794,6 +3794,81 @@ async def test_get_bypass_supply_temperature_target_returns_converted_values(
     }
 
 
+async def test_get_bypass_supply_temperature_targets_returns_available_targets(
+    config_data: dict[str, object],
+) -> None:
+    """Bulk bypass target reads should return all available targets in Celsius."""
+    mock_response = _response(json_payload=config_data)
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        request_mock = _request(mock_response)
+        with patch.object(session, "request", request_mock):
+            targets = await client.async_get_bypass_supply_temperature_targets()
+
+    assert targets == {
+        1: BypassSupplyTemperatureTarget(
+            zone_id=1,
+            value=18.0,
+            minimum=12.0,
+            increment=0.5,
+            maximum=22.0,
+        ),
+        2: BypassSupplyTemperatureTarget(
+            zone_id=2,
+            value=18.5,
+            minimum=12.0,
+            increment=0.5,
+            maximum=22.0,
+        ),
+    }
+    assert request_mock.call_args.kwargs["params"] == {
+        "module": "HeatRecovery",
+        "submodule": "Bypass",
+    }
+
+
+async def test_get_bypass_supply_temperature_targets_returns_empty_when_absent() -> None:
+    """Bulk bypass target reads should omit targets absent from the response."""
+    mock_response = _response(json_payload={"HeatRecovery": {"Bypass": {}}})
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with patch.object(session, "request", _request(mock_response)):
+            targets = await client.async_get_bypass_supply_temperature_targets()
+
+    assert targets == {}
+
+
+async def test_get_bypass_supply_temperature_targets_raises_when_unsupported() -> None:
+    """Unsupported bulk bypass target reads should raise a typed capability error."""
+    mock_response = _response(
+        status=400,
+        text_payload='{"Code":3,"Result":"FAILED"}',
+    )
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with (
+            patch.object(session, "request", _request(mock_response)),
+            pytest.raises(DucoUnsupportedCapabilityError),
+        ):
+            await client.async_get_bypass_supply_temperature_targets()
+
+
+async def test_get_bypass_supply_temperature_targets_reraises_other_client_errors() -> None:
+    """Unexpected bulk bypass target failures should remain visible to callers."""
+    mock_response = _response(status=400, text_payload='{"Code":4,"Result":"FAILED"}')
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with (
+            patch.object(session, "request", _request(mock_response)),
+            pytest.raises(DucoResponseError),
+        ):
+            await client.async_get_bypass_supply_temperature_targets()
+
+
 async def test_get_bypass_supply_temperature_target_raises_when_not_reported() -> None:
     """Missing bypass targets should fail for parameter-specific helper reads."""
     mock_response = _response(json_payload={"HeatRecovery": {"Bypass": {}}})

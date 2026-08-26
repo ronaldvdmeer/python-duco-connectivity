@@ -400,6 +400,19 @@ class DucoClient:
 
         return cls._build_bypass_supply_temperature_target(zone_id, raw_value)
 
+    @classmethod
+    def _extract_bypass_supply_temperature_targets(
+        cls,
+        config: Config,
+    ) -> dict[int, BypassSupplyTemperatureTarget]:
+        """Read all bypass supply targets from a typed config response."""
+        return {
+            zone_id: target
+            for zone_id in range(1, 9)
+            if (target := cls._extract_bypass_supply_temperature_target(config, zone_id))
+            is not None
+        }
+
     @staticmethod
     def _read_scalar_value(payload: dict[str, Any], key: str) -> Any:
         raw_value = payload[key]
@@ -2317,6 +2330,25 @@ class DucoClient:
             msg = f"Expected {parameter} in /config response"
             raise DucoError(msg)
         return target
+
+    async def async_get_bypass_supply_temperature_targets(
+        self,
+    ) -> dict[int, BypassSupplyTemperatureTarget]:
+        """Return all bypass supply targets exposed through `/config` in Celsius."""
+        try:
+            config = await self.async_get_config(
+                module=ConfigModuleSelector.HEAT_RECOVERY,
+                submodule=ConfigHeatRecoverySubmoduleSelector.BYPASS,
+            )
+        except DucoResponseError as err:
+            if _is_unsupported_optional_endpoint_error(err, "/config"):
+                raise DucoUnsupportedCapabilityError(
+                    err.status,
+                    err.path,
+                    err.body,
+                ) from err
+            raise
+        return self._extract_bypass_supply_temperature_targets(config)
 
     async def async_set_bypass_supply_temperature_target(
         self,

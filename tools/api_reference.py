@@ -280,6 +280,18 @@ METHOD_METADATA: dict[str, MethodMetadata] = {
             "without the requested target field in the response.",
         ),
     ),
+    "async_get_bypass_supply_temperature_targets": MethodMetadata(
+        category="Node and system information",
+        endpoint="GET /config?module=HeatRecovery&submodule=Bypass",
+        surface="wrapper",
+        details_path="config.md",
+        notes=(
+            "Returns all available bypass supply targets as Celsius convenience models.",
+            "Omits target fields that are absent from a successful response.",
+            "Raises `DucoUnsupportedCapabilityError` when the optional bypass endpoint "
+            "is unsupported.",
+        ),
+    ),
     "async_set_bypass_supply_temperature_target": MethodMetadata(
         category="Node and system information",
         endpoint=(

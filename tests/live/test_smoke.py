@@ -162,6 +162,19 @@ async def test_live_reads_temperature_convenience_helpers(
         assert bypass.zone_id == 1
         assert isinstance(bypass.value, float)
 
+    try:
+        bypass_targets = await live_client.async_get_bypass_supply_temperature_targets()
+    except DucoUnsupportedCapabilityError:
+        bypass_targets_summary = "unsupported"
+    else:
+        bypass_targets_summary = ",".join(str(zone_id) for zone_id in bypass_targets)
+        assert all(
+            zone_id == target.zone_id and isinstance(target, BypassSupplyTemperatureTarget)
+            for zone_id, target in bypass_targets.items()
+        )
+
+    live_report(f"bypass_zones={bypass_targets_summary}")
+
 
 async def test_live_reads_diagnostics_and_nodes(
     live_client: DucoClient,
