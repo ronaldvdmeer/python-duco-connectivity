@@ -103,6 +103,7 @@ their integer API scale instead of converting automatically to Celsius.
 For callers that want a narrower typed surface with the Celsius conversion kept
 inside the library, `DucoClient` also exposes these convenience helpers:
 
+- `async_get_bypass_supply_temperature_targets()`
 - `async_get_bypass_supply_temperature_target(zone_id)`
 - `async_set_bypass_supply_temperature_target(zone_id, temperature)`
 
@@ -110,6 +111,9 @@ Behavior:
 
 - Reads and writes the same `HeatRecovery.Bypass.TempSupTgtZoneX` fields
 - Accepts and returns Celsius values in `0.1°C` increments
+- Returns all available targets in one request from
+    `async_get_bypass_supply_temperature_targets()`, keyed by zone ID
+- Omits target fields that are absent from a successful bulk response
 - Raises `DucoUnsupportedCapabilityError` when the box explicitly reports that the optional target endpoint is unsupported
 - Raises `DucoError` when a parameter-specific read returns a valid `/config` response without the requested target field
 - Preserves the generic `async_get_config()` and `async_set_config()` behavior
@@ -118,6 +122,10 @@ Behavior:
 Example:
 
 ```python
+targets = await client.async_get_bypass_supply_temperature_targets()
+for zone_id, target in targets.items():
+    print(zone_id, target.value)
+
 target = await client.async_get_bypass_supply_temperature_target(1)
 print(target.value, target.minimum, target.increment, target.maximum)
 

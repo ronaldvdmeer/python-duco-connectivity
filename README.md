@@ -152,6 +152,7 @@ For local function probes without activating the environment first:
 .venv/bin/python -m duco_connectivity --host 192.168.1.10 call async_get_board_info
 .venv/bin/duco-probe --host 192.168.1.10 call async_get_board_info
 .venv/bin/duco-probe --host 192.168.1.10 call async_get_ventilation_temperature_info
+.venv/bin/duco-probe --host 192.168.1.10 call async_get_bypass_supply_temperature_targets
 .venv/bin/duco-probe --host 192.168.1.10 call async_get_bypass_supply_temperature_target --kwargs '{"zone_id": 1}'
 ```
 
