@@ -134,6 +134,7 @@ async def test_live_noop_bypass_supply_temperature_target_round_trip(
     result = await live_client.async_set_bypass_supply_temperature_target(
         target.zone_id,
         target.value,
+        target=target,
     )
 
     assert isinstance(result, BypassSupplyTemperatureTarget)

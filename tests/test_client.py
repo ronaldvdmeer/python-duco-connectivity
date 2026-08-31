@@ -4079,6 +4079,81 @@ async def test_set_bypass_supply_temperature_target_serializes_decicelsius(
     assert kwargs["headers"] == {"Content-Type": "application/json"}
 
 
+async def test_set_bypass_supply_temperature_target_validates_against_target(
+    config_data: dict[str, object],
+) -> None:
+    """Metadata-aware writes should validate and issue one PATCH without a GET."""
+    target = BypassSupplyTemperatureTarget(
+        zone_id=2,
+        value=18.5,
+        minimum=12.0,
+        increment=0.5,
+        maximum=22.0,
+    )
+    mock_response = _response(json_payload=config_data)
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        request = MagicMock(return_value=_request_context(mock_response))
+        with patch.object(session, "request", request):
+            await client.async_set_bypass_supply_temperature_target(
+                2,
+                18.5,
+                target=target,
+            )
+
+    request.assert_called_once()
+    assert request.call_args.args[:2] == ("PATCH", "http://192.0.2.94/config")
+
+
+@pytest.mark.parametrize(
+    ("zone_id", "value", "message"),
+    [
+        pytest.param(1, 18.5, "target zone_id must match zone_id", id="zone_mismatch"),
+        pytest.param(
+            2,
+            18.4,
+            "value must align with increment relative to minimum",
+            id="off_step",
+        ),
+        pytest.param(
+            2,
+            22.5,
+            "value must be between minimum and maximum",
+            id="out_of_range",
+        ),
+    ],
+)
+async def test_set_bypass_supply_temperature_target_rejects_target_mismatch(
+    zone_id: int,
+    value: float,
+    message: str,
+) -> None:
+    """Metadata-aware writes should reject invalid values before network I/O."""
+    target = BypassSupplyTemperatureTarget(
+        zone_id=2,
+        value=18.5,
+        minimum=12.0,
+        increment=0.5,
+        maximum=22.0,
+    )
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        request = MagicMock()
+        with (
+            patch.object(session, "request", request),
+            pytest.raises(ValueError, match=message),
+        ):
+            await client.async_set_bypass_supply_temperature_target(
+                zone_id,
+                value,
+                target=target,
+            )
+
+    request.assert_not_called()
+
+
 async def test_set_bypass_supply_temperature_target_rejects_invalid_response() -> None:
     """Bypass writes should reject incomplete target metadata in the response."""
     mock_response = _response(

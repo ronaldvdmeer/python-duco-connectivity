@@ -2386,9 +2386,15 @@ class DucoClient:
         self,
         zone_id: int,
         temperature: float,
+        *,
+        target: BypassSupplyTemperatureTarget | None = None,
     ) -> BypassSupplyTemperatureTarget:
         """Set a bypass supply target through `/config` using Celsius input."""
         parameter = self._validate_bypass_zone_id(zone_id)
+        if target is not None:
+            if target.zone_id != zone_id:
+                raise ValueError("target zone_id must match zone_id")
+            target.validate_value(temperature)
         raw_value = self._celsius_to_decicelsius(
             temperature,
             path=f"bypass_supply_temperature_target[{zone_id}]",
