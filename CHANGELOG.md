@@ -7,22 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.14.0] - 2026-08-31
+
 ### Changed
 
-- **Optional capability discovery**: Return natural empty results for explicit
-  unsupported responses from ventilation-temperature and bulk bypass target
-  discovery. Strict single-target reads continue to raise
-  `DucoUnsupportedCapabilityError`, and malformed or operational failures remain
-  exceptions.
 - **Bypass target metadata integrity**: Require complete and coherent value,
   minimum, increment, and maximum metadata from bypass target convenience
   helpers. Bulk reads isolate invalid targets per zone, while strict reads and
-  write responses raise `DucoError` for invalid target metadata.
+  write responses raise `DucoError` for invalid target metadata
+  ([#142](https://github.com/ronaldvdmeer/python-duco-connectivity/pull/142)).
 - **Target-owned bypass value policy**: Add exact range and step validation plus
   explicit half-up normalization to `BypassSupplyTemperatureTarget`. Bypass
   writes can now accept already-polled target metadata to validate before one
   PATCH without a hidden GET; calls without metadata retain the legacy finite
-  and exact-decicelsius checks temporarily.
+  and exact-decicelsius checks temporarily
+  ([#143](https://github.com/ronaldvdmeer/python-duco-connectivity/pull/143)).
+- **Optional capability discovery**: Return natural empty results for explicit
+  unsupported responses from ventilation-temperature and bulk bypass target
+  discovery. Strict single-target reads continue to raise
+  `DucoUnsupportedCapabilityError`, and malformed or operational failures remain
+  exceptions
+  ([#144](https://github.com/ronaldvdmeer/python-duco-connectivity/pull/144)).
 
 ## [0.13.1] - 2026-08-31
 
@@ -257,7 +262,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CI validation with pytest, Ruff, mypy, Bandit, and pip-audit.
 - PyPI Trusted Publishing workflow for tagged releases.
 
-[Unreleased]: https://github.com/ronaldvdmeer/python-duco-connectivity/compare/v0.13.1...HEAD
+[Unreleased]: https://github.com/ronaldvdmeer/python-duco-connectivity/compare/v0.14.0...HEAD
+[0.14.0]: https://github.com/ronaldvdmeer/python-duco-connectivity/releases/tag/v0.14.0
 [0.13.1]: https://github.com/ronaldvdmeer/python-duco-connectivity/releases/tag/v0.13.1
 [0.13.0]: https://github.com/ronaldvdmeer/python-duco-connectivity/releases/tag/v0.13.0
 [0.12.0]: https://github.com/ronaldvdmeer/python-duco-connectivity/releases/tag/v0.12.0
