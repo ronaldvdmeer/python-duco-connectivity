@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.0] - 2026-08-31
+
+### Changed
+
+- **Typed diagnostic status values**: Normalize known diagnostic subsystem
+  statuses as `DiagStatus` values while preserving the exact API value in
+  `DiagComponent.raw_status`; unknown future statuses now produce `status=None`
+  without losing their raw value
+  ([#128](https://github.com/ronaldvdmeer/python-duco-connectivity/pull/128)).
+
 ## [0.12.0] - 2026-08-26
 
 ### Added
@@ -220,7 +230,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CI validation with pytest, Ruff, mypy, Bandit, and pip-audit.
 - PyPI Trusted Publishing workflow for tagged releases.
 
-[Unreleased]: https://github.com/ronaldvdmeer/python-duco-connectivity/compare/v0.12.0...HEAD
+[Unreleased]: https://github.com/ronaldvdmeer/python-duco-connectivity/compare/v0.13.0...HEAD
+[0.13.0]: https://github.com/ronaldvdmeer/python-duco-connectivity/releases/tag/v0.13.0
 [0.12.0]: https://github.com/ronaldvdmeer/python-duco-connectivity/releases/tag/v0.12.0
 [0.11.0]: https://github.com/ronaldvdmeer/python-duco-connectivity/releases/tag/v0.11.0
 [0.10.0]: https://github.com/ronaldvdmeer/python-duco-connectivity/releases/tag/v0.10.0
