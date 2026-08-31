@@ -3720,6 +3720,7 @@ async def test_get_ventilation_temperature_info_returns_empty_when_unsupported()
             payload = await client.async_get_ventilation_temperature_info()
 
     assert payload == VentilationTemperatureInfo()
+    assert payload.raw_payload == {}
 
 
 async def test_get_ventilation_temperature_info_reraises_other_client_errors() -> None:
