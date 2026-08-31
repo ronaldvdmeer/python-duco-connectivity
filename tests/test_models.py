@@ -2,6 +2,7 @@
 
 import inspect
 import logging
+from typing import cast
 
 import pytest
 
@@ -41,6 +42,8 @@ from duco_connectivity import (
     ConfigZonesOverview,
     ConfigZoneStruct,
     DeviceGroupConfigSubmoduleSelector,
+    DiagComponent,
+    DiagStatus,
     DucoSerialNumber,
     DucoVersion,
     HostName,
@@ -273,6 +276,87 @@ def test_selector_enum_values() -> None:
     assert NodeInfoModuleSelector.MOTOR_STATE_CTRL.value == "MotorStateCtrl"
     assert ZoneModuleSelector.DEVICE_GROUP_CONFIG.value == "DeviceGroupConfig"
     assert DeviceGroupConfigSubmoduleSelector.GENERAL.value == "General"
+
+
+@pytest.mark.parametrize(
+    ("raw_status", "expected_status"),
+    [
+        pytest.param("Ok", DiagStatus.OK, id="ok"),
+        pytest.param("Disable", DiagStatus.DISABLED, id="disabled"),
+        pytest.param("Error", DiagStatus.ERROR, id="error"),
+        pytest.param("FutureState", None, id="unknown"),
+    ],
+)
+def test_diag_component_accepts_legacy_raw_status(
+    raw_status: str, expected_status: DiagStatus | None
+) -> None:
+    """DiagComponent should normalize status strings accepted before version 0.13."""
+    raw_payload = {"Status": raw_status}
+
+    component = DiagComponent(
+        component="Ventilation",
+        status=raw_status,
+        raw_payload=raw_payload,
+    )
+
+    assert component.status is expected_status
+    assert component.raw_status == raw_status
+    assert component.raw_payload is raw_payload
+
+
+def test_diag_component_accepts_legacy_positional_raw_payload() -> None:
+    """DiagComponent should retain the legacy positional raw payload argument."""
+    raw_payload = {"Status": "Ok"}
+
+    component = DiagComponent("Ventilation", "Ok", raw_payload)
+
+    assert component.status is DiagStatus.OK
+    assert component.raw_status == "Ok"
+    assert component.raw_payload is raw_payload
+
+
+def test_diag_component_accepts_normalized_status() -> None:
+    """DiagComponent should retain the explicit normalized status contract."""
+    component = DiagComponent(
+        component="Ventilation",
+        status=DiagStatus.OK,
+        raw_status="Ok",
+    )
+
+    assert component.status is DiagStatus.OK
+    assert component.raw_status == "Ok"
+
+
+def test_diag_component_rejects_conflicting_legacy_raw_status() -> None:
+    """DiagComponent should reject conflicting legacy raw status values."""
+    with pytest.raises(ValueError, match="raw_status must match status"):
+        DiagComponent(
+            component="Ventilation",
+            status="Ok",
+            raw_status="Error",
+        )
+
+
+def test_diag_component_accepts_matching_legacy_raw_status() -> None:
+    """DiagComponent should accept matching explicit legacy raw status values."""
+    component = DiagComponent(
+        component="Ventilation",
+        status="Ok",
+        raw_status="Ok",
+    )
+
+    assert component.status is DiagStatus.OK
+    assert component.raw_status == "Ok"
+
+
+def test_diag_component_rejects_non_string_raw_status() -> None:
+    """DiagComponent should reject non-string raw status values."""
+    with pytest.raises(TypeError, match="raw_status must be a string"):
+        DiagComponent(
+            component="Ventilation",
+            status=DiagStatus.OK,
+            raw_status=cast(str, 42),
+        )
 
 
 def test_board_name_known_value() -> None:

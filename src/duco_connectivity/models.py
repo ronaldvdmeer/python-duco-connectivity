@@ -1575,7 +1575,7 @@ class NodeOverview:
     raw_payload: dict[str, Any] = field(default_factory=dict, repr=False, compare=False)
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True, slots=True, init=False)
 class DiagComponent:
     """Health state for a diagnostic subsystem."""
 
@@ -1583,6 +1583,46 @@ class DiagComponent:
     status: DiagStatus | None
     raw_status: str
     raw_payload: dict[str, Any] = field(default_factory=dict, repr=False, compare=False)
+
+    def __init__(
+        self,
+        component: str,
+        status: DiagStatus | str | None,
+        raw_status: str | dict[str, Any] | None = None,
+        raw_payload: dict[str, Any] | None = None,
+    ) -> None:
+        """Initialize a diagnostic subsystem with legacy argument compatibility."""
+        if isinstance(raw_status, dict):
+            if raw_payload is not None:
+                raise TypeError("raw_payload was provided more than once")
+            raw_payload = raw_status
+            raw_status = None
+        if raw_status is not None and not isinstance(raw_status, str):
+            raise TypeError("raw_status must be a string")
+        if (
+            isinstance(status, str)
+            and not isinstance(status, DiagStatus)
+            and raw_status is not None
+            and raw_status != status
+        ):
+            raise ValueError("raw_status must match status for raw API strings")
+
+        normalized_status: DiagStatus | None
+        if isinstance(status, DiagStatus):
+            normalized_status = status
+        elif isinstance(status, str):
+            normalized_status = DiagStatus.from_api_value(status)
+        else:
+            normalized_status = None
+        if raw_status is None:
+            if not isinstance(status, str) or isinstance(status, DiagStatus):
+                raise TypeError("raw_status is required unless status is a raw API string")
+            raw_status = status
+
+        object.__setattr__(self, "component", component)
+        object.__setattr__(self, "status", normalized_status)
+        object.__setattr__(self, "raw_status", raw_status)
+        object.__setattr__(self, "raw_payload", {} if raw_payload is None else raw_payload)
 
 
 @dataclass(frozen=True, slots=True)
