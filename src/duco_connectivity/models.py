@@ -948,9 +948,9 @@ class BypassSupplyTemperatureTarget:
 
     zone_id: int
     value: float
-    minimum: float | None = None
-    increment: float | None = None
-    maximum: float | None = None
+    minimum: float
+    increment: float
+    maximum: float
     raw_payload: dict[str, Any] = field(default_factory=dict, repr=False, compare=False)
 
 

@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Bypass target metadata integrity**: Require complete and coherent value,
+  minimum, increment, and maximum metadata from bypass target convenience
+  helpers. Bulk reads isolate invalid targets per zone, while strict reads and
+  write responses raise `DucoError` for invalid target metadata.
+
 ## [0.13.1] - 2026-08-31
 
 ### Fixed
