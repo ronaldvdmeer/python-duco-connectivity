@@ -1607,7 +1607,7 @@ class DiagComponent:
             normalized_status = None
         if raw_status is None:
             if not isinstance(status, str) or isinstance(status, DiagStatus):
-                raise TypeError("raw_status is required for typed diagnostic statuses")
+                raise TypeError("raw_status is required unless status is a raw API string")
             raw_status = status
 
         object.__setattr__(self, "component", component)
