@@ -160,7 +160,7 @@ async def test_live_reads_temperature_convenience_helpers(
         assert isinstance(bypass.value, float)
 
     bypass_targets = await live_client.async_get_bypass_supply_temperature_targets()
-    bypass_targets_summary = ",".join(str(zone_id) for zone_id in bypass_targets)
+    bypass_targets_summary = ",".join(str(zone_id) for zone_id in bypass_targets) or "<empty>"
     assert all(
         zone_id == target.zone_id and isinstance(target, BypassSupplyTemperatureTarget)
         for zone_id, target in bypass_targets.items()
