@@ -116,9 +116,12 @@ Behavior:
 - Returns all available targets in one request from
     `async_get_bypass_supply_temperature_targets()`, keyed by zone ID
 - Omits target fields that are absent from a successful bulk response
+- Returns an empty mapping from the bulk helper when the box explicitly reports
+    that bypass target discovery is unsupported
+- Raises `DucoUnsupportedCapabilityError` from the parameter-specific helper
+    when the explicitly requested target is unsupported
 - Omits an incomplete or inconsistent target from a bulk response while
     retaining valid targets from other zones
-- Raises `DucoUnsupportedCapabilityError` when the box explicitly reports that the optional target endpoint is unsupported
 - Raises `DucoError` when a parameter-specific read or write response contains
     no target, incomplete metadata, an invalid range, or an off-step value
 - Exposes `target.validate_value(value)` for range and step validation and

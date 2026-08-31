@@ -89,7 +89,8 @@ def test_api_reference_documents_optional_capability_contracts() -> None:
     """Optional endpoint return and exception contracts should stay explicit."""
     content = render_api_reference()
 
-    assert "optional endpoint as unsupported" in content
+    assert "empty model when the optional endpoint is unsupported" in content
+    assert "empty mapping when the optional bypass endpoint is unsupported" in content
     assert "without the requested target field in the response" in content
     assert "optional target endpoint is unsupported" in content
 

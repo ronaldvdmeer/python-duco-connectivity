@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Optional capability discovery**: Return natural empty results for explicit
+  unsupported responses from ventilation-temperature and bulk bypass target
+  discovery. Strict single-target reads continue to raise
+  `DucoUnsupportedCapabilityError`, and malformed or operational failures remain
+  exceptions.
 - **Bypass target metadata integrity**: Require complete and coherent value,
   minimum, increment, and maximum metadata from bypass target convenience
   helpers. Bulk reads isolate invalid targets per zone, while strict reads and
