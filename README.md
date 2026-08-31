@@ -48,9 +48,11 @@ bypass-target helper returns a typed target model for successful parameter-
 specific reads and raises `DucoError` if the requested target field is missing
 from an otherwise valid `/config` response.
 
-Diagnostic subsystem reads now keep raw component and status strings from
-`Diag.SubSystems`, so future subsystem names or status values remain available
-to downstream consumers without parse fallbacks or product-specific filtering.
+Diagnostic subsystem reads expose known status values as normalized `DiagStatus`
+members (`ok`, `disabled`, or `error`). Each `DiagComponent` also keeps the exact
+API value in `raw_status`; an unrecognized future value produces `status=None`
+without discarding the raw value. Subsystem names remain unfiltered so future
+components are available to downstream consumers.
 
 ## Getting started
 

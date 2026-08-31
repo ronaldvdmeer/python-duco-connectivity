@@ -58,6 +58,7 @@ from .models import (
     DeviceGroupConfigSubmoduleSelector,
     DiagComponent,
     DiagInfo,
+    DiagStatus,
     InfoGeneralSubmoduleSelector,
     InfoGroup,
     InfoGroupStruct,
@@ -2067,7 +2068,8 @@ class DucoClient:
 
         return DiagComponent(
             component=component,
-            status=status,
+            status=DiagStatus.from_api_value(status),
+            raw_status=status,
             raw_payload=cls._preserve_raw_payload(payload),
         )
 

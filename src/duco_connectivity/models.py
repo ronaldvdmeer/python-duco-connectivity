@@ -587,12 +587,20 @@ def _coerce_node_motor_position(value: NodeMotorPosition | int) -> NodeMotorPosi
 
 
 class DiagStatus(StrEnum):
-    """Health states returned by the diagnostics API, plus a client-side fallback."""
+    """Known normalized health states returned by the diagnostics API."""
 
-    OK = "Ok"
-    DISABLE = "Disable"
-    ERROR = "Error"
-    UNKNOWN = "UNKNOWN"
+    OK = "ok"
+    DISABLED = "disabled"
+    ERROR = "error"
+
+    @classmethod
+    def from_api_value(cls, value: str) -> Self | None:
+        """Return the known normalized status for a raw API value."""
+        return {
+            "Ok": cls.OK,
+            "Disable": cls.DISABLED,
+            "Error": cls.ERROR,
+        }.get(value)
 
 
 class ActionResultStatus(StrEnum):
@@ -1572,7 +1580,8 @@ class DiagComponent:
     """Health state for a diagnostic subsystem."""
 
     component: str
-    status: str
+    status: DiagStatus | None
+    raw_status: str
     raw_payload: dict[str, Any] = field(default_factory=dict, repr=False, compare=False)
 
 
