@@ -373,14 +373,40 @@ class DucoClient:
         value: ConfigValue,
     ) -> BypassSupplyTemperatureTarget:
         """Convert a raw config value into a Celsius convenience model."""
+        parameter = f"TempSupTgtZone{zone_id}"
+        if value.minimum is None:
+            msg = f"Invalid {parameter}: missing Min"
+            raise DucoError(msg)
+        if value.increment is None:
+            msg = f"Invalid {parameter}: missing Inc"
+            raise DucoError(msg)
+        if value.maximum is None:
+            msg = f"Invalid {parameter}: missing Max"
+            raise DucoError(msg)
+
+        target_value = cls._decicelsius_to_celsius(value.value)
+        minimum = cls._decicelsius_to_celsius(value.minimum)
+        increment = cls._decicelsius_to_celsius(value.increment)
+        maximum = cls._decicelsius_to_celsius(value.maximum)
+        if increment <= 0:
+            msg = f"Invalid {parameter}: Inc must be greater than zero"
+            raise DucoError(msg)
+        if minimum > maximum:
+            msg = f"Invalid {parameter}: Min must not exceed Max"
+            raise DucoError(msg)
+        if not minimum <= target_value <= maximum:
+            msg = f"Invalid {parameter}: Val must be between Min and Max"
+            raise DucoError(msg)
+        if (value.value - value.minimum) % value.increment:
+            msg = f"Invalid {parameter}: Val must align with Inc relative to Min"
+            raise DucoError(msg)
+
         return BypassSupplyTemperatureTarget(
             zone_id=zone_id,
-            value=cls._decicelsius_to_celsius(value.value),
-            minimum=None if value.minimum is None else cls._decicelsius_to_celsius(value.minimum),
-            increment=None
-            if value.increment is None
-            else cls._decicelsius_to_celsius(value.increment),
-            maximum=None if value.maximum is None else cls._decicelsius_to_celsius(value.maximum),
+            value=target_value,
+            minimum=minimum,
+            increment=increment,
+            maximum=maximum,
             raw_payload=cls._preserve_raw_payload(value.raw_payload),
         )
 
@@ -407,12 +433,16 @@ class DucoClient:
         config: Config,
     ) -> dict[int, BypassSupplyTemperatureTarget]:
         """Read all bypass supply targets from a typed config response."""
-        return {
-            zone_id: target
-            for zone_id in range(1, 9)
-            if (target := cls._extract_bypass_supply_temperature_target(config, zone_id))
-            is not None
-        }
+        targets: dict[int, BypassSupplyTemperatureTarget] = {}
+        for zone_id in range(1, 9):
+            try:
+                target = cls._extract_bypass_supply_temperature_target(config, zone_id)
+            except DucoError as err:
+                _LOGGER.debug("Skipping bypass target for zone %s: %s", zone_id, err)
+                continue
+            if target is not None:
+                targets[zone_id] = target
+        return targets
 
     @staticmethod
     def _read_scalar_value(payload: dict[str, Any], key: str) -> Any:
@@ -2348,9 +2378,15 @@ class DucoClient:
         self,
         zone_id: int,
         temperature: float,
+        *,
+        target: BypassSupplyTemperatureTarget | None = None,
     ) -> BypassSupplyTemperatureTarget:
         """Set a bypass supply target through `/config` using Celsius input."""
         parameter = self._validate_bypass_zone_id(zone_id)
+        if target is not None:
+            if target.zone_id != zone_id:
+                raise ValueError("target zone_id must match zone_id")
+            target.validate_value(temperature)
         raw_value = self._celsius_to_decicelsius(
             temperature,
             path=f"bypass_supply_temperature_target[{zone_id}]",

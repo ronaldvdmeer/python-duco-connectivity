@@ -46,8 +46,16 @@ targets return `{}`. Malformed responses and operational failures remain
 exceptions. The strict parameter-specific bypass helper raises
 `DucoUnsupportedCapabilityError` for an unsupported target; this
 `DucoResponseError` subclass preserves the HTTP status, path, and response body.
-It raises `DucoError` if a successful `/config` response omits the requested
-target field.
+The bypass-target helpers only return models with complete and coherent value,
+minimum, increment, and maximum metadata. Bulk reads omit an invalid individual
+zone without suppressing valid zones. Parameter-specific reads and write
+responses raise `DucoError` when the requested target is missing, incomplete,
+or inconsistent. `BypassSupplyTemperatureTarget.validate_value()` checks a
+Celsius value against the target-specific range and step, while
+`normalize_value()` rounds converted values to the nearest supported step. Pass
+the target to `async_set_bypass_supply_temperature_target(..., target=target)`
+to validate a write without an additional read. Calls without `target` retain
+the legacy finite and exact-decicelsius validation temporarily.
 
 Diagnostic subsystem reads expose known status values as normalized `DiagStatus`
 members (`ok`, `disabled`, or `error`). Each `DiagComponent` also keeps the exact

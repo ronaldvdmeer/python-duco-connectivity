@@ -14,6 +14,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   discovery. Strict single-target reads continue to raise
   `DucoUnsupportedCapabilityError`, and malformed or operational failures remain
   exceptions.
+- **Bypass target metadata integrity**: Require complete and coherent value,
+  minimum, increment, and maximum metadata from bypass target convenience
+  helpers. Bulk reads isolate invalid targets per zone, while strict reads and
+  write responses raise `DucoError` for invalid target metadata.
+- **Target-owned bypass value policy**: Add exact range and step validation plus
+  explicit half-up normalization to `BypassSupplyTemperatureTarget`. Bypass
+  writes can now accept already-polled target metadata to validate before one
+  PATCH without a hidden GET; calls without metadata retain the legacy finite
+  and exact-decicelsius checks temporarily.
 
 ## [0.13.1] - 2026-08-31
 

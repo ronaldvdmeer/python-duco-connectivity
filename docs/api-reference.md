@@ -227,7 +227,7 @@ python tools/api_reference.py write
   - Note: Returns all available bypass supply targets as Celsius convenience models.
   - Note: Omits target fields that are absent from a successful response.
   - Note: Returns an empty mapping when the optional bypass endpoint is unsupported.
-- `async_set_bypass_supply_temperature_target(zone_id: int, temperature: float) -> BypassSupplyTemperatureTarget`
+- `async_set_bypass_supply_temperature_target(zone_id: int, temperature: float, *, target: BypassSupplyTemperatureTarget | None = None) -> BypassSupplyTemperatureTarget`
   - Endpoint: `PATCH /config?module=HeatRecovery&submodule=Bypass&parameter=TempSupTgtZone{zone}`
   - Surface: wrapper
   - Summary: Set a bypass supply target through `/config` using Celsius input.

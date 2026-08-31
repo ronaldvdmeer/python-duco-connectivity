@@ -4,6 +4,7 @@ import logging
 import re
 import sys
 from dataclasses import dataclass, field
+from decimal import ROUND_DOWN, ROUND_HALF_UP, Decimal
 from enum import StrEnum
 from types import FrameType
 from typing import Any, Self
@@ -948,10 +949,52 @@ class BypassSupplyTemperatureTarget:
 
     zone_id: int
     value: float
-    minimum: float | None = None
-    increment: float | None = None
-    maximum: float | None = None
+    minimum: float
+    increment: float
+    maximum: float
     raw_payload: dict[str, Any] = field(default_factory=dict, repr=False, compare=False)
+
+    @staticmethod
+    def _decimal_value(value: float, *, name: str) -> Decimal:
+        """Return a finite numeric value as an exact decimal."""
+        if type(value) not in (int, float):
+            msg = f"{name} must be an int or float, got {type(value).__name__}"
+            raise ValueError(msg)
+        decimal_value = Decimal(str(value))
+        if not decimal_value.is_finite():
+            msg = f"{name} must be finite"
+            raise ValueError(msg)
+        return decimal_value
+
+    def _decimal_range(self) -> tuple[Decimal, Decimal, Decimal]:
+        """Return validated target metadata as exact decimals."""
+        minimum = self._decimal_value(self.minimum, name="minimum")
+        increment = self._decimal_value(self.increment, name="increment")
+        maximum = self._decimal_value(self.maximum, name="maximum")
+        if increment <= 0:
+            raise ValueError("increment must be greater than zero")
+        if minimum > maximum:
+            raise ValueError("minimum must not exceed maximum")
+        return minimum, increment, maximum
+
+    def validate_value(self, value: float) -> float:
+        """Return an unchanged value that satisfies this target's capabilities."""
+        decimal_value = self._decimal_value(value, name="value")
+        minimum, increment, maximum = self._decimal_range()
+        if not minimum <= decimal_value <= maximum:
+            raise ValueError("value must be between minimum and maximum")
+        if (decimal_value - minimum) % increment:
+            raise ValueError("value must align with increment relative to minimum")
+        return value
+
+    def normalize_value(self, value: float) -> float:
+        """Round a value to the nearest supported target step."""
+        decimal_value = self._decimal_value(value, name="value")
+        minimum, increment, maximum = self._decimal_range()
+        steps = ((decimal_value - minimum) / increment).to_integral_value(rounding=ROUND_HALF_UP)
+        maximum_steps = ((maximum - minimum) / increment).to_integral_value(rounding=ROUND_DOWN)
+        normalized_steps = min(max(steps, Decimal()), maximum_steps)
+        return float(minimum + normalized_steps * increment)
 
 
 @dataclass(frozen=True, slots=True)
