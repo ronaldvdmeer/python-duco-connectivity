@@ -121,6 +121,15 @@ Behavior:
 - Raises `DucoUnsupportedCapabilityError` when the box explicitly reports that the optional target endpoint is unsupported
 - Raises `DucoError` when a parameter-specific read or write response contains
     no target, incomplete metadata, an invalid range, or an off-step value
+- Exposes `target.validate_value(value)` for range and step validation and
+    `target.normalize_value(value)` for explicit half-up rounding to the nearest
+    valid step
+- Accepts already-polled metadata through
+    `async_set_bypass_supply_temperature_target(..., target=target)` and
+    validates before sending one PATCH without an additional GET
+- Retains calls without `target` temporarily with the legacy finite and exact
+    `0.1°C` validation; target-specific range and step checks require `target`
+- Never normalizes silently inside the setter
 - Preserves the generic `async_get_config()` and `async_set_config()` behavior
     unchanged for callers that still want the original API-shaped payloads
 
@@ -134,7 +143,12 @@ for zone_id, target in targets.items():
 target = await client.async_get_bypass_supply_temperature_target(1)
 print(target.value, target.minimum, target.increment, target.maximum)
 
-updated = await client.async_set_bypass_supply_temperature_target(1, 18.5)
+normalized = target.normalize_value(18.34)
+updated = await client.async_set_bypass_supply_temperature_target(
+    1,
+    normalized,
+    target=target,
+)
 assert updated.value == 18.5
 ```
 

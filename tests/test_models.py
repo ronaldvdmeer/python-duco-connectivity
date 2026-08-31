@@ -2,7 +2,7 @@
 
 import inspect
 import logging
-from typing import cast
+from typing import Any, cast
 
 import pytest
 
@@ -770,6 +770,73 @@ def test_temperature_convenience_models_default_and_preserve_values() -> None:
     assert target.minimum == 12.0
     assert target.increment == 0.5
     assert target.maximum == 22.0
+
+
+@pytest.fixture
+def bypass_target() -> BypassSupplyTemperatureTarget:
+    """Return a bypass target with a non-zero minimum and fractional step."""
+    return BypassSupplyTemperatureTarget(
+        zone_id=2,
+        value=18.5,
+        minimum=10.1,
+        increment=0.5,
+        maximum=25.4,
+    )
+
+
+@pytest.mark.parametrize("value", [10.1, 18.6, 25.1])
+def test_bypass_target_validates_supported_values(
+    bypass_target: BypassSupplyTemperatureTarget,
+    value: float,
+) -> None:
+    """Target validation should return supported Celsius values unchanged."""
+    assert bypass_target.validate_value(value) == value
+
+
+@pytest.mark.parametrize(
+    ("value", "message"),
+    [
+        pytest.param("18.6", "value must be an int or float, got str", id="nonnumeric"),
+        pytest.param(True, "value must be an int or float, got bool", id="boolean"),
+        pytest.param(float("inf"), "value must be finite", id="infinite"),
+        pytest.param(float("nan"), "value must be finite", id="nan"),
+        pytest.param(10.0, "value must be between minimum and maximum", id="below_minimum"),
+        pytest.param(25.5, "value must be between minimum and maximum", id="above_maximum"),
+        pytest.param(
+            18.5,
+            "value must align with increment relative to minimum",
+            id="off_step",
+        ),
+    ],
+)
+def test_bypass_target_rejects_invalid_values(
+    bypass_target: BypassSupplyTemperatureTarget,
+    value: object,
+    message: str,
+) -> None:
+    """Target validation should reject values outside its capability contract."""
+    with pytest.raises(ValueError, match=message):
+        bypass_target.validate_value(cast(Any, value))
+
+
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [
+        pytest.param(18.34, 18.1, id="round_down"),
+        pytest.param(18.35, 18.6, id="half_up"),
+        pytest.param(18.36, 18.6, id="round_up"),
+        pytest.param(9.9, 10.1, id="clamp_minimum"),
+        pytest.param(25.4, 25.1, id="clamp_highest_step_below_maximum"),
+        pytest.param(26.0, 25.1, id="clamp_above_maximum"),
+    ],
+)
+def test_bypass_target_normalizes_values(
+    bypass_target: BypassSupplyTemperatureTarget,
+    value: float,
+    expected: float,
+) -> None:
+    """Target normalization should round and clamp using exact step arithmetic."""
+    assert bypass_target.normalize_value(value) == expected
 
 
 def test_config_group_struct_defaults() -> None:
