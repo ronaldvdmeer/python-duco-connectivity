@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.1] - 2026-08-31
+
+### Fixed
+
+- **Diagnostic model constructor compatibility**: Restore pre-0.13 direct
+  `DiagComponent` construction with raw status strings and positional raw
+  payloads while retaining normalized statuses and rejecting inconsistent
+  `raw_status` values
+  ([#130](https://github.com/ronaldvdmeer/python-duco-connectivity/pull/130)).
+
 ## [0.13.0] - 2026-08-31
 
 ### Changed
@@ -230,7 +240,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CI validation with pytest, Ruff, mypy, Bandit, and pip-audit.
 - PyPI Trusted Publishing workflow for tagged releases.
 
-[Unreleased]: https://github.com/ronaldvdmeer/python-duco-connectivity/compare/v0.13.0...HEAD
+[Unreleased]: https://github.com/ronaldvdmeer/python-duco-connectivity/compare/v0.13.1...HEAD
+[0.13.1]: https://github.com/ronaldvdmeer/python-duco-connectivity/releases/tag/v0.13.1
 [0.13.0]: https://github.com/ronaldvdmeer/python-duco-connectivity/releases/tag/v0.13.0
 [0.12.0]: https://github.com/ronaldvdmeer/python-duco-connectivity/releases/tag/v0.12.0
 [0.11.0]: https://github.com/ronaldvdmeer/python-duco-connectivity/releases/tag/v0.11.0
