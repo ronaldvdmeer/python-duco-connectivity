@@ -1597,6 +1597,15 @@ class DiagComponent:
                 raise TypeError("raw_payload was provided more than once")
             raw_payload = raw_status
             raw_status = None
+        if raw_status is not None and not isinstance(raw_status, str):
+            raise TypeError("raw_status must be a string")
+        if (
+            isinstance(status, str)
+            and not isinstance(status, DiagStatus)
+            and raw_status is not None
+            and raw_status != status
+        ):
+            raise ValueError("raw_status must match status for raw API strings")
 
         normalized_status: DiagStatus | None
         if isinstance(status, DiagStatus):

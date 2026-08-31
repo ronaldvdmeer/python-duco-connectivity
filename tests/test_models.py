@@ -2,6 +2,7 @@
 
 import inspect
 import logging
+from typing import cast
 
 import pytest
 
@@ -324,6 +325,38 @@ def test_diag_component_accepts_normalized_status() -> None:
 
     assert component.status is DiagStatus.OK
     assert component.raw_status == "Ok"
+
+
+def test_diag_component_rejects_conflicting_legacy_raw_status() -> None:
+    """DiagComponent should reject conflicting legacy raw status values."""
+    with pytest.raises(ValueError, match="raw_status must match status"):
+        DiagComponent(
+            component="Ventilation",
+            status="Ok",
+            raw_status="Error",
+        )
+
+
+def test_diag_component_accepts_matching_legacy_raw_status() -> None:
+    """DiagComponent should accept matching explicit legacy raw status values."""
+    component = DiagComponent(
+        component="Ventilation",
+        status="Ok",
+        raw_status="Ok",
+    )
+
+    assert component.status is DiagStatus.OK
+    assert component.raw_status == "Ok"
+
+
+def test_diag_component_rejects_non_string_raw_status() -> None:
+    """DiagComponent should reject non-string raw status values."""
+    with pytest.raises(TypeError, match="raw_status must be a string"):
+        DiagComponent(
+            component="Ventilation",
+            status=DiagStatus.OK,
+            raw_status=cast(str, 42),
+        )
 
 
 def test_board_name_known_value() -> None:
