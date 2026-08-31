@@ -42,6 +42,7 @@ from duco_connectivity import (
     DeviceGroupConfigSubmoduleSelector,
     DiagComponent,
     DiagInfo,
+    DiagStatus,
     DucoClient,
     DucoConnectionError,
     DucoError,
@@ -2066,7 +2067,8 @@ async def test_get_diagnostics(diag_data: dict[str, object]) -> None:
 
     assert len(diags) == 3
     assert diags[0].component == "Ventilation"
-    assert diags[0].status == "Ok"
+    assert diags[0].status is DiagStatus.OK
+    assert diags[0].raw_status == "Ok"
     assert diags[0].raw_payload is diag_data["Diag"]["SubSystems"][0]
 
 
@@ -2085,13 +2087,19 @@ async def test_get_diagnostics_info_exposes_typed_subsystems(
     assert_type(diag_info, DiagInfo)
     assert_type(diag_info.diagnostic_subsystems, tuple[DiagComponent, ...])
     assert_type(diag_info.diagnostic_subsystems[0].component, str)
-    assert_type(diag_info.diagnostic_subsystems[0].status, str)
+    assert_type(diag_info.diagnostic_subsystems[0].status, DiagStatus | None)
+    assert_type(diag_info.diagnostic_subsystems[0].raw_status, str)
     assert tuple(item.component for item in diag_info.diagnostic_subsystems) == (
         "Ventilation",
         "VentCool",
         "SunCtrl",
     )
     assert tuple(item.status for item in diag_info.diagnostic_subsystems) == (
+        DiagStatus.OK,
+        DiagStatus.OK,
+        DiagStatus.OK,
+    )
+    assert tuple(item.raw_status for item in diag_info.diagnostic_subsystems) == (
         "Ok",
         "Ok",
         "Ok",
@@ -2115,7 +2123,8 @@ async def test_get_diagnostics_preserves_unknown_status() -> None:
             diags = await client.async_get_diagnostics()
 
     assert len(diags) == 1
-    assert diags[0].status == "FutureState"
+    assert diags[0].status is None
+    assert diags[0].raw_status == "FutureState"
 
 
 async def test_get_diagnostics_preserves_unknown_component_name() -> None:
@@ -2182,9 +2191,11 @@ async def test_get_diagnostics_info_skips_partial_entries() -> None:
         with patch.object(session, "request", _request(mock_response)):
             diag_info = await client.async_get_diagnostics_info()
 
-    assert tuple((item.component, item.status) for item in diag_info.diagnostic_subsystems) == (
-        ("Ventilation", "Ok"),
-        ("SunCtrl", "FutureState"),
+    assert tuple(
+        (item.component, item.status, item.raw_status) for item in diag_info.diagnostic_subsystems
+    ) == (
+        ("Ventilation", DiagStatus.OK, "Ok"),
+        ("SunCtrl", None, "FutureState"),
     )
 
 
@@ -2212,6 +2223,12 @@ async def test_get_diagnostics_info_does_not_filter_product_specific_subsystems(
         "VentCool",
         "SunCtrl",
         "FutureSubsystem",
+    )
+    assert tuple((item.status, item.raw_status) for item in diag_info.diagnostic_subsystems) == (
+        (DiagStatus.ERROR, "Error"),
+        (DiagStatus.OK, "Ok"),
+        (DiagStatus.OK, "Ok"),
+        (DiagStatus.DISABLED, "Disable"),
     )
 
 

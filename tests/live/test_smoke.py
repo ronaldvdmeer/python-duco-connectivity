@@ -11,6 +11,7 @@ from duco_connectivity import (
     BypassSupplyTemperatureTarget,
     ConfigValue,
     ConfigValueString,
+    DiagStatus,
     DucoClient,
     DucoSerialNumber,
     DucoUnsupportedCapabilityError,
@@ -184,7 +185,7 @@ async def test_live_reads_diagnostics_and_nodes(
     diagnostics = await live_client.async_get_diagnostics()
     nodes = await live_client.async_get_nodes()
     diagnostic_summary = ", ".join(
-        f"{component.component}={component.status}" for component in diagnostics
+        f"{component.component}={component.raw_status}" for component in diagnostics
     )
     sample_names = ", ".join(
         node.general.name if node.general.name else "<empty>" for node in nodes[:5]
@@ -196,7 +197,11 @@ async def test_live_reads_diagnostics_and_nodes(
 
     assert diagnostics
     assert all(component.component for component in diagnostics)
-    assert all(isinstance(component.status, str) for component in diagnostics)
+    assert all(
+        component.status is None or isinstance(component.status, DiagStatus)
+        for component in diagnostics
+    )
+    assert all(component.raw_status for component in diagnostics)
     assert nodes
     assert all(node.node_id > 0 for node in nodes)
     assert all(isinstance(node.general.node_type, NodeType) for node in nodes)
