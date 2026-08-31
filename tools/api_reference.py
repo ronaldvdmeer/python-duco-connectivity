@@ -237,8 +237,7 @@ METHOD_METADATA: dict[str, MethodMetadata] = {
         surface="wrapper",
         notes=(
             "Converts the raw Duco decicelsius ventilation sensor values to Celsius.",
-            "Raises `DucoUnsupportedCapabilityError` when the box reports the "
-            "optional endpoint as unsupported.",
+            "Returns an empty model when the optional endpoint is unsupported.",
         ),
     ),
     "async_get_nodes": MethodMetadata(
@@ -288,8 +287,7 @@ METHOD_METADATA: dict[str, MethodMetadata] = {
         notes=(
             "Returns all available bypass supply targets as Celsius convenience models.",
             "Omits target fields that are absent from a successful response.",
-            "Raises `DucoUnsupportedCapabilityError` when the optional bypass endpoint "
-            "is unsupported.",
+            "Returns an empty mapping when the optional bypass endpoint is unsupported.",
         ),
     ),
     "async_set_bypass_supply_temperature_target": MethodMetadata(

@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Optional capability discovery**: Return natural empty results for explicit
+  unsupported responses from ventilation-temperature and bulk bypass target
+  discovery. Strict single-target reads continue to raise
+  `DucoUnsupportedCapabilityError`, and malformed or operational failures remain
+  exceptions.
+
 ## [0.13.1] - 2026-08-31
 
 ### Fixed

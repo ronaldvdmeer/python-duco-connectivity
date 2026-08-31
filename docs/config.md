@@ -114,7 +114,10 @@ Behavior:
 - Returns all available targets in one request from
     `async_get_bypass_supply_temperature_targets()`, keyed by zone ID
 - Omits target fields that are absent from a successful bulk response
-- Raises `DucoUnsupportedCapabilityError` when the box explicitly reports that the optional target endpoint is unsupported
+- Returns an empty mapping from the bulk helper when the box explicitly reports
+    that bypass target discovery is unsupported
+- Raises `DucoUnsupportedCapabilityError` from the parameter-specific helper
+    when the explicitly requested target is unsupported
 - Raises `DucoError` when a parameter-specific read returns a valid `/config` response without the requested target field
 - Preserves the generic `async_get_config()` and `async_set_config()` behavior
     unchanged for callers that still want the original API-shaped payloads

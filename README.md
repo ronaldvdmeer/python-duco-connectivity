@@ -32,21 +32,22 @@ in the development examples below.
 - asynchronous communication via `aiohttp`
 - typed stable config families for the documented `/config` branches
 - typed helpers for stable `/info` fields such as heat recovery filter time
-- optional endpoint helpers with explicit unsupported-capability errors
+- natural empty results for optional capability discovery and explicit errors
+  for strict capability access
 - typed models that stay close to the API response shape
 - preserved `raw_payload` data on typed response models for forward compatibility
 
 ## Error handling
 
-When a Duco box explicitly reports that the optional ventilation-temperature or
-bypass-target endpoint is unsupported, the relevant helper raises
-`DucoUnsupportedCapabilityError`. This exception is a `DucoResponseError`
-subclass and preserves the HTTP status, path, and response body. A valid
-ventilation-temperature response always returns a `VentilationTemperatureInfo`
-model, whose individual temperature fields can be `None` when omitted. The
-bypass-target helper returns a typed target model for successful parameter-
-specific reads and raises `DucoError` if the requested target field is missing
-from an otherwise valid `/config` response.
+Discovery-style helpers use their natural empty result when a Duco box reports
+an optional capability as unsupported: filter time returns `None`, ventilation
+temperatures return an empty `VentilationTemperatureInfo`, and bulk bypass
+targets return `{}`. Malformed responses and operational failures remain
+exceptions. The strict parameter-specific bypass helper raises
+`DucoUnsupportedCapabilityError` for an unsupported target; this
+`DucoResponseError` subclass preserves the HTTP status, path, and response body.
+It raises `DucoError` if a successful `/config` response omits the requested
+target field.
 
 Diagnostic subsystem reads expose known status values as normalized `DiagStatus`
 members (`ok`, `disabled`, or `error`). Each `DiagComponent` also keeps the exact

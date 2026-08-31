@@ -129,24 +129,20 @@ async def test_live_reads_temperature_convenience_helpers(
     live_report: Callable[[str], None],
 ) -> None:
     """Read the temperature convenience helper surfaces from a live Duco device."""
-    try:
-        ventilation = await live_client.async_get_ventilation_temperature_info()
-    except DucoUnsupportedCapabilityError:
-        ventilation_summary = "unsupported"
-    else:
-        ventilation_summary = (
-            f"oda={ventilation.temp_oda} sup={ventilation.temp_sup} "
-            f"eta={ventilation.temp_eta} eha={ventilation.temp_eha}"
-        )
-        assert isinstance(ventilation, VentilationTemperatureInfo)
-        for value in (
-            ventilation.temp_oda,
-            ventilation.temp_sup,
-            ventilation.temp_eta,
-            ventilation.temp_eha,
-        ):
-            if value is not None:
-                assert isinstance(value, float)
+    ventilation = await live_client.async_get_ventilation_temperature_info()
+    ventilation_summary = (
+        f"oda={ventilation.temp_oda} sup={ventilation.temp_sup} "
+        f"eta={ventilation.temp_eta} eha={ventilation.temp_eha}"
+    )
+    assert isinstance(ventilation, VentilationTemperatureInfo)
+    for value in (
+        ventilation.temp_oda,
+        ventilation.temp_sup,
+        ventilation.temp_eta,
+        ventilation.temp_eha,
+    ):
+        if value is not None:
+            assert isinstance(value, float)
 
     try:
         bypass = await live_client.async_get_bypass_supply_temperature_target(1)
@@ -163,16 +159,12 @@ async def test_live_reads_temperature_convenience_helpers(
         assert bypass.zone_id == 1
         assert isinstance(bypass.value, float)
 
-    try:
-        bypass_targets = await live_client.async_get_bypass_supply_temperature_targets()
-    except DucoUnsupportedCapabilityError:
-        bypass_targets_summary = "unsupported"
-    else:
-        bypass_targets_summary = ",".join(str(zone_id) for zone_id in bypass_targets)
-        assert all(
-            zone_id == target.zone_id and isinstance(target, BypassSupplyTemperatureTarget)
-            for zone_id, target in bypass_targets.items()
-        )
+    bypass_targets = await live_client.async_get_bypass_supply_temperature_targets()
+    bypass_targets_summary = ",".join(str(zone_id) for zone_id in bypass_targets)
+    assert all(
+        zone_id == target.zone_id and isinstance(target, BypassSupplyTemperatureTarget)
+        for zone_id, target in bypass_targets.items()
+    )
 
     live_report(f"bypass_zones={bypass_targets_summary}")
 

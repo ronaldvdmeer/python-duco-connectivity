@@ -2264,11 +2264,7 @@ class DucoClient:
             payload = await self.async_get_info(module=InfoModuleSelector.VENTILATION)
         except DucoResponseError as err:
             if _is_unsupported_optional_endpoint_error(err, "/info"):
-                raise DucoUnsupportedCapabilityError(
-                    err.status,
-                    err.path,
-                    err.body,
-                ) from err
+                return VentilationTemperatureInfo()
             raise
 
         if not isinstance(payload, dict):
@@ -2344,11 +2340,7 @@ class DucoClient:
             )
         except DucoResponseError as err:
             if _is_unsupported_optional_endpoint_error(err, "/config"):
-                raise DucoUnsupportedCapabilityError(
-                    err.status,
-                    err.path,
-                    err.body,
-                ) from err
+                return {}
             raise
         return self._extract_bypass_supply_temperature_targets(config)
 
