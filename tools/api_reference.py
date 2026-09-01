@@ -298,8 +298,8 @@ METHOD_METADATA: dict[str, MethodMetadata] = {
         surface="wrapper",
         details_path="config.md",
         notes=(
-            "Accepts Celsius input in 0.1°C increments and serializes it "
-            "back to the raw Duco decicelsius payload.",
+            "Requires already-polled `target` metadata; validates zone, range, "
+            "and step before one PATCH without a hidden GET.",
         ),
     ),
 }
