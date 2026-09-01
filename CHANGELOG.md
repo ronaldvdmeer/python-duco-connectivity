@@ -7,9 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.15.0] - 2026-09-01
+
 ### Changed
 
-- **Breaking — bypass target setter requires metadata**: `async_set_bypass_supply_temperature_target()` now requires the `target` keyword argument. The legacy compatibility path that accepted calls without target metadata and applied only the v0.12 finite and exact-decicelsius checks has been removed. Callers must retrieve a `BypassSupplyTemperatureTarget` first and pass it as `target=target` to validate against the target-specific zone, minimum, maximum, and increment before one PATCH is issued. No hidden GET is performed. Migration: call `async_get_bypass_supply_temperature_target(zone_id)` or `async_get_bypass_supply_temperature_targets()` once per coordinator cycle and pass the resulting target to the setter. The only known first-party consumer, `home-assistant/core`, already uses the metadata-aware form since [#180980](https://github.com/home-assistant/core/pull/180980).
+- **Breaking — bypass target setter requires metadata**: `async_set_bypass_supply_temperature_target()` now requires the `target` keyword argument. The legacy compatibility path that accepted calls without target metadata and applied only the v0.12 finite and exact-decicelsius checks has been removed. Callers must retrieve a `BypassSupplyTemperatureTarget` first and pass it as `target=target` to validate against the target-specific zone, minimum, maximum, and increment before one PATCH is issued. No hidden GET is performed. Migration: call `async_get_bypass_supply_temperature_target(zone_id)` or `async_get_bypass_supply_temperature_targets()` once per coordinator cycle and pass the resulting target to the setter. The only known first-party consumer, `home-assistant/core`, already uses the metadata-aware form since [#180980](https://github.com/home-assistant/core/pull/180980)
+  ([#146](https://github.com/ronaldvdmeer/python-duco-connectivity/pull/146)).
 
 ## [0.14.0] - 2026-08-31
 
@@ -266,7 +269,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CI validation with pytest, Ruff, mypy, Bandit, and pip-audit.
 - PyPI Trusted Publishing workflow for tagged releases.
 
-[Unreleased]: https://github.com/ronaldvdmeer/python-duco-connectivity/compare/v0.14.0...HEAD
+[Unreleased]: https://github.com/ronaldvdmeer/python-duco-connectivity/compare/v0.15.0...HEAD
+[0.15.0]: https://github.com/ronaldvdmeer/python-duco-connectivity/releases/tag/v0.15.0
 [0.14.0]: https://github.com/ronaldvdmeer/python-duco-connectivity/releases/tag/v0.14.0
 [0.13.1]: https://github.com/ronaldvdmeer/python-duco-connectivity/releases/tag/v0.13.1
 [0.13.0]: https://github.com/ronaldvdmeer/python-duco-connectivity/releases/tag/v0.13.0
