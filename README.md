@@ -54,8 +54,7 @@ or inconsistent. `BypassSupplyTemperatureTarget.validate_value()` checks a
 Celsius value against the target-specific range and step, while
 `normalize_value()` rounds converted values to the nearest supported step. Pass
 the target to `async_set_bypass_supply_temperature_target(..., target=target)`
-to validate a write without an additional read. Calls without `target` retain
-the legacy finite and exact-decicelsius validation temporarily.
+to validate a write without an additional read.
 
 Diagnostic subsystem reads expose known status values as normalized `DiagStatus`
 members (`ok`, `disabled`, or `error`). Each `DiagComponent` also keeps the exact
