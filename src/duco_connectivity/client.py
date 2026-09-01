@@ -2379,14 +2379,13 @@ class DucoClient:
         zone_id: int,
         temperature: float,
         *,
-        target: BypassSupplyTemperatureTarget | None = None,
+        target: BypassSupplyTemperatureTarget,
     ) -> BypassSupplyTemperatureTarget:
         """Set a bypass supply target through `/config` using Celsius input."""
         parameter = self._validate_bypass_zone_id(zone_id)
-        if target is not None:
-            if target.zone_id != zone_id:
-                raise ValueError("target zone_id must match zone_id")
-            target.validate_value(temperature)
+        if target.zone_id != zone_id:
+            raise ValueError("target zone_id must match zone_id")
+        target.validate_value(temperature)
         raw_value = self._celsius_to_decicelsius(
             temperature,
             path=f"bypass_supply_temperature_target[{zone_id}]",
@@ -2397,11 +2396,11 @@ class DucoClient:
             submodule=ConfigHeatRecoverySubmoduleSelector.BYPASS,
             parameter=parameter,
         )
-        target = self._extract_bypass_supply_temperature_target(response, zone_id)
-        if target is None:
+        updated_target = self._extract_bypass_supply_temperature_target(response, zone_id)
+        if updated_target is None:
             msg = f"Expected {parameter} in /config response after bypass target write"
             raise DucoError(msg)
-        return target
+        return updated_target
 
     async def async_get_write_req_remaining(self) -> int:
         """Backward-compatible alias for the old write budget method name."""

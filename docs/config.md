@@ -105,7 +105,7 @@ inside the library, `DucoClient` also exposes these convenience helpers:
 
 - `async_get_bypass_supply_temperature_targets()`
 - `async_get_bypass_supply_temperature_target(zone_id)`
-- `async_set_bypass_supply_temperature_target(zone_id, temperature)`
+- `async_set_bypass_supply_temperature_target(zone_id, temperature, *, target)`
 
 Behavior:
 
@@ -127,11 +127,9 @@ Behavior:
 - Exposes `target.validate_value(value)` for range and step validation and
     `target.normalize_value(value)` for explicit half-up rounding to the nearest
     valid step
-- Accepts already-polled metadata through
+- Requires already-polled metadata through
     `async_set_bypass_supply_temperature_target(..., target=target)` and
-    validates before sending one PATCH without an additional GET
-- Retains calls without `target` temporarily with the legacy finite and exact
-    `0.1°C` validation; target-specific range and step checks require `target`
+    validates zone, range, and step before sending one PATCH without a hidden GET
 - Never normalizes silently inside the setter
 - Preserves the generic `async_get_config()` and `async_set_config()` behavior
     unchanged for callers that still want the original API-shaped payloads

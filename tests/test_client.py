@@ -4042,37 +4042,13 @@ async def test_bypass_supply_temperature_helpers_reject_invalid_zone_ids(zone_id
         with pytest.raises(ValueError, match="zone_id must be an integer between 1 and 8"):
             await client.async_get_bypass_supply_temperature_target(cast(Any, zone_id))
 
+        dummy_target = BypassSupplyTemperatureTarget(
+            zone_id=1, value=18.0, minimum=12.0, increment=0.5, maximum=22.0
+        )
         with pytest.raises(ValueError, match="zone_id must be an integer between 1 and 8"):
-            await client.async_set_bypass_supply_temperature_target(cast(Any, zone_id), 18.0)
-
-
-async def test_set_bypass_supply_temperature_target_serializes_decicelsius(
-    config_data: dict[str, object],
-) -> None:
-    """Bypass target helpers should serialize Celsius writes as raw decicelsius values."""
-    mock_response = _response(json_payload=config_data)
-
-    async with aiohttp.ClientSession() as session:
-        client = DucoClient(session=session, host="192.0.2.94")
-        request = MagicMock(return_value=_request_context(mock_response))
-        with patch.object(session, "request", request):
-            payload = await client.async_set_bypass_supply_temperature_target(2, 18.5)
-
-    assert payload == BypassSupplyTemperatureTarget(
-        zone_id=2,
-        value=18.5,
-        minimum=12.0,
-        increment=0.5,
-        maximum=22.0,
-    )
-    _, kwargs = request.call_args
-    assert kwargs["params"] == {
-        "module": "HeatRecovery",
-        "submodule": "Bypass",
-        "parameter": "TempSupTgtZone2",
-    }
-    assert kwargs["data"] == b'{"HeatRecovery":{"Bypass":{"TempSupTgtZone2":{"Val":185}}}}'
-    assert kwargs["headers"] == {"Content-Type": "application/json"}
+            await client.async_set_bypass_supply_temperature_target(
+                cast(Any, zone_id), 18.0, target=dummy_target
+            )
 
 
 async def test_set_bypass_supply_temperature_target_validates_against_target(
@@ -4160,30 +4136,23 @@ async def test_set_bypass_supply_temperature_target_rejects_invalid_response() -
 
     async with aiohttp.ClientSession() as session:
         client = DucoClient(session=session, host="192.0.2.94")
+        valid_target = BypassSupplyTemperatureTarget(
+            zone_id=1, value=18.0, minimum=12.0, increment=0.5, maximum=22.0
+        )
+        mock_request = _request(mock_response)
         with (
-            patch.object(session, "request", _request(mock_response)),
+            patch.object(session, "request", mock_request),
             pytest.raises(DucoError, match="Invalid TempSupTgtZone1: missing Max"),
         ):
-            await client.async_set_bypass_supply_temperature_target(1, 18.0)
+            await client.async_set_bypass_supply_temperature_target(1, 18.0, target=valid_target)
 
-
-@pytest.mark.parametrize(
-    ("value", "message"),
-    [
-        pytest.param(18.34, "must be representable in 0.1°C increments", id="not_decicelsius"),
-        pytest.param(float("inf"), "must be a finite temperature value", id="not_finite"),
-        pytest.param(True, "must be an int or float, got bool", id="bool"),
-    ],
-)
-async def test_set_bypass_supply_temperature_target_rejects_invalid_temperatures(
-    value: object,
-    message: str,
-) -> None:
-    """Invalid convenience write values should fail before a request is sent."""
-    async with aiohttp.ClientSession() as session:
-        client = DucoClient(session=session, host="192.0.2.94")
-        with pytest.raises(ValueError, match=re.escape(message)):
-            await client.async_set_bypass_supply_temperature_target(1, cast(Any, value))
+    _, kwargs = mock_request.call_args
+    assert kwargs["params"] == {
+        "module": "HeatRecovery",
+        "submodule": "Bypass",
+        "parameter": "TempSupTgtZone1",
+    }
+    assert kwargs["data"] == b'{"HeatRecovery":{"Bypass":{"TempSupTgtZone1":{"Val":180}}}}'
 
 
 async def test_get_write_requests_remaining_is_parsed() -> None:

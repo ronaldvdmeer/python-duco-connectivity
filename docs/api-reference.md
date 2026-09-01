@@ -227,12 +227,12 @@ python tools/api_reference.py write
   - Note: Returns all available bypass supply targets as Celsius convenience models.
   - Note: Omits target fields that are absent from a successful response.
   - Note: Returns an empty mapping when the optional bypass endpoint is unsupported.
-- `async_set_bypass_supply_temperature_target(zone_id: int, temperature: float, *, target: BypassSupplyTemperatureTarget | None = None) -> BypassSupplyTemperatureTarget`
+- `async_set_bypass_supply_temperature_target(zone_id: int, temperature: float, *, target: BypassSupplyTemperatureTarget) -> BypassSupplyTemperatureTarget`
   - Endpoint: `PATCH /config?module=HeatRecovery&submodule=Bypass&parameter=TempSupTgtZone{zone}`
   - Surface: wrapper
   - Summary: Set a bypass supply target through `/config` using Celsius input.
   - Details: [config.md](config.md)
-  - Note: Accepts Celsius input in 0.1°C increments and serializes it back to the raw Duco decicelsius payload.
+  - Note: Requires already-polled `target` metadata; validates zone, range, and step before one PATCH without a hidden GET.
 
 ## Public exports
 

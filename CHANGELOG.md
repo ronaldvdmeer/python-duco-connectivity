@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Breaking — bypass target setter requires metadata**: `async_set_bypass_supply_temperature_target()` now requires the `target` keyword argument. The legacy compatibility path that accepted calls without target metadata and applied only the v0.12 finite and exact-decicelsius checks has been removed. Callers must retrieve a `BypassSupplyTemperatureTarget` first and pass it as `target=target` to validate against the target-specific zone, minimum, maximum, and increment before one PATCH is issued. No hidden GET is performed. Migration: call `async_get_bypass_supply_temperature_target(zone_id)` or `async_get_bypass_supply_temperature_targets()` once per coordinator cycle and pass the resulting target to the setter. The only known first-party consumer, `home-assistant/core`, already uses the metadata-aware form since [#180980](https://github.com/home-assistant/core/pull/180980).
+
 ## [0.14.0] - 2026-08-31
 
 ### Changed
