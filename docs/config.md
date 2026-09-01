@@ -105,7 +105,7 @@ inside the library, `DucoClient` also exposes these convenience helpers:
 
 - `async_get_bypass_supply_temperature_targets()`
 - `async_get_bypass_supply_temperature_target(zone_id)`
-- `async_set_bypass_supply_temperature_target(zone_id, temperature)`
+- `async_set_bypass_supply_temperature_target(zone_id, temperature, *, target)`
 
 Behavior:
 

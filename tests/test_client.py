@@ -4139,11 +4139,20 @@ async def test_set_bypass_supply_temperature_target_rejects_invalid_response() -
         valid_target = BypassSupplyTemperatureTarget(
             zone_id=1, value=18.0, minimum=12.0, increment=0.5, maximum=22.0
         )
+        mock_request = _request(mock_response)
         with (
-            patch.object(session, "request", _request(mock_response)),
+            patch.object(session, "request", mock_request),
             pytest.raises(DucoError, match="Invalid TempSupTgtZone1: missing Max"),
         ):
             await client.async_set_bypass_supply_temperature_target(1, 18.0, target=valid_target)
+
+    _, kwargs = mock_request.call_args
+    assert kwargs["params"] == {
+        "module": "HeatRecovery",
+        "submodule": "Bypass",
+        "parameter": "TempSupTgtZone1",
+    }
+    assert kwargs["data"] == b'{"HeatRecovery":{"Bypass":{"TempSupTgtZone1":{"Val":180}}}}'
 
 
 async def test_get_write_requests_remaining_is_parsed() -> None:
