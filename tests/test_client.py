@@ -2098,6 +2098,16 @@ async def test_info_overview_parses_energy_modules() -> None:
             "Expected integer value for General.Lan.RssiWifi, got str",
             id="rssi",
         ),
+        pytest.param(
+            {"HeatRecovery": []},
+            "Expected object payload at HeatRecovery in /info response",
+            id="heat-recovery",
+        ),
+        pytest.param(
+            {"Ventilation": []},
+            "Expected object payload at Ventilation in /info response",
+            id="ventilation",
+        ),
     ],
 )
 async def test_info_overview_rejects_malformed_payloads(

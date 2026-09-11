@@ -2086,8 +2086,10 @@ class DucoClient:
         return InfoOverview(
             rssi_wifi=rssi_wifi,
             diagnostic_subsystems=cls._parse_diag_info(payload).diagnostic_subsystems,
-            time_filter_remain=cls._parse_time_filter_remaining(payload),
-            ventilation_temperatures=cls._parse_ventilation_temperature_info(payload),
+            time_filter_remain=cls._parse_time_filter_remaining(payload, request_context="/info"),
+            ventilation_temperatures=cls._parse_ventilation_temperature_info(
+                payload, request_context="/info"
+            ),
         )
 
     async def async_get_info_overview(self) -> InfoOverview:
@@ -2304,31 +2306,30 @@ class DucoClient:
         return self._parse_time_filter_remaining(payload)
 
     @classmethod
-    def _parse_time_filter_remaining(cls, payload: Any) -> int | None:
+    def _parse_time_filter_remaining(
+        cls,
+        payload: Any,
+        *,
+        request_context: str = "/info?module=HeatRecovery",
+    ) -> int | None:
         """Parse remaining heat recovery filter time from an info payload."""
 
         if not isinstance(payload, dict):
-            msg = (
-                "Expected object payload from /info?module=HeatRecovery, got "
-                f"{type(payload).__name__}"
-            )
+            msg = f"Expected object payload from {request_context}, got {type(payload).__name__}"
             raise DucoError(msg)
 
         heat_recovery = payload.get("HeatRecovery")
         if heat_recovery is None:
             return None
         if not isinstance(heat_recovery, dict):
-            msg = "Expected object payload at HeatRecovery in /info?module=HeatRecovery response"
+            msg = f"Expected object payload at HeatRecovery in {request_context} response"
             raise DucoError(msg)
 
         general = heat_recovery.get("General")
         if general is None:
             return None
         if not isinstance(general, dict):
-            msg = (
-                "Expected object payload at HeatRecovery.General in "
-                "/info?module=HeatRecovery response"
-            )
+            msg = f"Expected object payload at HeatRecovery.General in {request_context} response"
             raise DucoError(msg)
 
         return cls._read_optional_wrapped_int(
@@ -2349,30 +2350,30 @@ class DucoClient:
         return self._parse_ventilation_temperature_info(payload)
 
     @classmethod
-    def _parse_ventilation_temperature_info(cls, payload: Any) -> VentilationTemperatureInfo:
+    def _parse_ventilation_temperature_info(
+        cls,
+        payload: Any,
+        *,
+        request_context: str = "/info?module=Ventilation",
+    ) -> VentilationTemperatureInfo:
         """Parse ventilation temperatures from an info payload."""
 
         if not isinstance(payload, dict):
-            msg = (
-                "Expected object payload from /info?module=Ventilation, got "
-                f"{type(payload).__name__}"
-            )
+            msg = f"Expected object payload from {request_context}, got {type(payload).__name__}"
             raise DucoError(msg)
 
         ventilation = payload.get("Ventilation")
         if ventilation is None:
             return VentilationTemperatureInfo()
         if not isinstance(ventilation, dict):
-            msg = "Expected object payload at Ventilation in /info?module=Ventilation response"
+            msg = f"Expected object payload at Ventilation in {request_context} response"
             raise DucoError(msg)
 
         sensor = ventilation.get("Sensor")
         if sensor is None:
             return VentilationTemperatureInfo(raw_payload=cls._preserve_raw_payload(ventilation))
         if not isinstance(sensor, dict):
-            msg = (
-                "Expected object payload at Ventilation.Sensor in /info?module=Ventilation response"
-            )
+            msg = f"Expected object payload at Ventilation.Sensor in {request_context} response"
             raise DucoError(msg)
 
         temp_oda = cls._read_optional_wrapped_int(sensor, "TempOda", path="Ventilation.Sensor")

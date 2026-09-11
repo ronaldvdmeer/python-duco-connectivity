@@ -61,6 +61,7 @@ cases:
 - `async_get_zones_config`
 - `async_get_zone_config`
 - `async_get_board_info`
+- `async_get_info_overview`
 - `async_get_lan_info`
 - `async_get_diagnostics`
 - `async_get_nodes`
@@ -79,6 +80,12 @@ Board info probe:
 
 ```bash
 .venv/bin/duco-probe --host 192.168.1.10 call async_get_board_info
+```
+
+Combined info overview probe:
+
+```bash
+.venv/bin/duco-probe --host 192.168.1.10 call async_get_info_overview
 ```
 
 LAN info probe:
