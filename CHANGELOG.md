@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.16.0] - 2026-09-11
+
+### Added
+
+- **Typed system information overview**: Add `InfoOverview` and
+  `async_get_info_overview()` to retrieve RSSI, diagnostic subsystems, filter
+  time remaining, and ventilation temperatures with one unfiltered `/info`
+  request. Optional product-specific modules retain their natural empty values,
+  while sensitive broad and LAN payloads are deliberately not exposed
+  ([#149](https://github.com/ronaldvdmeer/python-duco-connectivity/pull/149)).
+
+### Enhanced
+
+- **Read endpoint inventory**: Document all 16 Public API 2.5 GET routes,
+  privacy-safe response shapes observed across three Public API 2.7 products,
+  firmware deviations, and polling optimization implications
+  ([#150](https://github.com/ronaldvdmeer/python-duco-connectivity/pull/150)).
+
 ## [0.15.0] - 2026-09-01
 
 ### Changed
@@ -269,7 +287,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CI validation with pytest, Ruff, mypy, Bandit, and pip-audit.
 - PyPI Trusted Publishing workflow for tagged releases.
 
-[Unreleased]: https://github.com/ronaldvdmeer/python-duco-connectivity/compare/v0.15.0...HEAD
+[Unreleased]: https://github.com/ronaldvdmeer/python-duco-connectivity/compare/v0.16.0...HEAD
+[0.16.0]: https://github.com/ronaldvdmeer/python-duco-connectivity/releases/tag/v0.16.0
 [0.15.0]: https://github.com/ronaldvdmeer/python-duco-connectivity/releases/tag/v0.15.0
 [0.14.0]: https://github.com/ronaldvdmeer/python-duco-connectivity/releases/tag/v0.14.0
 [0.13.1]: https://github.com/ronaldvdmeer/python-duco-connectivity/releases/tag/v0.13.1
