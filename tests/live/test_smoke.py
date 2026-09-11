@@ -17,6 +17,7 @@ from duco_connectivity import (
     DucoUnsupportedCapabilityError,
     DucoVersion,
     HostName,
+    InfoOverview,
     IpAddress,
     KnownLanMode,
     LanMode,
@@ -38,6 +39,23 @@ from duco_connectivity import (
 )
 
 pytestmark = pytest.mark.live
+
+
+async def test_live_reads_info_overview(
+    live_client: DucoClient,
+    live_report: Callable[[str], None],
+) -> None:
+    """Read the selected typed overview from a live Duco device."""
+    overview = await live_client.async_get_info_overview()
+
+    live_report(
+        f"rssi={overview.rssi_wifi} diagnostics={len(overview.diagnostic_subsystems)} "
+        f"filter_time={overview.time_filter_remain}"
+    )
+
+    assert isinstance(overview, InfoOverview)
+    assert isinstance(overview.ventilation_temperatures, VentilationTemperatureInfo)
+    assert not hasattr(overview, "raw_payload")
 
 
 async def test_live_reads_core_device_info(

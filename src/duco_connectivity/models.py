@@ -1676,6 +1676,18 @@ class DiagInfo:
     raw_payload: dict[str, Any] = field(default_factory=dict, repr=False, compare=False)
 
 
+@dataclass(frozen=True, slots=True)
+class InfoOverview:
+    """Selected typed values returned by an unfiltered `/info` request."""
+
+    rssi_wifi: int | None = None
+    diagnostic_subsystems: tuple[DiagComponent, ...] = ()
+    time_filter_remain: int | None = None
+    ventilation_temperatures: VentilationTemperatureInfo = field(
+        default_factory=VentilationTemperatureInfo
+    )
+
+
 @dataclass(frozen=True, slots=True, init=False)
 class Action:
     """System action request payload."""

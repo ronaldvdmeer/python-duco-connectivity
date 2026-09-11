@@ -32,6 +32,7 @@ in the development examples below.
 - asynchronous communication via `aiohttp`
 - typed stable config families for the documented `/config` branches
 - typed helpers for stable `/info` fields such as heat recovery filter time
+- a typed overview for selected values from one unfiltered `/info` request
 - natural empty results for optional capability discovery and explicit errors
   for strict capability access
 - typed models that stay close to the API response shape
@@ -65,6 +66,13 @@ pre-0.13 raw status string remains compatible and derives `raw_status`
 automatically; callers using a normalized `DiagStatus` must provide
 `raw_status` explicitly.
 
+`async_get_info_overview()` combines RSSI, diagnostic subsystems, heat recovery
+filter time, and ventilation temperatures from one `GET /info` request. Missing
+product-specific modules produce their natural empty values. Unlike most typed
+models, `InfoOverview` does not retain the broad response or the LAN raw
+payload, because that response can contain network credentials such as the
+Wi-Fi access point key.
+
 ## Getting started
 
 ```python
@@ -79,9 +87,11 @@ async def main() -> None:
     async with aiohttp.ClientSession() as session:
         client = DucoClient(session, "192.168.1.10")
         api_info = await client.async_get_api_info()
+        info = await client.async_get_info_overview()
         nodes = await client.async_get_nodes_overview()
 
         print(api_info.public_api_version)
+        print(info.rssi_wifi)
         print([node.node_id for node in nodes])
 
 

@@ -76,6 +76,9 @@ METHOD_SPECS: dict[str, MethodSpec] = {
         description="Return the typed response from /config/zones/{zone}.",
     ),
     "async_get_board_info": MethodSpec(description="Return board identity details."),
+    "async_get_info_overview": MethodSpec(
+        description="Return selected typed values from one unfiltered /info request."
+    ),
     "async_get_lan_info": MethodSpec(description="Return LAN settings."),
     "async_get_diagnostics_info": MethodSpec(
         description="Return the typed diagnostics response from /info?module=Diag."
