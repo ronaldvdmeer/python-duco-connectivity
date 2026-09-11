@@ -211,6 +211,15 @@ METHOD_METADATA: dict[str, MethodMetadata] = {
         endpoint="GET /info?module=General&submodule=Board",
         surface="typed",
     ),
+    "async_get_info_overview": MethodMetadata(
+        category="Node and system information",
+        endpoint="GET /info",
+        surface="typed",
+        notes=(
+            "Returns selected LAN, diagnostic, heat recovery, and ventilation values in one request.",
+            "Does not retain the broad response or LAN raw payload, which can contain network credentials.",
+        ),
+    ),
     "async_get_lan_info": MethodMetadata(
         category="Node and system information",
         endpoint="GET /info?module=General&submodule=Lan",

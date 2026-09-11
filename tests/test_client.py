@@ -55,6 +55,7 @@ from duco_connectivity import (
     InfoGeneralSubmoduleSelector,
     InfoGroup,
     InfoModuleSelector,
+    InfoOverview,
     InfoZone,
     InfoZoneGroup,
     InfoZonesOverview,
@@ -2002,6 +2003,127 @@ async def test_lan_info_wifi_is_parsed(lan_info_data: dict[str, object]) -> None
     assert isinstance(lan.host_name, HostName)
     assert lan.rssi_wifi == -44
     assert lan.raw_payload is lan_info_data["General"]["Lan"]
+
+
+async def test_info_overview_parses_supported_data_without_sensitive_raw_payload(
+    generic_info_all_data: dict[str, object],
+) -> None:
+    """The broad info overview should expose only its typed public contract."""
+    mock_response = _response(json_payload=generic_info_all_data)
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with patch.object(session, "request", _request(mock_response)) as request_mock:
+            overview = await client.async_get_info_overview()
+
+    assert isinstance(overview, InfoOverview)
+    assert_type(overview, InfoOverview)
+    assert overview.rssi_wifi == -47
+    assert tuple(subsystem.component for subsystem in overview.diagnostic_subsystems) == (
+        "Ventilation",
+        "VentCool",
+        "SunCtrl",
+    )
+    assert overview.time_filter_remain is None
+    assert overview.ventilation_temperatures == VentilationTemperatureInfo()
+    assert not hasattr(overview, "raw_payload")
+    assert request_mock.call_args.args == ("GET", "http://192.0.2.94/info")
+
+
+async def test_info_overview_parses_energy_modules() -> None:
+    """The broad info overview should combine all supported ENERGY data."""
+    payload: dict[str, object] = {
+        "General": {
+            "Lan": {
+                "WifiApKey": {"Val": "secret"},
+                "RssiWifi": {"Val": -51},
+            }
+        },
+        "Diag": {
+            "SubSystems": [
+                {"Component": "Ventilation", "Status": "Ok"},
+            ]
+        },
+        "HeatRecovery": {
+            "General": {"TimeFilterRemain": {"Val": 7200}},
+        },
+        "Ventilation": {
+            "Sensor": {
+                "TempOda": {"Val": 175},
+                "TempSup": {"Val": 180},
+                "TempEta": {"Val": 215},
+                "TempEha": {"Val": 225},
+            }
+        },
+    }
+    mock_response = _response(json_payload=payload)
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with patch.object(session, "request", _request(mock_response)):
+            overview = await client.async_get_info_overview()
+
+    assert overview.rssi_wifi == -51
+    assert overview.diagnostic_subsystems[0].status is DiagStatus.OK
+    assert overview.time_filter_remain == 7200
+    assert overview.ventilation_temperatures == VentilationTemperatureInfo(
+        temp_oda=17.5,
+        temp_sup=18.0,
+        temp_eta=21.5,
+        temp_eha=22.5,
+    )
+    assert "WifiApKey" not in repr(overview)
+
+
+@pytest.mark.parametrize(
+    ("payload", "message"),
+    [
+        pytest.param(
+            [],
+            "Expected object payload from /info, got list",
+            id="top-level",
+        ),
+        pytest.param(
+            {"General": []},
+            "Expected object payload at General in /info response, got list",
+            id="general",
+        ),
+        pytest.param(
+            {"General": {"Lan": []}},
+            "Expected object payload at General.Lan in /info response, got list",
+            id="lan",
+        ),
+        pytest.param(
+            {"General": {"Lan": {"RssiWifi": {"Val": "strong"}}}},
+            "Expected integer value for General.Lan.RssiWifi, got str",
+            id="rssi",
+        ),
+        pytest.param(
+            {"HeatRecovery": []},
+            "Expected object payload at HeatRecovery in /info response",
+            id="heat-recovery",
+        ),
+        pytest.param(
+            {"Ventilation": []},
+            "Expected object payload at Ventilation in /info response",
+            id="ventilation",
+        ),
+    ],
+)
+async def test_info_overview_rejects_malformed_payloads(
+    payload: object,
+    message: str,
+) -> None:
+    """Present malformed overview sections should fail with field context."""
+    mock_response = _response(json_payload=payload)
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with (
+            patch.object(session, "request", _request(mock_response)),
+            pytest.raises(DucoError, match=re.escape(message)),
+        ):
+            await client.async_get_info_overview()
 
 
 async def test_lan_info_ethernet_is_parsed(

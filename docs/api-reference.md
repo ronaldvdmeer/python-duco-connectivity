@@ -170,6 +170,12 @@ python tools/api_reference.py write
   - Endpoint: `GET /info?module=General&submodule=Board`
   - Surface: typed
   - Summary: Return identity and version details for the main unit.
+- `async_get_info_overview() -> InfoOverview`
+  - Endpoint: `GET /info`
+  - Surface: typed
+  - Summary: Return selected typed values from one unfiltered `/info` request.
+  - Note: Returns selected LAN, diagnostic, heat recovery, and ventilation values in one request.
+  - Note: Does not retain the broad response or LAN raw payload, which can contain network credentials.
 - `async_get_lan_info() -> LanInfo`
   - Endpoint: `GET /info?module=General&submodule=Lan`
   - Surface: typed
@@ -284,6 +290,7 @@ The package exports the following public symbols through `duco_connectivity.__al
 - `HostName`
 - `InfoGroup`
 - `InfoGroupStruct`
+- `InfoOverview`
 - `InfoZone`
 - `InfoZoneGroup`
 - `InfoZoneStruct`

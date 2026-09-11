@@ -90,6 +90,12 @@ Raw support is deliberate, but it is still scoped:
 It exists so a typed model can stay the primary result type while still
 preserving the original API object for forward compatibility.
 
+`InfoOverview` is an intentional exception. An unfiltered `/info` response can
+contain network credentials under `General.Lan`, so the overview exposes only
+its selected typed values and does not retain the broad response or LAN raw
+payload. The endpoint remains available through `async_get_info()` for callers
+that explicitly need raw access and accept responsibility for that data.
+
 Use `raw_payload` when:
 
 - the surrounding model is already typed
