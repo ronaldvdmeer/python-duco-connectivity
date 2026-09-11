@@ -97,6 +97,8 @@ public client methods, exports, compatibility aliases, and construction rules.
 - `docs/api-reference.md` for the central public API inventory
 - `docs/cli.md` for the function probe CLI and shell examples
 - `docs/config.md` for system, node, and zone config reads and writes
+- `docs/endpoint-inventory.md` for the Public API 2.5 read routes and observed
+  response shapes across tested Duco products
 - `docs/live-testing.md` for local opt-in tests against a real Duco device
 - `docs/replay-testing.md` for local sample validation against ignored raw API
   captures
