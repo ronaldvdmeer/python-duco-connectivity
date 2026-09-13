@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.17.0] - 2026-09-13
+
+### Added
+
+- **Typed node identification control**: Add
+  `async_set_node_identify(node_id, identify)` with an explicit Boolean state
+  and `DucoActionError` for unsuccessful action results. Document live Public
+  API 2.7 validation across ENERGY, FOCUS, and SILENT_CONNECT systems
+  ([#152](https://github.com/ronaldvdmeer/python-duco-connectivity/pull/152)).
+
 ## [0.16.0] - 2026-09-11
 
 ### Added
@@ -287,7 +297,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CI validation with pytest, Ruff, mypy, Bandit, and pip-audit.
 - PyPI Trusted Publishing workflow for tagged releases.
 
-[Unreleased]: https://github.com/ronaldvdmeer/python-duco-connectivity/compare/v0.16.0...HEAD
+[Unreleased]: https://github.com/ronaldvdmeer/python-duco-connectivity/compare/v0.17.0...HEAD
+[0.17.0]: https://github.com/ronaldvdmeer/python-duco-connectivity/releases/tag/v0.17.0
 [0.16.0]: https://github.com/ronaldvdmeer/python-duco-connectivity/releases/tag/v0.16.0
 [0.15.0]: https://github.com/ronaldvdmeer/python-duco-connectivity/releases/tag/v0.15.0
 [0.14.0]: https://github.com/ronaldvdmeer/python-duco-connectivity/releases/tag/v0.14.0
