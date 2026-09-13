@@ -56,6 +56,7 @@ def test_collect_public_symbols_groups_known_exports() -> None:
     assert "VentilationState" in symbols["Enums"]
     assert "InfoModuleSelector" in symbols["Enums"]
     assert "ConfigZone" in symbols["Models"]
+    assert "DucoActionError" in symbols["Exceptions"]
     assert "DucoWriteLimitError" in symbols["Exceptions"]
     assert symbols["Compatibility exports"] == ["ApiEndpointInfo", "DucoRateLimitError"]
     assert symbols["Other"] == ["__version__"]

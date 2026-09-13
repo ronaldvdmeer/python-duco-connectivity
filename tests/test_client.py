@@ -13,6 +13,7 @@ from duco_connectivity import (
     ActionEnumValue,
     ActionItem,
     ActionName,
+    ActionResult,
     ActionResultStatus,
     ActionValueType,
     BoardName,
@@ -43,6 +44,7 @@ from duco_connectivity import (
     DiagComponent,
     DiagInfo,
     DiagStatus,
+    DucoActionError,
     DucoClient,
     DucoConnectionError,
     DucoError,
@@ -60,6 +62,7 @@ from duco_connectivity import (
     InfoZoneGroup,
     InfoZonesOverview,
     IpAddress,
+    KnownActionName,
     KnownBoardName,
     KnownLanMode,
     LanMode,
@@ -5231,6 +5234,75 @@ async def test_set_ventilation_state_delegates_to_generic_node_action() -> None:
         action="SetVentilationState",
         val="MAN2",
     )
+
+
+@pytest.mark.parametrize("identify", [True, False])
+async def test_set_node_identify_delegates_to_generic_node_action(
+    identify: bool,
+) -> None:
+    """Identify writes should use the typed Boolean node action contract."""
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with patch.object(
+            client,
+            "async_set_node_action",
+            AsyncMock(return_value=ActionResult(result=ActionResultStatus.SUCCESS)),
+        ) as set_node_action:
+            await client.async_set_node_identify(1, identify)
+
+    set_node_action.assert_awaited_once_with(
+        node_id=1,
+        action=KnownActionName.SET_IDENTIFY,
+        val=identify,
+    )
+
+
+async def test_set_node_identify_uses_boolean_json_body() -> None:
+    """Identify writes should send an explicit JSON Boolean value."""
+    mock_response = _response(json_payload={"Result": "SUCCESS"})
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        request = MagicMock(return_value=_request_context(mock_response))
+        with patch.object(session, "request", request):
+            await client.async_set_node_identify(1, True)
+
+    _, kwargs = request.call_args
+    assert kwargs["data"] == b'{"Action":"SetIdentify","Val":true}'
+    assert kwargs["headers"] == {"Content-Type": "application/json"}
+
+
+@pytest.mark.parametrize(
+    "result_status",
+    [ActionResultStatus.FAILED, ActionResultStatus.UNKNOWN],
+)
+async def test_set_node_identify_raises_for_unsuccessful_result(
+    result_status: ActionResultStatus,
+) -> None:
+    """Identify writes should raise when the API does not report success."""
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with (
+            patch.object(
+                client,
+                "async_set_node_action",
+                AsyncMock(
+                    return_value=ActionResult(
+                        result=result_status,
+                        code=12,
+                        message="Action is not performed",
+                    )
+                ),
+            ),
+            pytest.raises(
+                DucoActionError,
+                match=(
+                    rf"Duco action SetIdentify returned {result_status} "
+                    r"\(code 12\): Action is not performed"
+                ),
+            ),
+        ):
+            await client.async_set_node_identify(1, True)
 
 
 async def test_set_ventilation_state_uses_compact_json_body() -> None:

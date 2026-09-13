@@ -87,6 +87,12 @@ python tools/api_reference.py write
   - Summary: Request a ventilation state change for a node.
   - Details: [actions.md](actions.md)
   - Note: Thin convenience wrapper over `async_set_node_action()` for `SetVentilationState`.
+- `async_set_node_identify(node_id: int, identify: bool) -> None`
+  - Endpoint: `POST /action/nodes/{node}`
+  - Surface: wrapper
+  - Summary: Set the identify state for a node.
+  - Details: [actions.md](actions.md)
+  - Note: Raises `DucoActionError` when the API does not report success.
 - `async_set_node_action(node_id: int, action: ActionName | str, val: str | int | bool | None = None) -> ActionResult`
   - Endpoint: `POST /action/nodes/{node}`
   - Surface: typed
@@ -362,6 +368,7 @@ The package exports the following public symbols through `duco_connectivity.__al
 
 ### Exceptions
 
+- `DucoActionError`
 - `DucoConnectionError`
 - `DucoError`
 - `DucoResponseError`

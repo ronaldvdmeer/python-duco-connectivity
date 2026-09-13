@@ -13,6 +13,7 @@ from urllib.parse import urlsplit
 import aiohttp
 
 from .exceptions import (
+    DucoActionError,
     DucoConnectionError,
     DucoError,
     DucoResponseError,
@@ -68,6 +69,7 @@ from .models import (
     InfoZoneGroup,
     InfoZonesOverview,
     InfoZoneStruct,
+    KnownActionName,
     LanInfo,
     NetworkType,
     Node,
@@ -2501,6 +2503,22 @@ class DucoClient:
             action="SetVentilationState",
             val=state_value,
         )
+
+    async def async_set_node_identify(self, node_id: int, identify: bool) -> None:
+        """Set the identify state for a node."""
+        action = KnownActionName.SET_IDENTIFY
+        result = await self.async_set_node_action(
+            node_id=node_id,
+            action=action,
+            val=identify,
+        )
+        if result.result is not ActionResultStatus.SUCCESS:
+            raise DucoActionError(
+                action=action,
+                result=result.result,
+                code=result.code,
+                message=result.message,
+            )
 
     async def async_set_node_action(
         self,

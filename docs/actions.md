@@ -126,6 +126,8 @@ Behavior:
 - Returns a typed `ActionResult`
 - Preserves `async_set_ventilation_state()` as a convenience wrapper for
   `SetVentilationState`
+- Provides `async_set_node_identify()` as a Boolean convenience wrapper for
+  `SetIdentify`; unsuccessful action results raise `DucoActionError`
 
 The public model layer also exposes typed action request and discovery models
 for the structures described in `notes/public_api_v2.5.yaml`:
@@ -157,3 +159,15 @@ For ventilation state writes, the existing helper remains available:
 ```python
 await client.async_set_ventilation_state(1, "MAN2")
 ```
+
+For node identification, use the typed Boolean helper:
+
+```python
+await client.async_set_node_identify(1, True)
+```
+
+Live Public API 2.7 validation found that `SetIdentify` is advertised with
+`ValType.Boolean` on supported nodes. Both `True` and `False` writes produced
+the matching `General.Identify` state on all supported nodes tested across
+ENERGY, FOCUS, and SILENT_CONNECT systems. Action availability remains
+node-specific and should be determined through action discovery.

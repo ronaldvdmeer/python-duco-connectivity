@@ -4,6 +4,7 @@ from importlib.metadata import PackageNotFoundError, version
 
 from .client import DucoClient
 from .exceptions import (
+    DucoActionError,
     DucoConnectionError,
     DucoError,
     DucoRateLimitError,
@@ -170,6 +171,7 @@ __all__ = [
     "DiagComponent",
     "DiagInfo",
     "DiagStatus",
+    "DucoActionError",
     "DucoClient",
     "DucoConnectionError",
     "DucoError",

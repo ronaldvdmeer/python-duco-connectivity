@@ -3,6 +3,7 @@
 import pytest
 
 from duco_connectivity import (
+    DucoActionError,
     DucoConnectionError,
     DucoError,
     DucoRateLimitError,
@@ -10,6 +11,25 @@ from duco_connectivity import (
     DucoUnsupportedCapabilityError,
     DucoWriteLimitError,
 )
+
+
+def test_action_error_exposes_result_context() -> None:
+    """DucoActionError should expose the unsuccessful action result."""
+    err = DucoActionError(
+        action="SetIdentify",
+        result="FAILED",
+        code=12,
+        message="Action is not performed",
+    )
+
+    assert err.action == "SetIdentify"
+    assert err.result == "FAILED"
+    assert err.code == 12
+    assert err.message == "Action is not performed"
+    assert str(err) == (
+        "Duco action SetIdentify returned FAILED (code 12): Action is not performed"
+    )
+    assert isinstance(err, DucoError)
 
 
 def test_connection_error_inherits_from_base_error() -> None:

@@ -5,6 +5,28 @@ class DucoError(Exception):
     """Base class for client errors."""
 
 
+class DucoActionError(DucoError):
+    """Raised when the box reports an unsuccessful action result."""
+
+    def __init__(
+        self,
+        action: str,
+        result: str,
+        code: int | None = None,
+        message: str | None = None,
+    ) -> None:
+        self.action = action
+        self.result = result
+        self.code = code
+        self.message = message
+        detail = f"Duco action {action} returned {result}"
+        if code is not None:
+            detail = f"{detail} (code {code})"
+        if message:
+            detail = f"{detail}: {message}"
+        super().__init__(detail)
+
+
 class DucoConnectionError(DucoError):
     """Raised when the client cannot reach the box."""
 
