@@ -117,6 +117,13 @@ METHOD_METADATA: dict[str, MethodMetadata] = {
             "Thin convenience wrapper over `async_set_node_action()` for `SetVentilationState`.",
         ),
     ),
+    "async_set_node_identify": MethodMetadata(
+        category="Actions and commands",
+        endpoint="POST /action/nodes/{node}",
+        surface="wrapper",
+        details_path="actions.md",
+        notes=("Raises `DucoActionError` when the API does not report success.",),
+    ),
     "async_set_node_action": MethodMetadata(
         category="Actions and commands",
         endpoint="POST /action/nodes/{node}",
@@ -216,8 +223,10 @@ METHOD_METADATA: dict[str, MethodMetadata] = {
         endpoint="GET /info",
         surface="typed",
         notes=(
-            "Returns selected LAN, diagnostic, heat recovery, and ventilation values in one request.",
-            "Does not retain the broad response or LAN raw payload, which can contain network credentials.",
+            "Returns selected LAN, diagnostic, heat recovery, and ventilation "
+            "values in one request.",
+            "Does not retain the broad response or LAN raw payload, which can "
+            "contain network credentials.",
         ),
     ),
     "async_get_lan_info": MethodMetadata(

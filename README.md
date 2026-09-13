@@ -73,6 +73,10 @@ models, `InfoOverview` does not retain the broad response or the LAN raw
 payload, because that response can contain network credentials such as the
 Wi-Fi access point key.
 
+`async_set_node_identify(node_id, identify)` exposes the node `SetIdentify`
+action with an explicit Boolean state. The helper raises `DucoActionError` when
+the box returns an unsuccessful action result.
+
 ## Getting started
 
 ```python
