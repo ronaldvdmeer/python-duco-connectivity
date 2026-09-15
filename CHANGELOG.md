@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Managed node identification**: Add
+  `async_set_node_identify_timed(node_id)` to enable identification immediately
+  and automatically disable it after 15 minutes, with per-node deadlines,
+  repeated-call extension, and retry on later API activity after failed
+  automatic cleanup.
+
 ## [0.17.0] - 2026-09-13
 
 ### Added

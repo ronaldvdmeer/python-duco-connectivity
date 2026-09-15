@@ -128,6 +128,8 @@ Behavior:
   `SetVentilationState`
 - Provides `async_set_node_identify()` as a Boolean convenience wrapper for
   `SetIdentify`; unsuccessful action results raise `DucoActionError`
+- Provides `async_set_node_identify_timed()` to enable `SetIdentify` immediately
+  and automatically disable it after 15 minutes
 
 The public model layer also exposes typed action request and discovery models
 for the structures described in `notes/public_api_v2.5.yaml`:
@@ -165,6 +167,20 @@ For node identification, use the typed Boolean helper:
 ```python
 await client.async_set_node_identify(1, True)
 ```
+
+To run identification for a fixed 15-minute period, use the managed helper:
+
+```python
+await client.async_set_node_identify_timed(1)
+```
+
+The managed helper returns after identification is enabled. It uses the running
+event loop's monotonic clock to schedule the off-write. A repeated call for the
+same node restarts the full period, while separate nodes retain independent
+deadlines. An explicit `async_set_node_identify()` call cancels the managed
+timeout for that node. If the automatic off-write fails, the client logs the
+failure and retries it when a later API request is made. The in-process deadline
+does not survive an application restart.
 
 Live Public API 2.7 validation found that `SetIdentify` is advertised with
 `ValType.Boolean` on supported nodes. Both `True` and `False` writes produced
