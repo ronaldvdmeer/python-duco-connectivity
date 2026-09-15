@@ -7,13 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.18.0] - 2026-09-15
+
 ### Added
 
 - **Managed node identification**: Add
   `async_set_node_identify_timed(node_id)` to enable identification immediately
   and automatically disable it after 15 minutes, with per-node deadlines,
   repeated-call extension, and retry on later API activity after failed
-  automatic cleanup.
+  automatic cleanup ([#154](https://github.com/ronaldvdmeer/python-duco-connectivity/pull/154)).
 
 ## [0.17.0] - 2026-09-13
 
@@ -305,7 +307,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CI validation with pytest, Ruff, mypy, Bandit, and pip-audit.
 - PyPI Trusted Publishing workflow for tagged releases.
 
-[Unreleased]: https://github.com/ronaldvdmeer/python-duco-connectivity/compare/v0.17.0...HEAD
+[Unreleased]: https://github.com/ronaldvdmeer/python-duco-connectivity/compare/v0.18.0...HEAD
+[0.18.0]: https://github.com/ronaldvdmeer/python-duco-connectivity/compare/v0.17.0...v0.18.0
 [0.17.0]: https://github.com/ronaldvdmeer/python-duco-connectivity/releases/tag/v0.17.0
 [0.16.0]: https://github.com/ronaldvdmeer/python-duco-connectivity/releases/tag/v0.16.0
 [0.15.0]: https://github.com/ronaldvdmeer/python-duco-connectivity/releases/tag/v0.15.0
