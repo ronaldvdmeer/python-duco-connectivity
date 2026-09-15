@@ -93,6 +93,12 @@ python tools/api_reference.py write
   - Summary: Set the identify state for a node.
   - Details: [actions.md](actions.md)
   - Note: Raises `DucoActionError` when the API does not report success.
+- `async_set_node_identify_timed(node_id: int) -> None`
+  - Endpoint: `POST /action/nodes/{node}`
+  - Surface: wrapper
+  - Summary: Start node identification for 15 minutes.
+  - Details: [actions.md](actions.md)
+  - Note: Repeated calls restart the 15-minute timeout; explicit identify writes cancel it.
 - `async_set_node_action(node_id: int, action: ActionName | str, val: str | int | bool | None = None) -> ActionResult`
   - Endpoint: `POST /action/nodes/{node}`
   - Surface: typed

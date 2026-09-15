@@ -1,5 +1,6 @@
 """Tests for the HTTP-only Duco connectivity client."""
 
+import asyncio
 import logging
 import re
 from dataclasses import dataclass, field
@@ -5270,6 +5271,142 @@ async def test_set_node_identify_uses_boolean_json_body() -> None:
     _, kwargs = request.call_args
     assert kwargs["data"] == b'{"Action":"SetIdentify","Val":true}'
     assert kwargs["headers"] == {"Content-Type": "application/json"}
+
+
+async def test_set_node_identify_timed_turns_off_at_deadline() -> None:
+    """Timed identify should turn on immediately and off at its deadline."""
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with patch.object(client, "_async_set_node_identify_value", AsyncMock()) as set_identify:
+            started_at = asyncio.get_running_loop().time()
+            await client.async_set_node_identify_timed(1)
+            deadline = client._identify_deadlines[1]
+            assert deadline == pytest.approx(started_at + 900, abs=0.1)
+            with patch("asyncio.get_running_loop") as get_running_loop:
+                get_running_loop.return_value.time.return_value = deadline
+                client._start_node_identify_cleanup(1, deadline)
+                await asyncio.gather(*client._identify_cleanup_tasks)
+
+    assert [call.args for call in set_identify.await_args_list] == [
+        (1, True),
+        (1, False),
+    ]
+
+
+async def test_set_node_identify_timed_reschedules_early_cleanup() -> None:
+    """Timed identify should reschedule cleanup if its timer runs early."""
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with patch.object(client, "_async_set_node_identify_value", AsyncMock()):
+            await client.async_set_node_identify_timed(1)
+            deadline = client._identify_deadlines[1]
+            with patch("duco_connectivity.client.asyncio.get_running_loop") as get_running_loop:
+                loop = get_running_loop.return_value
+                loop.time.return_value = deadline - 0.001
+                client._start_node_identify_cleanup(1, deadline)
+                await asyncio.gather(*client._identify_cleanup_tasks)
+
+    loop.call_at.assert_called_once_with(
+        deadline,
+        client._start_node_identify_cleanup,
+        1,
+        deadline,
+    )
+    assert client._identify_deadlines[1] == deadline
+    client._identify_timers[1].cancel()
+
+
+async def test_set_node_identify_timed_resets_deadline() -> None:
+    """Starting identify again should supersede the previous deadline."""
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with patch.object(client, "_async_set_node_identify_value", AsyncMock()) as set_identify:
+            await client.async_set_node_identify_timed(1)
+            previous_deadline = client._identify_deadlines[1]
+            await client.async_set_node_identify_timed(1)
+            client._start_node_identify_cleanup(1, previous_deadline)
+            await client.async_set_node_identify(1, False)
+
+    assert [call.args for call in set_identify.await_args_list] == [
+        (1, True),
+        (1, True),
+        (1, False),
+    ]
+
+
+async def test_set_node_identify_timed_tracks_nodes_independently() -> None:
+    """Timed identify should maintain a separate deadline for each node."""
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with patch.object(client, "_async_set_node_identify_value", AsyncMock()):
+            await client.async_set_node_identify_timed(1)
+            await client.async_set_node_identify_timed(2)
+            await client.async_set_node_identify(1, False)
+
+            assert set(client._identify_deadlines) == {2}
+
+            await client.async_set_node_identify(2, False)
+
+
+async def test_set_node_identify_timed_does_not_schedule_after_failure() -> None:
+    """Timed identify should not schedule cleanup when enabling fails."""
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with (
+            patch.object(
+                client,
+                "_async_set_node_identify_value",
+                AsyncMock(side_effect=DucoConnectionError("Connection failed")),
+            ),
+            pytest.raises(DucoConnectionError, match="Connection failed"),
+        ):
+            await client.async_set_node_identify_timed(1)
+
+    assert not client._identify_deadlines
+    assert not client._identify_timers
+
+
+async def test_set_node_identify_cancels_timed_cleanup() -> None:
+    """An explicit identify write should cancel managed cleanup."""
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with patch.object(client, "_async_set_node_identify_value", AsyncMock()):
+            await client.async_set_node_identify_timed(1)
+            timer = client._identify_timers[1]
+            await client.async_set_node_identify(1, False)
+
+    assert timer.cancelled()
+    assert 1 not in client._identify_deadlines
+    assert 1 not in client._identify_timers
+
+
+async def test_expired_node_identify_retries_on_next_request(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """A later API request should retry failed identify cleanup."""
+    mock_response = _response(json_payload={"ApiVersion": "2.5"})
+
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        set_identify = AsyncMock(side_effect=[None, DucoConnectionError("Connection failed"), None])
+        with patch.object(client, "_async_set_node_identify_value", set_identify):
+            await client.async_set_node_identify_timed(1)
+            deadline = asyncio.get_running_loop().time() - 1
+            client._identify_deadlines[1] = deadline
+            client._start_node_identify_cleanup(1, deadline)
+            await asyncio.gather(*client._identify_cleanup_tasks)
+
+            with patch.object(session, "request", _request(mock_response)):
+                await client.async_get_raw("/info")
+            await asyncio.gather(*client._identify_cleanup_tasks)
+
+    assert [call.args for call in set_identify.await_args_list] == [
+        (1, True),
+        (1, False),
+        (1, False),
+    ]
+    assert "Failed to disable identify for node 1 after 15 minutes" in caplog.text
+    assert 1 not in client._identify_deadlines
 
 
 @pytest.mark.parametrize(

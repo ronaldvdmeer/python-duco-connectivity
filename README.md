@@ -77,6 +77,14 @@ Wi-Fi access point key.
 action with an explicit Boolean state. The helper raises `DucoActionError` when
 the box returns an unsuccessful action result.
 
+`async_set_node_identify_timed(node_id)` turns identification on and returns
+after the write succeeds. The client turns it off after 15 minutes using the
+running event loop. Calling the method again for the same node restarts the
+15-minute period; nodes are tracked independently. An explicit
+`async_set_node_identify()` call cancels the managed timeout for that node.
+Failed automatic off-writes are logged and retried when a later API request is made.
+Because the timer is in process, it does not survive application restarts.
+
 ## Getting started
 
 ```python

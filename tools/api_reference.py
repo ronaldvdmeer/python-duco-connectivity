@@ -124,6 +124,15 @@ METHOD_METADATA: dict[str, MethodMetadata] = {
         details_path="actions.md",
         notes=("Raises `DucoActionError` when the API does not report success.",),
     ),
+    "async_set_node_identify_timed": MethodMetadata(
+        category="Actions and commands",
+        endpoint="POST /action/nodes/{node}",
+        surface="wrapper",
+        details_path="actions.md",
+        notes=(
+            "Repeated calls restart the 15-minute timeout; explicit identify writes cancel it.",
+        ),
+    ),
     "async_set_node_action": MethodMetadata(
         category="Actions and commands",
         endpoint="POST /action/nodes/{node}",

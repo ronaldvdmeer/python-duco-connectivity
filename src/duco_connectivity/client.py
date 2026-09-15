@@ -1,5 +1,6 @@
 """Async client for the local Duco HTTP API."""
 
+import asyncio
 import json
 import logging
 import math
@@ -96,6 +97,8 @@ from .models import (
 
 _LOGGER = logging.getLogger(__name__)
 
+_NODE_IDENTIFY_DURATION = 15 * 60
+
 
 def _compat_caller() -> str | None:
     """Return the first external caller that reached a compatibility path."""
@@ -140,6 +143,11 @@ class DucoClient:
     ) -> None:
         self._session = session
         self._timeout = aiohttp.ClientTimeout(total=request_timeout)
+        self._identify_deadlines: dict[int, float] = {}
+        self._identify_timers: dict[int, asyncio.TimerHandle] = {}
+        self._identify_locks: dict[int, asyncio.Lock] = {}
+        self._identify_cleanup_nodes: set[int] = set()
+        self._identify_cleanup_tasks: set[asyncio.Task[None]] = set()
 
         raw_host = host.rstrip("/")
         authority = raw_host.split("://", 1)[1] if "://" in raw_host else raw_host
@@ -228,6 +236,8 @@ class DucoClient:
         return parsed_path.path
 
     async def _request_json(self, method: str, path: str, **kwargs: Any) -> Any:
+        self._schedule_expired_node_identify_cleanup()
+
         allow_empty_response = kwargs.pop("allow_empty_response", False)
         json_payload = None
         if "json" in kwargs:
@@ -2506,6 +2516,27 @@ class DucoClient:
 
     async def async_set_node_identify(self, node_id: int, identify: bool) -> None:
         """Set the identify state for a node."""
+        async with self._identify_locks.setdefault(node_id, asyncio.Lock()):
+            await self._async_set_node_identify_value(node_id, identify)
+            self._cancel_node_identify_timer(node_id)
+
+    async def async_set_node_identify_timed(self, node_id: int) -> None:
+        """Start node identification for 15 minutes."""
+        async with self._identify_locks.setdefault(node_id, asyncio.Lock()):
+            await self._async_set_node_identify_value(node_id, True)
+            self._cancel_node_identify_timer(node_id)
+
+            loop = asyncio.get_running_loop()
+            deadline = loop.time() + _NODE_IDENTIFY_DURATION
+            self._identify_deadlines[node_id] = deadline
+            self._identify_timers[node_id] = loop.call_at(
+                deadline,
+                self._start_node_identify_cleanup,
+                node_id,
+                deadline,
+            )
+
+    async def _async_set_node_identify_value(self, node_id: int, identify: bool) -> None:
         action = KnownActionName.SET_IDENTIFY
         result = await self.async_set_node_action(
             node_id=node_id,
@@ -2519,6 +2550,63 @@ class DucoClient:
                 code=result.code,
                 message=result.message,
             )
+
+    def _cancel_node_identify_timer(self, node_id: int) -> None:
+        """Cancel managed identify expiry for a node."""
+        self._identify_deadlines.pop(node_id, None)
+        if timer := self._identify_timers.pop(node_id, None):
+            timer.cancel()
+
+    def _start_node_identify_cleanup(self, node_id: int, deadline: float) -> None:
+        """Start asynchronous cleanup when a node identify deadline expires."""
+        if (
+            self._identify_deadlines.get(node_id) != deadline
+            or node_id in self._identify_cleanup_nodes
+        ):
+            return
+
+        self._identify_cleanup_nodes.add(node_id)
+        if timer := self._identify_timers.pop(node_id, None):
+            timer.cancel()
+        task = asyncio.create_task(self._async_disable_expired_node_identify(node_id, deadline))
+        self._identify_cleanup_tasks.add(task)
+        task.add_done_callback(self._identify_cleanup_tasks.discard)
+
+    def _schedule_expired_node_identify_cleanup(self) -> None:
+        """Schedule overdue identify cleanup before another API request."""
+        now = asyncio.get_running_loop().time()
+        for node_id, deadline in tuple(self._identify_deadlines.items()):
+            if deadline > now or node_id in self._identify_cleanup_nodes:
+                continue
+            self._start_node_identify_cleanup(node_id, deadline)
+
+    async def _async_disable_expired_node_identify(self, node_id: int, deadline: float) -> None:
+        """Disable an identify state if its deadline is still current."""
+        try:
+            async with self._identify_locks.setdefault(node_id, asyncio.Lock()):
+                if self._identify_deadlines.get(node_id) != deadline:
+                    return
+                loop = asyncio.get_running_loop()
+                if deadline > loop.time():
+                    self._identify_timers[node_id] = loop.call_at(
+                        deadline,
+                        self._start_node_identify_cleanup,
+                        node_id,
+                        deadline,
+                    )
+                    return
+                try:
+                    await self._async_set_node_identify_value(node_id, False)
+                except Exception as err:
+                    _LOGGER.warning(
+                        "Failed to disable identify for node %s after 15 minutes: %s",
+                        node_id,
+                        err,
+                    )
+                    return
+                self._identify_deadlines.pop(node_id, None)
+        finally:
+            self._identify_cleanup_nodes.discard(node_id)
 
     async def async_set_node_action(
         self,
