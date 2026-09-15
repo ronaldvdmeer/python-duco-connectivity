@@ -2584,10 +2584,16 @@ class DucoClient:
         """Disable an identify state if its deadline is still current."""
         try:
             async with self._identify_locks.setdefault(node_id, asyncio.Lock()):
-                if (
-                    self._identify_deadlines.get(node_id) != deadline
-                    or deadline > asyncio.get_running_loop().time()
-                ):
+                if self._identify_deadlines.get(node_id) != deadline:
+                    return
+                loop = asyncio.get_running_loop()
+                if deadline > loop.time():
+                    self._identify_timers[node_id] = loop.call_at(
+                        deadline,
+                        self._start_node_identify_cleanup,
+                        node_id,
+                        deadline,
+                    )
                     return
                 try:
                     await self._async_set_node_identify_value(node_id, False)

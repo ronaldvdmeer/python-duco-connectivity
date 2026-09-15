@@ -5293,6 +5293,29 @@ async def test_set_node_identify_timed_turns_off_at_deadline() -> None:
     ]
 
 
+async def test_set_node_identify_timed_reschedules_early_cleanup() -> None:
+    """Timed identify should reschedule cleanup if its timer runs early."""
+    async with aiohttp.ClientSession() as session:
+        client = DucoClient(session=session, host="192.0.2.94")
+        with patch.object(client, "_async_set_node_identify_value", AsyncMock()):
+            await client.async_set_node_identify_timed(1)
+            deadline = client._identify_deadlines[1]
+            with patch("duco_connectivity.client.asyncio.get_running_loop") as get_running_loop:
+                loop = get_running_loop.return_value
+                loop.time.return_value = deadline - 0.001
+                client._start_node_identify_cleanup(1, deadline)
+                await asyncio.gather(*client._identify_cleanup_tasks)
+
+    loop.call_at.assert_called_once_with(
+        deadline,
+        client._start_node_identify_cleanup,
+        1,
+        deadline,
+    )
+    assert client._identify_deadlines[1] == deadline
+    client._identify_timers[1].cancel()
+
+
 async def test_set_node_identify_timed_resets_deadline() -> None:
     """Starting identify again should supersede the previous deadline."""
     async with aiohttp.ClientSession() as session:
